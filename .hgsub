@@ -1,0 +1,4 @@
+DAVServer/cocoadavserver = https://cocoadavserver.googlecode.com/hg/
+JSON/JSONKit = [git]https://github.com/jparise/JSONKit.git
+SocialNetworks/Facebook-iOS-SDK = [git]https://github.com/facebook/facebook-ios-sdk.git
+SocialNetworks/ShareKit = [git]https://github.com/ideashower/ShareKit.git
