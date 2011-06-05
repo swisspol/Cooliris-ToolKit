@@ -1,0 +1,409 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		E225E78E1393CF4400722275 /* NSObject+SBJSON.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E7811393CF4400722275 /* NSObject+SBJSON.m */; };
+		E225E7901393CF4400722275 /* NSString+SBJSON.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E7831393CF4400722275 /* NSString+SBJSON.m */; };
+		E225E7921393CF4400722275 /* SBJSON.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E7851393CF4400722275 /* SBJSON.m */; };
+		E225E7941393CF4400722275 /* SBJsonBase.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E7871393CF4400722275 /* SBJsonBase.m */; };
+		E225E7961393CF4400722275 /* SBJsonParser.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E7891393CF4400722275 /* SBJsonParser.m */; };
+		E225E7981393CF4400722275 /* SBJsonWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E78B1393CF4400722275 /* SBJsonWriter.m */; };
+		E272FB8F12CDCD8600D25967 /* FacebookComposeViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = E2AA225C12CD7160005D67CE /* FacebookComposeViewController.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E272FB9012CDCD8600D25967 /* TwitterComposeViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = E2AA226012CD7160005D67CE /* TwitterComposeViewController.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E2AA229612CD7160005D67CE /* FacebookComposeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA225D12CD7160005D67CE /* FacebookComposeViewController.m */; };
+		E2AA229712CD7160005D67CE /* FacebookFormViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA225F12CD7160005D67CE /* FacebookFormViewController.m */; };
+		E2AA229812CD7160005D67CE /* TwitterComposeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA226112CD7160005D67CE /* TwitterComposeViewController.m */; };
+		E2AA229912CD7160005D67CE /* TwitterFormViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA226312CD7160005D67CE /* TwitterFormViewController.m */; };
+		E2AA229A12CD7160005D67CE /* Facebook.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA226612CD7160005D67CE /* Facebook.m */; };
+		E2AA229B12CD7160005D67CE /* FBDialog.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA226A12CD7160005D67CE /* FBDialog.m */; };
+		E2AA229C12CD7160005D67CE /* FBLoginDialog.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA226C12CD7160005D67CE /* FBLoginDialog.m */; };
+		E2AA229D12CD7160005D67CE /* FBRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA226E12CD7160005D67CE /* FBRequest.m */; };
+		E2AA22A112CD7160005D67CE /* Base64Transcoder.c in Sources */ = {isa = PBXBuildFile; fileRef = E2AA227812CD7160005D67CE /* Base64Transcoder.c */; };
+		E2AA22A212CD7160005D67CE /* hmac.c in Sources */ = {isa = PBXBuildFile; fileRef = E2AA227A12CD7160005D67CE /* hmac.c */; };
+		E2AA22A312CD7160005D67CE /* sha1.c in Sources */ = {isa = PBXBuildFile; fileRef = E2AA227C12CD7160005D67CE /* sha1.c */; };
+		E2AA22A412CD7160005D67CE /* OAAsynchronousDataFetcher.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA227F12CD7160005D67CE /* OAAsynchronousDataFetcher.m */; };
+		E2AA22A512CD7160005D67CE /* OAConsumer.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA228112CD7160005D67CE /* OAConsumer.m */; };
+		E2AA22A612CD7160005D67CE /* OADataFetcher.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA228312CD7160005D67CE /* OADataFetcher.m */; };
+		E2AA22A712CD7160005D67CE /* OAHMAC_SHA1SignatureProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA228512CD7160005D67CE /* OAHMAC_SHA1SignatureProvider.m */; };
+		E2AA22A812CD7160005D67CE /* OAMutableURLRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA228712CD7160005D67CE /* OAMutableURLRequest.m */; };
+		E2AA22A912CD7160005D67CE /* OAPlaintextSignatureProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA228912CD7160005D67CE /* OAPlaintextSignatureProvider.m */; };
+		E2AA22AA12CD7160005D67CE /* OARequestParameter.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA228B12CD7160005D67CE /* OARequestParameter.m */; };
+		E2AA22AB12CD7160005D67CE /* OAServiceTicket.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA228D12CD7160005D67CE /* OAServiceTicket.m */; };
+		E2AA22AC12CD7160005D67CE /* OAToken.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA229012CD7160005D67CE /* OAToken.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		D2AAC07E0554694100DB518D /* libSocialNetworks.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSocialNetworks.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2257A9B121CC5C0001403E0 /* Base.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		E2257A9C121CC5C0001403E0 /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		E2257A9D121CC5C0001403E0 /* Release.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		E225E7751393CF2900722275 /* SHKConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SHKConfig.h; path = ShareKit/Classes/ShareKit/SHKConfig.h; sourceTree = SOURCE_ROOT; };
+		E225E77F1393CF4400722275 /* JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSON.h; sourceTree = "<group>"; };
+		E225E7801393CF4400722275 /* NSObject+SBJSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSObject+SBJSON.h"; sourceTree = "<group>"; };
+		E225E7811393CF4400722275 /* NSObject+SBJSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSObject+SBJSON.m"; sourceTree = "<group>"; };
+		E225E7821393CF4400722275 /* NSString+SBJSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+SBJSON.h"; sourceTree = "<group>"; };
+		E225E7831393CF4400722275 /* NSString+SBJSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+SBJSON.m"; sourceTree = "<group>"; };
+		E225E7841393CF4400722275 /* SBJSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBJSON.h; sourceTree = "<group>"; };
+		E225E7851393CF4400722275 /* SBJSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBJSON.m; sourceTree = "<group>"; };
+		E225E7861393CF4400722275 /* SBJsonBase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBJsonBase.h; sourceTree = "<group>"; };
+		E225E7871393CF4400722275 /* SBJsonBase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBJsonBase.m; sourceTree = "<group>"; };
+		E225E7881393CF4400722275 /* SBJsonParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBJsonParser.h; sourceTree = "<group>"; };
+		E225E7891393CF4400722275 /* SBJsonParser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBJsonParser.m; sourceTree = "<group>"; };
+		E225E78A1393CF4400722275 /* SBJsonWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBJsonWriter.h; sourceTree = "<group>"; };
+		E225E78B1393CF4400722275 /* SBJsonWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBJsonWriter.m; sourceTree = "<group>"; };
+		E2AA225C12CD7160005D67CE /* FacebookComposeViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FacebookComposeViewController.h; path = Classes/FacebookComposeViewController.h; sourceTree = "<group>"; };
+		E2AA225D12CD7160005D67CE /* FacebookComposeViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = FacebookComposeViewController.m; path = Classes/FacebookComposeViewController.m; sourceTree = "<group>"; };
+		E2AA225E12CD7160005D67CE /* FacebookFormViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FacebookFormViewController.h; path = Classes/FacebookFormViewController.h; sourceTree = "<group>"; };
+		E2AA225F12CD7160005D67CE /* FacebookFormViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = FacebookFormViewController.m; path = Classes/FacebookFormViewController.m; sourceTree = "<group>"; };
+		E2AA226012CD7160005D67CE /* TwitterComposeViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TwitterComposeViewController.h; path = Classes/TwitterComposeViewController.h; sourceTree = "<group>"; };
+		E2AA226112CD7160005D67CE /* TwitterComposeViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TwitterComposeViewController.m; path = Classes/TwitterComposeViewController.m; sourceTree = "<group>"; };
+		E2AA226212CD7160005D67CE /* TwitterFormViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TwitterFormViewController.h; path = Classes/TwitterFormViewController.h; sourceTree = "<group>"; };
+		E2AA226312CD7160005D67CE /* TwitterFormViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TwitterFormViewController.m; path = Classes/TwitterFormViewController.m; sourceTree = "<group>"; };
+		E2AA226512CD7160005D67CE /* Facebook.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Facebook.h; sourceTree = "<group>"; };
+		E2AA226612CD7160005D67CE /* Facebook.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Facebook.m; sourceTree = "<group>"; };
+		E2AA226712CD7160005D67CE /* FBConnect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBConnect.h; sourceTree = "<group>"; };
+		E2AA226912CD7160005D67CE /* FBDialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBDialog.h; sourceTree = "<group>"; };
+		E2AA226A12CD7160005D67CE /* FBDialog.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBDialog.m; sourceTree = "<group>"; };
+		E2AA226B12CD7160005D67CE /* FBLoginDialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBLoginDialog.h; sourceTree = "<group>"; };
+		E2AA226C12CD7160005D67CE /* FBLoginDialog.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBLoginDialog.m; sourceTree = "<group>"; };
+		E2AA226D12CD7160005D67CE /* FBRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBRequest.h; sourceTree = "<group>"; };
+		E2AA226E12CD7160005D67CE /* FBRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBRequest.m; sourceTree = "<group>"; };
+		E2AA227112CD7160005D67CE /* NSMutableURLRequest+Parameters.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSMutableURLRequest+Parameters.h"; sourceTree = "<group>"; };
+		E2AA227312CD7160005D67CE /* NSString+URLEncoding.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+URLEncoding.h"; sourceTree = "<group>"; };
+		E2AA227512CD7160005D67CE /* NSURL+Base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSURL+Base.h"; sourceTree = "<group>"; };
+		E2AA227812CD7160005D67CE /* Base64Transcoder.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Base64Transcoder.c; sourceTree = "<group>"; };
+		E2AA227912CD7160005D67CE /* Base64Transcoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base64Transcoder.h; sourceTree = "<group>"; };
+		E2AA227A12CD7160005D67CE /* hmac.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hmac.c; sourceTree = "<group>"; };
+		E2AA227B12CD7160005D67CE /* hmac.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hmac.h; sourceTree = "<group>"; };
+		E2AA227C12CD7160005D67CE /* sha1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sha1.c; sourceTree = "<group>"; };
+		E2AA227D12CD7160005D67CE /* sha1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sha1.h; sourceTree = "<group>"; };
+		E2AA227E12CD7160005D67CE /* OAAsynchronousDataFetcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAAsynchronousDataFetcher.h; sourceTree = "<group>"; };
+		E2AA227F12CD7160005D67CE /* OAAsynchronousDataFetcher.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OAAsynchronousDataFetcher.m; sourceTree = "<group>"; };
+		E2AA228012CD7160005D67CE /* OAConsumer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAConsumer.h; sourceTree = "<group>"; };
+		E2AA228112CD7160005D67CE /* OAConsumer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OAConsumer.m; sourceTree = "<group>"; };
+		E2AA228212CD7160005D67CE /* OADataFetcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OADataFetcher.h; sourceTree = "<group>"; };
+		E2AA228312CD7160005D67CE /* OADataFetcher.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OADataFetcher.m; sourceTree = "<group>"; };
+		E2AA228412CD7160005D67CE /* OAHMAC_SHA1SignatureProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAHMAC_SHA1SignatureProvider.h; sourceTree = "<group>"; };
+		E2AA228512CD7160005D67CE /* OAHMAC_SHA1SignatureProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OAHMAC_SHA1SignatureProvider.m; sourceTree = "<group>"; };
+		E2AA228612CD7160005D67CE /* OAMutableURLRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAMutableURLRequest.h; sourceTree = "<group>"; };
+		E2AA228712CD7160005D67CE /* OAMutableURLRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OAMutableURLRequest.m; sourceTree = "<group>"; };
+		E2AA228812CD7160005D67CE /* OAPlaintextSignatureProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAPlaintextSignatureProvider.h; sourceTree = "<group>"; };
+		E2AA228912CD7160005D67CE /* OAPlaintextSignatureProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OAPlaintextSignatureProvider.m; sourceTree = "<group>"; };
+		E2AA228A12CD7160005D67CE /* OARequestParameter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OARequestParameter.h; sourceTree = "<group>"; };
+		E2AA228B12CD7160005D67CE /* OARequestParameter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OARequestParameter.m; sourceTree = "<group>"; };
+		E2AA228C12CD7160005D67CE /* OAServiceTicket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAServiceTicket.h; sourceTree = "<group>"; };
+		E2AA228D12CD7160005D67CE /* OAServiceTicket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OAServiceTicket.m; sourceTree = "<group>"; };
+		E2AA228E12CD7160005D67CE /* OASignatureProviding.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OASignatureProviding.h; sourceTree = "<group>"; };
+		E2AA228F12CD7160005D67CE /* OAToken.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAToken.h; sourceTree = "<group>"; };
+		E2AA229012CD7160005D67CE /* OAToken.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OAToken.m; sourceTree = "<group>"; };
+		E2AA229112CD7160005D67CE /* OAuthConsumer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OAuthConsumer.h; sourceTree = "<group>"; };
+		E2BD809112F3E836005F4A0D /* FacebookFormViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = FacebookFormViewController.xib; path = Resources/FacebookFormViewController.xib; sourceTree = "<group>"; };
+		E2BD809212F3E836005F4A0D /* TwitterFormViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = TwitterFormViewController.xib; path = Resources/TwitterFormViewController.xib; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		034768DFFF38A50411DB9C8B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D2AAC07E0554694100DB518D /* libSocialNetworks.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0867D691FE84028FC02AAC07 /* DAVServer */ = {
+			isa = PBXGroup;
+			children = (
+				E2AA225C12CD7160005D67CE /* FacebookComposeViewController.h */,
+				E2AA225D12CD7160005D67CE /* FacebookComposeViewController.m */,
+				E2AA225E12CD7160005D67CE /* FacebookFormViewController.h */,
+				E2AA225F12CD7160005D67CE /* FacebookFormViewController.m */,
+				E2BD809112F3E836005F4A0D /* FacebookFormViewController.xib */,
+				E2AA226012CD7160005D67CE /* TwitterComposeViewController.h */,
+				E2AA226112CD7160005D67CE /* TwitterComposeViewController.m */,
+				E2AA226212CD7160005D67CE /* TwitterFormViewController.h */,
+				E2AA226312CD7160005D67CE /* TwitterFormViewController.m */,
+				E2BD809212F3E836005F4A0D /* TwitterFormViewController.xib */,
+				E2AA226412CD7160005D67CE /* Facebook iOS SDK */,
+				E2AA226F12CD7160005D67CE /* ShareKit - OAuth */,
+				E2257A9A121CC5C0001403E0 /* Xcode-Configurations */,
+				034768DFFF38A50411DB9C8B /* Products */,
+			);
+			name = DAVServer;
+			sourceTree = "<group>";
+		};
+		E2257A9A121CC5C0001403E0 /* Xcode-Configurations */ = {
+			isa = PBXGroup;
+			children = (
+				E2257A9B121CC5C0001403E0 /* Base.xcconfig */,
+				E2257A9C121CC5C0001403E0 /* Debug.xcconfig */,
+				E2257A9D121CC5C0001403E0 /* Release.xcconfig */,
+			);
+			name = "Xcode-Configurations";
+			path = "../Xcode-Configurations";
+			sourceTree = SOURCE_ROOT;
+		};
+		E225E77E1393CF4400722275 /* JSON */ = {
+			isa = PBXGroup;
+			children = (
+				E225E77F1393CF4400722275 /* JSON.h */,
+				E225E7801393CF4400722275 /* NSObject+SBJSON.h */,
+				E225E7811393CF4400722275 /* NSObject+SBJSON.m */,
+				E225E7821393CF4400722275 /* NSString+SBJSON.h */,
+				E225E7831393CF4400722275 /* NSString+SBJSON.m */,
+				E225E7841393CF4400722275 /* SBJSON.h */,
+				E225E7851393CF4400722275 /* SBJSON.m */,
+				E225E7861393CF4400722275 /* SBJsonBase.h */,
+				E225E7871393CF4400722275 /* SBJsonBase.m */,
+				E225E7881393CF4400722275 /* SBJsonParser.h */,
+				E225E7891393CF4400722275 /* SBJsonParser.m */,
+				E225E78A1393CF4400722275 /* SBJsonWriter.h */,
+				E225E78B1393CF4400722275 /* SBJsonWriter.m */,
+			);
+			path = JSON;
+			sourceTree = "<group>";
+		};
+		E2AA226412CD7160005D67CE /* Facebook iOS SDK */ = {
+			isa = PBXGroup;
+			children = (
+				E2AA226512CD7160005D67CE /* Facebook.h */,
+				E2AA226612CD7160005D67CE /* Facebook.m */,
+				E2AA226712CD7160005D67CE /* FBConnect.h */,
+				E2AA226912CD7160005D67CE /* FBDialog.h */,
+				E2AA226A12CD7160005D67CE /* FBDialog.m */,
+				E2AA226B12CD7160005D67CE /* FBLoginDialog.h */,
+				E2AA226C12CD7160005D67CE /* FBLoginDialog.m */,
+				E2AA226D12CD7160005D67CE /* FBRequest.h */,
+				E2AA226E12CD7160005D67CE /* FBRequest.m */,
+				E225E77E1393CF4400722275 /* JSON */,
+			);
+			name = "Facebook iOS SDK";
+			path = "Facebook-iOS-SDK/src";
+			sourceTree = "<group>";
+		};
+		E2AA226F12CD7160005D67CE /* ShareKit - OAuth */ = {
+			isa = PBXGroup;
+			children = (
+				E225E7751393CF2900722275 /* SHKConfig.h */,
+				E2AA227012CD7160005D67CE /* Categories */,
+				E2AA227712CD7160005D67CE /* Crytpo */,
+				E2AA227E12CD7160005D67CE /* OAAsynchronousDataFetcher.h */,
+				E2AA227F12CD7160005D67CE /* OAAsynchronousDataFetcher.m */,
+				E2AA228012CD7160005D67CE /* OAConsumer.h */,
+				E2AA228112CD7160005D67CE /* OAConsumer.m */,
+				E2AA228212CD7160005D67CE /* OADataFetcher.h */,
+				E2AA228312CD7160005D67CE /* OADataFetcher.m */,
+				E2AA228412CD7160005D67CE /* OAHMAC_SHA1SignatureProvider.h */,
+				E2AA228512CD7160005D67CE /* OAHMAC_SHA1SignatureProvider.m */,
+				E2AA228612CD7160005D67CE /* OAMutableURLRequest.h */,
+				E2AA228712CD7160005D67CE /* OAMutableURLRequest.m */,
+				E2AA228812CD7160005D67CE /* OAPlaintextSignatureProvider.h */,
+				E2AA228912CD7160005D67CE /* OAPlaintextSignatureProvider.m */,
+				E2AA228A12CD7160005D67CE /* OARequestParameter.h */,
+				E2AA228B12CD7160005D67CE /* OARequestParameter.m */,
+				E2AA228C12CD7160005D67CE /* OAServiceTicket.h */,
+				E2AA228D12CD7160005D67CE /* OAServiceTicket.m */,
+				E2AA228E12CD7160005D67CE /* OASignatureProviding.h */,
+				E2AA228F12CD7160005D67CE /* OAToken.h */,
+				E2AA229012CD7160005D67CE /* OAToken.m */,
+				E2AA229112CD7160005D67CE /* OAuthConsumer.h */,
+			);
+			name = "ShareKit - OAuth";
+			path = ShareKit/Classes/ShareKit/Core/Helpers/OAuth;
+			sourceTree = "<group>";
+		};
+		E2AA227012CD7160005D67CE /* Categories */ = {
+			isa = PBXGroup;
+			children = (
+				E2AA227112CD7160005D67CE /* NSMutableURLRequest+Parameters.h */,
+				E2AA227312CD7160005D67CE /* NSString+URLEncoding.h */,
+				E2AA227512CD7160005D67CE /* NSURL+Base.h */,
+			);
+			path = Categories;
+			sourceTree = "<group>";
+		};
+		E2AA227712CD7160005D67CE /* Crytpo */ = {
+			isa = PBXGroup;
+			children = (
+				E2AA227812CD7160005D67CE /* Base64Transcoder.c */,
+				E2AA227912CD7160005D67CE /* Base64Transcoder.h */,
+				E2AA227A12CD7160005D67CE /* hmac.c */,
+				E2AA227B12CD7160005D67CE /* hmac.h */,
+				E2AA227C12CD7160005D67CE /* sha1.c */,
+				E2AA227D12CD7160005D67CE /* sha1.h */,
+			);
+			path = Crytpo;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		E272FB9812CDCD9200D25967 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E272FB8F12CDCD8600D25967 /* FacebookComposeViewController.h in Headers */,
+				E272FB9012CDCD8600D25967 /* TwitterComposeViewController.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		D2AAC07D0554694100DB518D /* SocialNetworks */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB921E08733DC00010E9CD /* Build configuration list for PBXNativeTarget "SocialNetworks" */;
+			buildPhases = (
+				D2AAC07B0554694100DB518D /* Sources */,
+				E272FB9812CDCD9200D25967 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SocialNetworks;
+			productName = DAVServer;
+			productReference = D2AAC07E0554694100DB518D /* libSocialNetworks.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0867D690FE84028FC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "SocialNetworks" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 0867D691FE84028FC02AAC07 /* DAVServer */;
+			productRefGroup = 034768DFFF38A50411DB9C8B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D2AAC07D0554694100DB518D /* SocialNetworks */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D2AAC07B0554694100DB518D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2AA229612CD7160005D67CE /* FacebookComposeViewController.m in Sources */,
+				E2AA229712CD7160005D67CE /* FacebookFormViewController.m in Sources */,
+				E2AA229812CD7160005D67CE /* TwitterComposeViewController.m in Sources */,
+				E2AA229912CD7160005D67CE /* TwitterFormViewController.m in Sources */,
+				E2AA229A12CD7160005D67CE /* Facebook.m in Sources */,
+				E2AA229B12CD7160005D67CE /* FBDialog.m in Sources */,
+				E2AA229C12CD7160005D67CE /* FBLoginDialog.m in Sources */,
+				E2AA229D12CD7160005D67CE /* FBRequest.m in Sources */,
+				E2AA22A112CD7160005D67CE /* Base64Transcoder.c in Sources */,
+				E2AA22A212CD7160005D67CE /* hmac.c in Sources */,
+				E2AA22A312CD7160005D67CE /* sha1.c in Sources */,
+				E2AA22A412CD7160005D67CE /* OAAsynchronousDataFetcher.m in Sources */,
+				E2AA22A512CD7160005D67CE /* OAConsumer.m in Sources */,
+				E2AA22A612CD7160005D67CE /* OADataFetcher.m in Sources */,
+				E2AA22A712CD7160005D67CE /* OAHMAC_SHA1SignatureProvider.m in Sources */,
+				E2AA22A812CD7160005D67CE /* OAMutableURLRequest.m in Sources */,
+				E2AA22A912CD7160005D67CE /* OAPlaintextSignatureProvider.m in Sources */,
+				E2AA22AA12CD7160005D67CE /* OARequestParameter.m in Sources */,
+				E2AA22AB12CD7160005D67CE /* OAServiceTicket.m in Sources */,
+				E2AA22AC12CD7160005D67CE /* OAToken.m in Sources */,
+				E225E78E1393CF4400722275 /* NSObject+SBJSON.m in Sources */,
+				E225E7901393CF4400722275 /* NSString+SBJSON.m in Sources */,
+				E225E7921393CF4400722275 /* SBJSON.m in Sources */,
+				E225E7941393CF4400722275 /* SBJsonBase.m in Sources */,
+				E225E7961393CF4400722275 /* SBJsonParser.m in Sources */,
+				E225E7981393CF4400722275 /* SBJsonWriter.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB921F08733DC00010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREFIX_HEADER = "";
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				PRODUCT_NAME = SocialNetworks;
+				PUBLIC_HEADERS_FOLDER_PATH = "";
+				USER_HEADER_SEARCH_PATHS = "../Classes  ../JSON";
+				WARNING_CFLAGS = (
+					"$(inherited)",
+					"-Wno-parentheses",
+				);
+			};
+			name = Debug;
+		};
+		1DEB922008733DC00010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREFIX_HEADER = "";
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				PRODUCT_NAME = SocialNetworks;
+				PUBLIC_HEADERS_FOLDER_PATH = "";
+				USER_HEADER_SEARCH_PATHS = "../Classes  ../JSON";
+				WARNING_CFLAGS = (
+					"$(inherited)",
+					"-Wno-parentheses",
+				);
+			};
+			name = Release;
+		};
+		1DEB922308733DC00010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E2257A9C121CC5C0001403E0 /* Debug.xcconfig */;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 3.2;
+				SDKROOT = iphoneos;
+				SYMROOT = ../build;
+			};
+			name = Debug;
+		};
+		1DEB922408733DC00010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E2257A9D121CC5C0001403E0 /* Release.xcconfig */;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 3.2;
+				SDKROOT = iphoneos;
+				SYMROOT = ../build;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB921E08733DC00010E9CD /* Build configuration list for PBXNativeTarget "SocialNetworks" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB921F08733DC00010E9CD /* Debug */,
+				1DEB922008733DC00010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "SocialNetworks" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB922308733DC00010E9CD /* Debug */,
+				1DEB922408733DC00010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0867D690FE84028FC02AAC07 /* Project object */;
+}

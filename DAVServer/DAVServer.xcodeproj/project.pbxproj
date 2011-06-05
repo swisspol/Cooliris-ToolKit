@@ -1,0 +1,296 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		E20060A51398FC8100053D68 /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = E20060991398FC8100053D68 /* GCDAsyncSocket.m */; };
+		E20060B81398FCDA00053D68 /* DAVConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = E20060B01398FCDA00053D68 /* DAVConnection.m */; };
+		E20060BA1398FCDA00053D68 /* DAVResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = E20060B21398FCDA00053D68 /* DAVResponse.m */; };
+		E20060BC1398FCDA00053D68 /* DELETEResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = E20060B41398FCDA00053D68 /* DELETEResponse.m */; };
+		E20060BE1398FCDA00053D68 /* PUTResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = E20060B61398FCDA00053D68 /* PUTResponse.m */; };
+		E20060C81398FD1600053D68 /* HTTPFileResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = E20060C41398FD1600053D68 /* HTTPFileResponse.m */; };
+		E20060CA1398FD1600053D68 /* HTTPMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = E20060C61398FD1600053D68 /* HTTPMessage.m */; };
+		E2257AB5121CC611001403E0 /* DAVServer.m in Sources */ = {isa = PBXBuildFile; fileRef = E2257AB3121CC611001403E0 /* DAVServer.m */; };
+		E2257ADB121CC64F001403E0 /* HTTPAsyncFileResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = E2257ACC121CC639001403E0 /* HTTPAsyncFileResponse.m */; };
+		E2257ADC121CC650001403E0 /* HTTPAuthenticationRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = E2257ACE121CC639001403E0 /* HTTPAuthenticationRequest.m */; };
+		E2257ADD121CC651001403E0 /* HTTPConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = E2257AD0121CC639001403E0 /* HTTPConnection.m */; };
+		E2257AE0121CC656001403E0 /* HTTPServer.m in Sources */ = {isa = PBXBuildFile; fileRef = E2257AD6121CC639001403E0 /* HTTPServer.m */; };
+		E25917EE1284F283002273A7 /* WebSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = E25917ED1284F283002273A7 /* WebSocket.m */; };
+		E2AA234812CD74E0005D67CE /* DAVServer.h in Headers */ = {isa = PBXBuildFile; fileRef = E2257AB2121CC611001403E0 /* DAVServer.h */; settings = {ATTRIBUTES = (Public, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		D2AAC07E0554694100DB518D /* libDAVServer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libDAVServer.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		E20060981398FC8100053D68 /* GCDAsyncSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDAsyncSocket.h; sourceTree = "<group>"; };
+		E20060991398FC8100053D68 /* GCDAsyncSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDAsyncSocket.m; sourceTree = "<group>"; };
+		E20060AF1398FCDA00053D68 /* DAVConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DAVConnection.h; sourceTree = "<group>"; };
+		E20060B01398FCDA00053D68 /* DAVConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DAVConnection.m; sourceTree = "<group>"; };
+		E20060B11398FCDA00053D68 /* DAVResponse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DAVResponse.h; sourceTree = "<group>"; };
+		E20060B21398FCDA00053D68 /* DAVResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DAVResponse.m; sourceTree = "<group>"; };
+		E20060B31398FCDA00053D68 /* DELETEResponse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DELETEResponse.h; sourceTree = "<group>"; };
+		E20060B41398FCDA00053D68 /* DELETEResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DELETEResponse.m; sourceTree = "<group>"; };
+		E20060B51398FCDA00053D68 /* PUTResponse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PUTResponse.h; sourceTree = "<group>"; };
+		E20060B61398FCDA00053D68 /* PUTResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PUTResponse.m; sourceTree = "<group>"; };
+		E20060C31398FD1600053D68 /* HTTPFileResponse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HTTPFileResponse.h; sourceTree = "<group>"; };
+		E20060C41398FD1600053D68 /* HTTPFileResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HTTPFileResponse.m; sourceTree = "<group>"; };
+		E20060C51398FD1600053D68 /* HTTPMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HTTPMessage.h; sourceTree = "<group>"; };
+		E20060C61398FD1600053D68 /* HTTPMessage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HTTPMessage.m; sourceTree = "<group>"; };
+		E20061101398FF9A00053D68 /* DDLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDLog.h; sourceTree = "<group>"; };
+		E200615F1399086B00053D68 /* HTTPLogging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HTTPLogging.h; sourceTree = "<group>"; };
+		E2257A9B121CC5C0001403E0 /* Base.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		E2257A9C121CC5C0001403E0 /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		E2257A9D121CC5C0001403E0 /* Release.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		E2257AB2121CC611001403E0 /* DAVServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DAVServer.h; sourceTree = "<group>"; };
+		E2257AB3121CC611001403E0 /* DAVServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DAVServer.m; sourceTree = "<group>"; };
+		E2257AC5121CC639001403E0 /* DDData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDData.h; sourceTree = "<group>"; };
+		E2257AC7121CC639001403E0 /* DDNumber.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDNumber.h; sourceTree = "<group>"; };
+		E2257AC9121CC639001403E0 /* DDRange.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDRange.h; sourceTree = "<group>"; };
+		E2257ACB121CC639001403E0 /* HTTPAsyncFileResponse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HTTPAsyncFileResponse.h; sourceTree = "<group>"; };
+		E2257ACC121CC639001403E0 /* HTTPAsyncFileResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HTTPAsyncFileResponse.m; sourceTree = "<group>"; };
+		E2257ACD121CC639001403E0 /* HTTPAuthenticationRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HTTPAuthenticationRequest.h; sourceTree = "<group>"; };
+		E2257ACE121CC639001403E0 /* HTTPAuthenticationRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HTTPAuthenticationRequest.m; sourceTree = "<group>"; };
+		E2257ACF121CC639001403E0 /* HTTPConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HTTPConnection.h; sourceTree = "<group>"; };
+		E2257AD0121CC639001403E0 /* HTTPConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HTTPConnection.m; sourceTree = "<group>"; };
+		E2257AD3121CC639001403E0 /* HTTPResponse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HTTPResponse.h; sourceTree = "<group>"; };
+		E2257AD5121CC639001403E0 /* HTTPServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HTTPServer.h; sourceTree = "<group>"; };
+		E2257AD6121CC639001403E0 /* HTTPServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HTTPServer.m; sourceTree = "<group>"; };
+		E25917EC1284F283002273A7 /* WebSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocket.h; sourceTree = "<group>"; };
+		E25917ED1284F283002273A7 /* WebSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocket.m; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		034768DFFF38A50411DB9C8B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D2AAC07E0554694100DB518D /* libDAVServer.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0867D691FE84028FC02AAC07 /* DAVServer */ = {
+			isa = PBXGroup;
+			children = (
+				E2257AB2121CC611001403E0 /* DAVServer.h */,
+				E2257AB3121CC611001403E0 /* DAVServer.m */,
+				E20061101398FF9A00053D68 /* DDLog.h */,
+				E2257AC2121CC639001403E0 /* cocoadavserver */,
+				E2257A9A121CC5C0001403E0 /* Xcode-Configurations */,
+				034768DFFF38A50411DB9C8B /* Products */,
+			);
+			name = DAVServer;
+			sourceTree = "<group>";
+		};
+		E20060961398FC8100053D68 /* CocoaAsyncSocket */ = {
+			isa = PBXGroup;
+			children = (
+				E20060981398FC8100053D68 /* GCDAsyncSocket.h */,
+				E20060991398FC8100053D68 /* GCDAsyncSocket.m */,
+			);
+			name = CocoaAsyncSocket;
+			path = Vendor/CocoaAsyncSocket;
+			sourceTree = "<group>";
+		};
+		E20060AE1398FCDA00053D68 /* DAVSupport */ = {
+			isa = PBXGroup;
+			children = (
+				E20060AF1398FCDA00053D68 /* DAVConnection.h */,
+				E20060B01398FCDA00053D68 /* DAVConnection.m */,
+				E20060B11398FCDA00053D68 /* DAVResponse.h */,
+				E20060B21398FCDA00053D68 /* DAVResponse.m */,
+				E20060B31398FCDA00053D68 /* DELETEResponse.h */,
+				E20060B41398FCDA00053D68 /* DELETEResponse.m */,
+				E20060B51398FCDA00053D68 /* PUTResponse.h */,
+				E20060B61398FCDA00053D68 /* PUTResponse.m */,
+			);
+			path = DAVSupport;
+			sourceTree = "<group>";
+		};
+		E2257A9A121CC5C0001403E0 /* Xcode-Configurations */ = {
+			isa = PBXGroup;
+			children = (
+				E2257A9B121CC5C0001403E0 /* Base.xcconfig */,
+				E2257A9C121CC5C0001403E0 /* Debug.xcconfig */,
+				E2257A9D121CC5C0001403E0 /* Release.xcconfig */,
+			);
+			name = "Xcode-Configurations";
+			path = "../Xcode-Configurations";
+			sourceTree = SOURCE_ROOT;
+		};
+		E2257AC2121CC639001403E0 /* cocoadavserver */ = {
+			isa = PBXGroup;
+			children = (
+				E20060961398FC8100053D68 /* CocoaAsyncSocket */,
+				E20060AE1398FCDA00053D68 /* DAVSupport */,
+				E2257AC5121CC639001403E0 /* DDData.h */,
+				E2257AC7121CC639001403E0 /* DDNumber.h */,
+				E2257AC9121CC639001403E0 /* DDRange.h */,
+				E2257ACB121CC639001403E0 /* HTTPAsyncFileResponse.h */,
+				E2257ACC121CC639001403E0 /* HTTPAsyncFileResponse.m */,
+				E2257ACD121CC639001403E0 /* HTTPAuthenticationRequest.h */,
+				E2257ACE121CC639001403E0 /* HTTPAuthenticationRequest.m */,
+				E2257ACF121CC639001403E0 /* HTTPConnection.h */,
+				E2257AD0121CC639001403E0 /* HTTPConnection.m */,
+				E20060C31398FD1600053D68 /* HTTPFileResponse.h */,
+				E20060C41398FD1600053D68 /* HTTPFileResponse.m */,
+				E20060C51398FD1600053D68 /* HTTPMessage.h */,
+				E200615F1399086B00053D68 /* HTTPLogging.h */,
+				E20060C61398FD1600053D68 /* HTTPMessage.m */,
+				E2257AD3121CC639001403E0 /* HTTPResponse.h */,
+				E2257AD5121CC639001403E0 /* HTTPServer.h */,
+				E2257AD6121CC639001403E0 /* HTTPServer.m */,
+				E25917EC1284F283002273A7 /* WebSocket.h */,
+				E25917ED1284F283002273A7 /* WebSocket.m */,
+			);
+			path = cocoadavserver;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		E2AA235512CD74EF005D67CE /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2AA234812CD74E0005D67CE /* DAVServer.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		D2AAC07D0554694100DB518D /* DAVServer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB921E08733DC00010E9CD /* Build configuration list for PBXNativeTarget "DAVServer" */;
+			buildPhases = (
+				D2AAC07B0554694100DB518D /* Sources */,
+				E2AA235512CD74EF005D67CE /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DAVServer;
+			productName = DAVServer;
+			productReference = D2AAC07E0554694100DB518D /* libDAVServer.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0867D690FE84028FC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "DAVServer" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 0867D691FE84028FC02AAC07 /* DAVServer */;
+			productRefGroup = 034768DFFF38A50411DB9C8B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D2AAC07D0554694100DB518D /* DAVServer */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D2AAC07B0554694100DB518D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2257AB5121CC611001403E0 /* DAVServer.m in Sources */,
+				E2257ADB121CC64F001403E0 /* HTTPAsyncFileResponse.m in Sources */,
+				E2257ADC121CC650001403E0 /* HTTPAuthenticationRequest.m in Sources */,
+				E2257ADD121CC651001403E0 /* HTTPConnection.m in Sources */,
+				E2257AE0121CC656001403E0 /* HTTPServer.m in Sources */,
+				E25917EE1284F283002273A7 /* WebSocket.m in Sources */,
+				E20060A51398FC8100053D68 /* GCDAsyncSocket.m in Sources */,
+				E20060B81398FCDA00053D68 /* DAVConnection.m in Sources */,
+				E20060BA1398FCDA00053D68 /* DAVResponse.m in Sources */,
+				E20060BC1398FCDA00053D68 /* DELETEResponse.m in Sources */,
+				E20060BE1398FCDA00053D68 /* PUTResponse.m in Sources */,
+				E20060C81398FD1600053D68 /* HTTPFileResponse.m in Sources */,
+				E20060CA1398FD1600053D68 /* HTTPMessage.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB921F08733DC00010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREFIX_HEADER = "";
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				HEADER_SEARCH_PATHS = "${SDKROOT}/usr/include/libxml2";
+				PRODUCT_NAME = DAVServer;
+				PUBLIC_HEADERS_FOLDER_PATH = "";
+			};
+			name = Debug;
+		};
+		1DEB922008733DC00010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREFIX_HEADER = "";
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				HEADER_SEARCH_PATHS = "${SDKROOT}/usr/include/libxml2";
+				PRODUCT_NAME = DAVServer;
+				PUBLIC_HEADERS_FOLDER_PATH = "";
+			};
+			name = Release;
+		};
+		1DEB922308733DC00010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E2257A9C121CC5C0001403E0 /* Debug.xcconfig */;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
+				SDKROOT = iphoneos;
+				SYMROOT = ../build;
+			};
+			name = Debug;
+		};
+		1DEB922408733DC00010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E2257A9D121CC5C0001403E0 /* Release.xcconfig */;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
+				SDKROOT = iphoneos;
+				SYMROOT = ../build;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB921E08733DC00010E9CD /* Build configuration list for PBXNativeTarget "DAVServer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB921F08733DC00010E9CD /* Debug */,
+				1DEB922008733DC00010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "DAVServer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB922308733DC00010E9CD /* Debug */,
+				1DEB922408733DC00010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0867D690FE84028FC02AAC07 /* Project object */;
+}

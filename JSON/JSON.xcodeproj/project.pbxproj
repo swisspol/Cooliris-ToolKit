@@ -1,0 +1,199 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		E225E7ED1393D07600722275 /* JSONKit.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E7EA1393D07600722275 /* JSONKit.m */; };
+		E2C2CBA112CDBB6C00344A11 /* JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = E2C2CB9F12CDBB6C00344A11 /* JSON.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E2C2CBA212CDBB6C00344A11 /* JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = E2C2CBA012CDBB6C00344A11 /* JSON.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		D2AAC07E0554694100DB518D /* libJSON.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libJSON.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2257A9B121CC5C0001403E0 /* Base.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		E2257A9C121CC5C0001403E0 /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		E2257A9D121CC5C0001403E0 /* Release.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		E225E7E91393D07600722275 /* JSONKit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSONKit.h; sourceTree = "<group>"; };
+		E225E7EA1393D07600722275 /* JSONKit.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JSONKit.m; sourceTree = "<group>"; };
+		E2C2CB9F12CDBB6C00344A11 /* JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSON.h; sourceTree = "<group>"; };
+		E2C2CBA012CDBB6C00344A11 /* JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JSON.m; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		034768DFFF38A50411DB9C8B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D2AAC07E0554694100DB518D /* libJSON.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0867D691FE84028FC02AAC07 /* DAVServer */ = {
+			isa = PBXGroup;
+			children = (
+				E2C2CB9F12CDBB6C00344A11 /* JSON.h */,
+				E2C2CBA012CDBB6C00344A11 /* JSON.m */,
+				E225E7C21393D07600722275 /* JSONKit */,
+				E2257A9A121CC5C0001403E0 /* Xcode-Configurations */,
+				034768DFFF38A50411DB9C8B /* Products */,
+			);
+			name = DAVServer;
+			sourceTree = "<group>";
+		};
+		E2257A9A121CC5C0001403E0 /* Xcode-Configurations */ = {
+			isa = PBXGroup;
+			children = (
+				E2257A9B121CC5C0001403E0 /* Base.xcconfig */,
+				E2257A9C121CC5C0001403E0 /* Debug.xcconfig */,
+				E2257A9D121CC5C0001403E0 /* Release.xcconfig */,
+			);
+			name = "Xcode-Configurations";
+			path = "../Xcode-Configurations";
+			sourceTree = SOURCE_ROOT;
+		};
+		E225E7C21393D07600722275 /* JSONKit */ = {
+			isa = PBXGroup;
+			children = (
+				E225E7E91393D07600722275 /* JSONKit.h */,
+				E225E7EA1393D07600722275 /* JSONKit.m */,
+			);
+			path = JSONKit;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		E2AA230F12CD741A005D67CE /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2C2CBA112CDBB6C00344A11 /* JSON.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		D2AAC07D0554694100DB518D /* JSON */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB921E08733DC00010E9CD /* Build configuration list for PBXNativeTarget "JSON" */;
+			buildPhases = (
+				D2AAC07B0554694100DB518D /* Sources */,
+				E2AA230F12CD741A005D67CE /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = JSON;
+			productName = DAVServer;
+			productReference = D2AAC07E0554694100DB518D /* libJSON.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0867D690FE84028FC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "JSON" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 0867D691FE84028FC02AAC07 /* DAVServer */;
+			productRefGroup = 034768DFFF38A50411DB9C8B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D2AAC07D0554694100DB518D /* JSON */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D2AAC07B0554694100DB518D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2C2CBA212CDBB6C00344A11 /* JSON.m in Sources */,
+				E225E7ED1393D07600722275 /* JSONKit.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB921F08733DC00010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREFIX_HEADER = "";
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				PRODUCT_NAME = JSON;
+				PUBLIC_HEADERS_FOLDER_PATH = "";
+			};
+			name = Debug;
+		};
+		1DEB922008733DC00010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREFIX_HEADER = "";
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				PRODUCT_NAME = JSON;
+				PUBLIC_HEADERS_FOLDER_PATH = "";
+			};
+			name = Release;
+		};
+		1DEB922308733DC00010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E2257A9C121CC5C0001403E0 /* Debug.xcconfig */;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 3.2;
+				SDKROOT = iphoneos;
+				SYMROOT = ../build;
+			};
+			name = Debug;
+		};
+		1DEB922408733DC00010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E2257A9D121CC5C0001403E0 /* Release.xcconfig */;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 3.2;
+				SDKROOT = iphoneos;
+				SYMROOT = ../build;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB921E08733DC00010E9CD /* Build configuration list for PBXNativeTarget "JSON" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB921F08733DC00010E9CD /* Debug */,
+				1DEB922008733DC00010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "JSON" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB922308733DC00010E9CD /* Debug */,
+				1DEB922408733DC00010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0867D690FE84028FC02AAC07 /* Project object */;
+}
