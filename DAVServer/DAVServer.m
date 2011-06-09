@@ -25,9 +25,9 @@
 #endif
 
 // Work around Obj-C files containing only categories not being included into static libraries
-#import "cocoadavserver/DDData.m"
-#import "cocoadavserver/DDNumber.m"
-#import "cocoadavserver/DDRange.m"
+#import "cocoahttpserver/Core/Categories/DDData.m"
+#import "cocoahttpserver/Core/Categories/DDNumber.m"
+#import "cocoahttpserver/Core/Categories/DDRange.m"
 
 @interface HTTPServer (Internal)
 - (void) socket:(GCDAsyncSocket*)sock didAcceptNewSocket:(GCDAsyncSocket*)newSocket;
