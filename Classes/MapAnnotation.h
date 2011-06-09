@@ -21,7 +21,7 @@
   NSString* _subtitle;
 }
 @property(nonatomic, readonly) CLLocationCoordinate2D coordinate;
-@property(nonatomic, readonly) NSString* title;
-@property(nonatomic, readonly) NSString* subtitle;
+@property(nonatomic, copy, readonly) NSString* title;
+@property(nonatomic, copy, readonly) NSString* subtitle;
 - (id) initWithCoordinate:(CLLocationCoordinate2D)coordinate title:(NSString*)title subtitle:(NSString*)subtitle;
 @end
