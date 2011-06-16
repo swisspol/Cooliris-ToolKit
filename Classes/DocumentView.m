@@ -22,7 +22,7 @@
 @implementation DocumentView
 
 @synthesize delegate=_delegate, hideInvisiblePageViews=_hideInvisibleViews, pageViews=_pageViews, swipingEnabled=_swipingEnabled,
-            animationDuration=_animationDuration, selectedPageIndex=_pageIndex;
+            animationDuration=_animationDuration, selectedPageIndex=_pageIndex, showsOnlySelectedPage=_showSelectedOnly;
 
 - (BOOL) gestureRecognizerShouldBegin:(UIGestureRecognizer*)gestureRecognizer {
   return _pageViews && _swipingEnabled ? YES : NO;
@@ -108,17 +108,27 @@
 }
 
 - (void) _updatePageViewsVisibility {
-  if (_pageViews.count > 3) {
+  if (_showSelectedOnly) {
     for (NSUInteger i = 0; i < _pageViews.count; ++i) {
-      if ((i + 1 == _pageIndex) || (i == _pageIndex) || (i == _pageIndex + 1)) {
+      if (i == _pageIndex) {
         [self _updatePageView:[_pageViews objectAtIndex:i] visibility:YES];
       } else {
         [self _updatePageView:[_pageViews objectAtIndex:i] visibility:NO];
       }
     }
   } else {
-    for (UIView* pageView in _pageViews) {
-      [self _updatePageView:pageView visibility:YES];
+    if (_pageViews.count > 3) {
+      for (NSUInteger i = 0; i < _pageViews.count; ++i) {
+        if ((i + 1 == _pageIndex) || (i == _pageIndex) || (i == _pageIndex + 1)) {
+          [self _updatePageView:[_pageViews objectAtIndex:i] visibility:YES];
+        } else {
+          [self _updatePageView:[_pageViews objectAtIndex:i] visibility:NO];
+        }
+      }
+    } else {
+      for (UIView* pageView in _pageViews) {
+        [self _updatePageView:pageView visibility:YES];
+      }
     }
   }
 }
@@ -200,6 +210,14 @@
 
 - (void) setSelectedPageIndex:(NSUInteger)index {
   [self setSelectedPageIndex:index animate:NO];
+}
+
+- (void) setShowsOnlySelectedPage:(BOOL)flag {
+  if (flag != _showSelectedOnly) {
+    _showSelectedOnly = flag;
+    
+    [self _updatePageViewsVisibility];
+  }
 }
 
 - (void) _didFadeOut:(NSString*)animationID finished:(NSNumber*)finished context:(void*)context {
