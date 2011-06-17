@@ -53,7 +53,7 @@ typedef enum {
 }
 + (BOOL) isCameraAvailable;
 @property(nonatomic, assign) id<CameraViewControllerDelegate> delegate;
-@property(nonatomic, getter=isLowResolution) BOOL lowResolution;  // Use camera in 640x480 mode instead of full-resolution - Must be set before the controller becomes active
+@property(nonatomic, getter=isLowResolution) BOOL lowResolution;  // Use camera in 640x480 mode instead of full-resolution - Must be set before the controller becomes active - Not supported on iPhone 3G
 @property(nonatomic) NSUInteger photoSize;  // If non-zero, photos will be orientation-corrected and scaled UIImages instead of raw JPEG data - Must be set before the controller becomes active
 @property(nonatomic) BOOL squarePhotos;  // Requires "photoSize" to be non-zero - Must be set before the controller becomes active
 @property(nonatomic, retain) UIView* overlayView;  // Automatically reized - Must be set before the controller becomes active

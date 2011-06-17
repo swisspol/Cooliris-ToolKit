@@ -367,21 +367,23 @@ typedef enum {
           if (image) {
             size_t imageWidth = CGImageGetWidth(image);
             size_t imageHeight = CGImageGetHeight(image);
-            if (_squarePhotos) {
-              if ((CGFloat)imageWidth / (CGFloat)_photoSize >= (CGFloat)imageHeight / (CGFloat)_photoSize) {
-                imageWidth = roundf((CGFloat)imageWidth / ((CGFloat)imageHeight / (CGFloat)_photoSize));
-                imageHeight = _photoSize;
+            if ((imageWidth > _photoSize) || (imageHeight > _photoSize)) {
+              if (_squarePhotos) {
+                if ((CGFloat)imageWidth / (CGFloat)_photoSize >= (CGFloat)imageHeight / (CGFloat)_photoSize) {
+                  imageWidth = roundf((CGFloat)imageWidth / ((CGFloat)imageHeight / (CGFloat)_photoSize));
+                  imageHeight = _photoSize;
+                } else {
+                  imageHeight = roundf((CGFloat)imageHeight / ((CGFloat)imageWidth / (CGFloat)_photoSize));
+                  imageWidth = _photoSize;
+                }
               } else {
-                imageHeight = roundf((CGFloat)imageHeight / ((CGFloat)imageWidth / (CGFloat)_photoSize));
-                imageWidth = _photoSize;
-              }
-            } else {
-              if ((CGFloat)imageWidth / (CGFloat)_photoSize >= (CGFloat)imageHeight / (CGFloat)_photoSize) {
-                imageHeight = roundf((CGFloat)imageHeight / ((CGFloat)imageWidth / (CGFloat)_photoSize));
-                imageWidth = _photoSize;
-              } else {
-                imageWidth = roundf((CGFloat)imageWidth / ((CGFloat)imageHeight / (CGFloat)_photoSize));
-                imageHeight = _photoSize;
+                if ((CGFloat)imageWidth / (CGFloat)_photoSize >= (CGFloat)imageHeight / (CGFloat)_photoSize) {
+                  imageHeight = roundf((CGFloat)imageHeight / ((CGFloat)imageWidth / (CGFloat)_photoSize));
+                  imageWidth = _photoSize;
+                } else {
+                  imageWidth = roundf((CGFloat)imageWidth / ((CGFloat)imageHeight / (CGFloat)_photoSize));
+                  imageHeight = _photoSize;
+                }
               }
             }
             CGAffineTransform transform;
