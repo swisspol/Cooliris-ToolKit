@@ -95,7 +95,8 @@ typedef NSUInteger DatabaseSQLColumnOptions;
   OSSpinLock _lock;
 #endif
 }
-- (id) initWithDatabaseAtPath:(NSString*)path;  // Requires database to have been initialized
+- (id) initWithDatabaseAtPath:(NSString*)path;  // Requests read-write by default
+- (id) initWithDatabaseAtPath:(NSString*)path readWrite:(BOOL)readWrite;  // Requires database to have been initialized
 - (BOOL) beginTransaction;  // Nestable
 - (BOOL) commitTransaction;  // Nestable
 - (BOOL) rollbackTransaction;  // Rolls back current transaction

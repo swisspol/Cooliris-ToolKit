@@ -768,13 +768,17 @@ static int _ExecTableCallback(void* context, int count, char** row, char** colum
   return [self initWithDatabaseAtPath:nil];
 }
 
+- (id) initWithDatabaseAtPath:(NSString*)path {
+  return [self initWithDatabaseAtPath:path readWrite:YES];
+}
+
 static void __ReleaseStatementCallBack(CFAllocatorRef allocator, const void* value) {
   sqlite3_finalize((sqlite3_stmt*)value);
 }
 
-- (id) initWithDatabaseAtPath:(NSString*)path {
+- (id) initWithDatabaseAtPath:(NSString*)path readWrite:(BOOL)readWrite {
   if ((self = [super init])) {
-    int result = _OpenDatabase(path, SQLITE_OPEN_READWRITE, (sqlite3**)&_database);
+    int result = _OpenDatabase(path, readWrite ? SQLITE_OPEN_READWRITE : SQLITE_OPEN_READONLY, (sqlite3**)&_database);
     if (result != SQLITE_OK) {
        LOG_ERROR(@"Failed opening database at \"%@\": %@ (%i)", path,
                  [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
