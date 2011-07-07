@@ -1196,20 +1196,29 @@ UNLOCK_CONNECTION();
 }
 
 - (NSArray*) executeRawSQLStatement:(NSString*)sql {
+  return [self executeRawSQLStatement:sql usingRowClass:[NSMutableDictionary class] primaryKey:nil];
+}
+
+- (id) executeRawSQLStatement:(NSString*)sql usingRowClass:(Class)class primaryKey:(NSString*)key {
 LOCK_CONNECTION();
   CHECK(sql);
-  id value = nil;
+  id results = nil;
   
   sqlite3_stmt* statement = NULL;
   int result = sqlite3_prepare_v2(_database, [sql UTF8String], -1, &statement, NULL);
   if (result == SQLITE_OK) {
-    value = [NSMutableArray array];
+    if (key) {
+      results = [NSMutableDictionary dictionary];
+    } else {
+      results = [NSMutableArray array];
+    }
     while (1) {
       result = _ExecuteStatement(statement);
       if (result != SQLITE_ROW) {
         break;
       }
-      NSMutableDictionary* row = [[NSMutableDictionary alloc] init];
+      id row = [[class alloc] init];
+      id primary = nil;
       int count = sqlite3_column_count(statement);
       for (int i = 0; i < count; ++i) {
         id object = [NSNull null];
@@ -1243,17 +1252,29 @@ LOCK_CONNECTION();
           }
           
         }
-        [row setObject:object forKey:[NSString stringWithUTF8String:sqlite3_column_name(statement, i)]];
+        NSString* field = [NSString stringWithUTF8String:sqlite3_column_name(statement, i)];
+        if ([key isEqualToString:field]) {
+          primary = [object retain];
+        } else {
+          [row setValue:object forKey:field];
+        }
         [object release];
       }
-      [value addObject:row];
+      if (key) {
+        if (primary) {
+          [results setObject:row forKey:primary];
+          [primary release];
+        }
+      } else {
+        [results addObject:row];
+      }
       [row release];
     }
     sqlite3_finalize(statement);
   }
   
 UNLOCK_CONNECTION();
-  return (result == SQLITE_DONE ? value : nil);
+  return (result == SQLITE_DONE ? results : nil);
 }
 
 - (BOOL) executeRawSQLStatements:(NSString*)sql {
