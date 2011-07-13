@@ -117,7 +117,7 @@ static void _ArrayReleaseCallBack(CFAllocatorRef allocator, const void* value) {
     
     // If total size is above threshold, sort files by least recently used and delete the oldest ones as needed
     if (totalSize > maxSize) {
-      LOG_INFO(@"%@ is %i Kb over limit and requires purging", self, (totalSize - maxSize) / 1024);
+      LOG_VERBOSE(@"%@ is %i Kb over limit and requires purging", [self miniDescription], (totalSize - maxSize) / 1024);
       CFIndex count = CFArrayGetCount(files);
       CFArraySortValues(files, CFRangeMake(0, count), _ComparatorFunction, NULL);
       for (CFIndex index = 0; index < count; ++index) {
