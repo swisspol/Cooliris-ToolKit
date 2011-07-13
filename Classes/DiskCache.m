@@ -59,7 +59,7 @@ static CFComparisonResult _ComparatorFunction(const void* value1, const void* va
   return kCFCompareEqualTo;
 }
 
-static void _ArrayReleaseCallBack(CFAllocatorRef allocator, const void* value) {
+static void _ArrayApplierFunction(const void* value, void* context) {
   const CacheFileInfo* info = (const CacheFileInfo*)value;
   free((void*)info->path);
   free((void*)info);
@@ -73,8 +73,7 @@ static void _ArrayReleaseCallBack(CFAllocatorRef allocator, const void* value) {
   if ((directory = opendir(path))) {
     size_t baseLength = strlen(path);
     size_t totalSize = 0;
-    CFArrayCallBacks callbacks = {0, NULL, _ArrayReleaseCallBack, NULL, NULL};
-    CFMutableArrayRef files = CFArrayCreateMutable(kCFAllocatorDefault, 0, &callbacks);
+    CFMutableArrayRef files = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
     
     // Scan cache directory
     struct dirent storage;
@@ -131,6 +130,7 @@ static void _ArrayReleaseCallBack(CFAllocatorRef allocator, const void* value) {
       }
     }
     
+    CFArrayApplyFunction(files, CFRangeMake(0, CFArrayGetCount(files)), _ArrayApplierFunction, NULL);
     CFRelease(files);
     closedir(directory);
     return totalSize;
