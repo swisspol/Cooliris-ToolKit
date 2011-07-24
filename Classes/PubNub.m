@@ -22,6 +22,7 @@
 #define kMaxMessageLength 1800  // From documentation
 #define kMaxHistorySize 100  // From documentation
 #define kConnectionTimeOut 200.0  // From https://github.com/jazzychad/CEPubnub/blob/master/CEPubnub/CEPubnubRequest.m
+#define kMinRetryInterval 5.0
 #define kInitialTimeToken @"0"
 
 typedef enum {
@@ -152,6 +153,7 @@ typedef enum {
     [connection cancel];
   }
   [_connections release];
+  [NSObject cancelPreviousPerformRequestsWithTarget:self];
   
   [_publishKey release];
   [_subscribeKey release];
@@ -194,9 +196,13 @@ typedef enum {
   [connection release];
 }
 
+- (void) _resubscribeToChannel:(NSString*)channel {
+  [self _resubscribeToChannel:channel timeToken:kInitialTimeToken];
+}
+
 - (void) subscribeToChannel:(NSString*)channel {
   if (![self isSubscribedToChannel:channel]) {
-    [self _resubscribeToChannel:channel timeToken:kInitialTimeToken];
+    [self _resubscribeToChannel:channel];
     LOG_VERBOSE(@"Did subscribe to PubNub channel \"%@\"", channel);
   } else {
     DNOT_REACHED();
@@ -211,6 +217,7 @@ typedef enum {
       LOG_VERBOSE(@"Did unsubscribe from PubNub channel \"%@\"", channel);
     }
   }
+  [NSObject cancelPreviousPerformRequestsWithTarget:self];
 }
 
 - (BOOL) isSubscribedToChannel:(NSString*)channel {
@@ -263,7 +270,9 @@ typedef enum {
           [_delegate pubnub:self didSucceedPublishingMessageToChannel:connection.channel];
         }
       } else {
-        LOG_ERROR(@"Failed sending message to PubNub channel \"%@\": %@", connection.channel, error);
+        if (response) {
+          LOG_ERROR(@"Failed sending message to PubNub channel \"%@\": %@", connection.channel, error);
+        }
         if ([_delegate respondsToSelector:@selector(pubnub:didFailPublishingMessageToChannel:error:)]) {
           [_delegate pubnub:self didFailPublishingMessageToChannel:connection.channel error:error];
         }
@@ -281,10 +290,18 @@ typedef enum {
           }
         }
         timeToken = [response objectAtIndex:1];
-      } else {
+      } else if (response) {
         LOG_ERROR(@"Unexpected subscribe response from PubNub");
       }
-      [self _resubscribeToChannel:connection.channel timeToken:(timeToken ? timeToken : kInitialTimeToken)];
+      if (response) {
+        if (timeToken) {
+          [self _resubscribeToChannel:connection.channel timeToken:timeToken];
+        } else {
+          [self _resubscribeToChannel:connection.channel];
+        }
+      } else {
+        [self performSelector:@selector(_resubscribeToChannel:) withObject:connection.channel afterDelay:kMinRetryInterval];
+      }
       break;
     }
     
@@ -293,7 +310,7 @@ typedef enum {
       if ([response isKindOfClass:[NSArray class]]) {
         LOG_VERBOSE(@"Fetched %i history messages from PubNub channel \"%@\"", [response count], connection.channel);
         history = response;
-      } else {
+      } else if (response) {
         LOG_ERROR(@"Unexpected history response from PubNub");
       }
       if ([_delegate respondsToSelector:@selector(pubnub:didFetchHistory:forChannel:)]) {
@@ -307,7 +324,7 @@ typedef enum {
       if ([response isKindOfClass:[NSArray class]] && ([response count] == 1)) {
         LOG_VERBOSE(@"Retrieved PubNub time '%@'", [response objectAtIndex:0]);
         number = [response objectAtIndex:0];
-      } else {
+      } else if (response) {
         LOG_ERROR(@"Unexpected time response from PubNub");
       }
       if ([_delegate respondsToSelector:@selector(pubnub:didReceiveTime:)]) {
