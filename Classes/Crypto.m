@@ -19,7 +19,7 @@
 const MD5 kNullMD5 = {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 const SHA2 kNullSHA2 = {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
-static BOOL _HashFromString(NSString* string, unsigned char* hash, NSUInteger size) {
+BOOL HashFromString(NSString* string, unsigned char* hash, NSUInteger size) {
   if (string.length != 2 * size) {
     return NO;
   }
@@ -51,7 +51,7 @@ static BOOL _HashFromString(NSString* string, unsigned char* hash, NSUInteger si
   return YES;
 }
 
-static NSString* _HashToString(unsigned char* hash, NSUInteger size) {
+NSString* HashToString(const unsigned char* hash, NSUInteger size) {
   char buffer[2 * size + 1];
   for (NSUInteger i = 0; i < size; ++i) {
     char byte = hash[i];
@@ -95,12 +95,12 @@ MD5 MD5WithBytes(const void* bytes, NSUInteger length) {
 }
 
 NSString* MD5ToString(MD5* md5) {
-  return md5 ? _HashToString(md5->bytes, kMD5Size) : nil;
+  return md5 ? HashToString(md5->bytes, kMD5Size) : nil;
 }
 
 MD5 MD5FromString(NSString* string) {
   MD5 md5;
-  if (!_HashFromString(string, md5.bytes, kMD5Size)) {
+  if (!HashFromString(string, md5.bytes, kMD5Size)) {
     return kNullMD5;
   }
   return md5;
@@ -142,12 +142,12 @@ SHA2 SHA2WithBytes(const void* bytes, NSUInteger length) {
 }
 
 NSString* SHA2ToString(SHA2* sha2) {
-  return sha2 ? _HashToString(sha2->bytes, kSHA2Size) : nil;
+  return sha2 ? HashToString(sha2->bytes, kSHA2Size) : nil;
 }
 
 SHA2 SHA2FromString(NSString* string) {
   SHA2 sha2;
-  if (!_HashFromString(string, sha2.bytes, kSHA2Size)) {
+  if (!HashFromString(string, sha2.bytes, kSHA2Size)) {
     return kNullSHA2;
   }
   return sha2;
