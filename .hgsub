@@ -1,4 +1,4 @@
-DAVServer/cocoahttpserver = https://cocoahttpserver.googlecode.com/hg/
+DAVServer/cocoahttpserver = [git]https://code.google.com/p/cocoahttpserver/
 JSON/JSONKit = [git]https://github.com/jparise/JSONKit.git
 SocialNetworks/Facebook-iOS-SDK = [git]https://github.com/facebook/facebook-ios-sdk.git
 SocialNetworks/ShareKit = [git]https://github.com/ideashower/ShareKit.git
