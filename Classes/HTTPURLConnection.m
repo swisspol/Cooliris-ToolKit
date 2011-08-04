@@ -15,7 +15,8 @@
 #import "HTTPURLConnection.h"
 #import "Logging.h"
 
-#define kURLConnectionTimeOut 30.0 // Default is 60.0
+#define kURLConnectionConnectTimeOut 30.0 // Default is 60.0
+#define kURLConnectionIdleTimeOut 90.0  // Default is infinite(?)
 #define kTaskURLDownloadRunLoopMode "TaskURLDownloadMode"
 #define kTaskURLDownloadRunLoopInterval 0.5
 
@@ -47,7 +48,7 @@
                               handleCookies:(BOOL)handleCookies {
   NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:url
                                                          cachePolicy:NSURLRequestReloadIgnoringCacheData
-                                                     timeoutInterval:kURLConnectionTimeOut];
+                                                     timeoutInterval:kURLConnectionConnectTimeOut];
   [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
   [request setValue:userAgent forHTTPHeaderField:@"User-Agent"];  // Passing nil is OK
   [request setHTTPShouldHandleCookies:handleCookies];
@@ -118,8 +119,10 @@
     connection.stream = stream;
     [connection scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:@kTaskURLDownloadRunLoopMode];
     [connection start];
+    CFTimeInterval lastTime = CFAbsoluteTimeGetCurrent();
+    NSUInteger lastLength = -1;
 #ifndef NDEBUG
-    CFTimeInterval time = CFAbsoluteTimeGetCurrent();
+    CFTimeInterval duration = lastTime;
 #endif
     while (connection.status == 0) {
       CFRunLoopRunInMode(CFSTR(kTaskURLDownloadRunLoopMode), kTaskURLDownloadRunLoopInterval, true);
@@ -128,9 +131,20 @@
         [connection cancel];
         break;
       }
+      CFTimeInterval time = CFAbsoluteTimeGetCurrent();
+      if (connection.length == lastLength) {
+        if (time - lastTime >= kURLConnectionIdleTimeOut) {
+          LOG_ERROR(@"Aborting stalled download of \"%@\"", request.URL);
+          [connection cancel];
+          break;
+        }
+      } else {
+        lastLength = connection.length;
+        lastTime = time;
+      }
     }
 #ifndef NDEBUG
-    time = CFAbsoluteTimeGetCurrent() - time;
+    duration = CFAbsoluteTimeGetCurrent() - duration;
 #endif
     NSHTTPURLResponse* response = connection.response;
     NSDictionary* headers = response.allHeaderFields;
@@ -139,9 +153,9 @@
       NSInteger contentLength = [[headers objectForKey:@"Content-Length"] integerValue];
       if (contentLength > 0) {
         LOG_DEBUG(@"%i bytes downloaded from \"%@\" in %.3f seconds (%.0f%% compression)", contentLength, connection.response.URL,
-                  time, (1.0 - [[headers objectForKey:@"Content-Length"] floatValue] / (float)connection.length) * 100.0);
+                  duration, (1.0 - [[headers objectForKey:@"Content-Length"] floatValue] / (float)connection.length) * 100.0);
       } else {
-        LOG_DEBUG(@"%i bytes downloaded from \"%@\" in %.3f seconds", connection.length, connection.response.URL, time);
+        LOG_DEBUG(@"%i bytes downloaded from \"%@\" in %.3f seconds", connection.length, connection.response.URL, duration);
       }
 #endif
       if (headerFields) {
@@ -154,7 +168,7 @@
         [(NSMutableDictionary*)*headerFields setValue:response.suggestedFilename forKey:kHTTPURLConnection_HeaderField_SuggestedFilename];
       }
       statusCode = response.statusCode;
-    } else if (![delegate isCancelled]) {
+    } else if (connection.status < 0) {
       NSError* error = connection.error;
       if ([error.domain isEqualToString:NSURLErrorDomain] && (error.code == NSURLErrorNotConnectedToInternet)) {
         LOG_VERBOSE(@"No Internet connection to download \"%@\"", request.URL);
