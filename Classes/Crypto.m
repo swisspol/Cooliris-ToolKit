@@ -111,6 +111,16 @@ NSString* MD5HashedString(NSString* string) {
   return MD5ToString(&md5);
 }
 
+NSString* MD5HashedFormat(NSString* format, ...) {
+  va_list arguments;
+  va_start(arguments, format);
+  NSString* string = [[NSString alloc] initWithFormat:format arguments:arguments];
+  MD5 md5 = MD5WithString(string);
+  [string release];
+  va_end(arguments);
+  return MD5ToString(&md5);
+}
+
 SHA2 SHA2WithString(NSString* string) {
   NSUInteger length = string.length;
   if (length) {
@@ -155,5 +165,15 @@ SHA2 SHA2FromString(NSString* string) {
 
 NSString* SHA2HashedString(NSString* string) {
   SHA2 sha2 = SHA2WithString(string);
+  return SHA2ToString(&sha2);
+}
+
+NSString* SHA2HashedFormat(NSString* format, ...) {
+  va_list arguments;
+  va_start(arguments, format);
+  NSString* string = [[NSString alloc] initWithFormat:format arguments:arguments];
+  SHA2 sha2 = SHA2WithString(string);
+  [string release];
+  va_end(arguments);
   return SHA2ToString(&sha2);
 }

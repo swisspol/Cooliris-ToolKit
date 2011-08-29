@@ -61,6 +61,7 @@ MD5 MD5WithBytes(const void* bytes, NSUInteger length);
 NSString* MD5ToString(MD5* md5);
 MD5 MD5FromString(NSString* string);
 NSString* MD5HashedString(NSString* string);
+NSString* MD5HashedFormat(NSString* format, ...);
 
 SHA2 SHA2WithString(NSString* string);
 SHA2 SHA2WithData(NSData* data);
@@ -68,6 +69,7 @@ SHA2 SHA2WithBytes(const void* bytes, NSUInteger length);
 NSString* SHA2ToString(SHA2* sha2);
 SHA2 SHA2FromString(NSString* string);
 NSString* SHA2HashedString(NSString* string);
+NSString* SHA2HashedFormat(NSString* format, ...);
 #ifdef __cplusplus
 }
 #endif
