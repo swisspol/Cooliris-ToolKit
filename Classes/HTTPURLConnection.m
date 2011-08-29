@@ -160,9 +160,11 @@
 #endif
       if (headerFields) {
         *headerFields = [NSMutableDictionary dictionaryWithDictionary:headers];
+        [(NSMutableDictionary*)*headerFields setObject:[NSString stringWithFormat:@"%i", response.statusCode]
+                                                forKey:kHTTPURLConnection_HeaderField_HTTPStatus];
+        [(NSMutableDictionary*)*headerFields setObject:[NSString stringWithFormat:@"%i", connection.length]
+                                                forKey:kHTTPURLConnection_HeaderField_DataLength];
         [(NSMutableDictionary*)*headerFields setValue:connection.redirectedURL forKey:kHTTPURLConnection_HeaderField_RedirectedURL];
-        [(NSMutableDictionary*)*headerFields setValue:[NSString stringWithFormat:@"%i", connection.length]
-                                               forKey:kHTTPURLConnection_HeaderField_DataLength];
         [(NSMutableDictionary*)*headerFields setValue:response.MIMEType forKey:kHTTPURLConnection_HeaderField_MIMEType];
         [(NSMutableDictionary*)*headerFields setValue:response.textEncodingName forKey:kHTTPURLConnection_HeaderField_TextEncodingName];
         [(NSMutableDictionary*)*headerFields setValue:response.suggestedFilename forKey:kHTTPURLConnection_HeaderField_SuggestedFilename];

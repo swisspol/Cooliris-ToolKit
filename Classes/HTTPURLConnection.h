@@ -14,6 +14,7 @@
 
 #import <Foundation/Foundation.h>
 
+#define kHTTPURLConnection_HeaderField_HTTPStatus @".HTTPStatus"
 #define kHTTPURLConnection_HeaderField_RedirectedURL @".RedirectedURL"  // In case of multiple redirects, this will be the last one
 #define kHTTPURLConnection_HeaderField_DataLength @".DataLength"
 #define kHTTPURLConnection_HeaderField_MIMEType @".MIMEType"
