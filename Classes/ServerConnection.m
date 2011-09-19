@@ -17,6 +17,7 @@
 
 #define kHugeTimerInterval (365.0 * 24.0 * 3600.0)
 #define kCheckInitialDelay 2.0
+#define kCheckMaxDelay 3600.0
 
 static NSString* _stateNames[] = {
                                   @"Offline",
@@ -120,7 +121,7 @@ static NSString* _stateNames[] = {
     }
   } else {
     if (_netReachability.reachable) {
-      _checkDelay *= 2.0;
+      _checkDelay = MIN(_checkDelay * 2.0, kCheckMaxDelay);
       [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
       [self _setState:kServerConnectionState_Online];
       LOG_WARNING(@"Server connection is not responding (retrying in %.0f seconds)", _checkDelay);
