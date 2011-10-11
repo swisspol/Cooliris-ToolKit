@@ -25,6 +25,7 @@ typedef enum {
 } LogLevel;
 
 #define LOG_MESSAGE(__LEVEL__, ...) { if ((__LEVEL__) >= _minimumLogLevel) LogMessage(__LEVEL__, __VA_ARGS__); }
+#define LOG_EXCEPTION(__EXCEPTION__) { if ((kLogLevel_Exception) >= _minimumLogLevel) LogRawMessage(kLogLevel_Exception, [__EXCEPTION__ description]); }
 
 #ifdef NDEBUG
 #define LOG_DEBUG(...)
@@ -35,8 +36,6 @@ typedef enum {
 #define LOG_INFO(...) LOG_MESSAGE(kLogLevel_Info, __VA_ARGS__)
 #define LOG_WARNING(...) LOG_MESSAGE(kLogLevel_Warning, __VA_ARGS__)
 #define LOG_ERROR(...) LOG_MESSAGE(kLogLevel_Error, __VA_ARGS__)
-#define LOG_EXCEPTION(__EXCEPTION__) LOG_MESSAGE(kLogLevel_Exception, @"Exception \"%@\": %@", \
-                                                 [(__EXCEPTION__) name], [(__EXCEPTION__) reason])
 #define LOG_ABORT(...) LOG_MESSAGE(kLogLevel_Abort, __VA_ARGS__)
 
 #ifdef NDEBUG
@@ -88,7 +87,7 @@ typedef void (*LoggingReplayCallback)(NSUInteger appVersion, NSTimeInterval time
 extern "C" {
 #endif
 void LogMessage(LogLevel level, NSString* format, ...);
-void LogMessageExtended(LogLevel level, NSString* format, va_list arguments);
+void LogRawMessage(LogLevel level, NSString* message);
 
 const char* LoggingGetLevelName(LogLevel level);
 void LoggingSetMinimumLevel(LogLevel level);  // Default is kLogLevel_Debug unless overridden by "logLevel" environment variable

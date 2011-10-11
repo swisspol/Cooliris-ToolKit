@@ -23,6 +23,9 @@
 #import <sqlite3.h>
 #import <assert.h>
 #import <unistd.h>
+#if !TARGET_OS_IPHONE
+#import <execinfo.h>
+#endif
 
 #import "Logging.h"
 
@@ -293,16 +296,31 @@ void LoggingDisableRemoteAccess(BOOL keepConnectionAlive) {
 void LogMessage(LogLevel level, NSString* format, ...) {
   va_list arguments;
   va_start(arguments, format);
-  LogMessageExtended(level, format, arguments);
+  NSMutableString* string = [[NSMutableString alloc] initWithFormat:format arguments:arguments];
   va_end(arguments);
+  LogRawMessage(level, string);
+  [string autorelease];  // Needs autorelease as NSZombieEnabled reports that this is somehow accessed afterwards (at least under GDB)
 }
 
-void LogMessageExtended(LogLevel level, NSString* format, va_list arguments) {
-  NSString* string = [[NSString alloc] initWithFormat:format arguments:arguments];
-  const char* cString = [string UTF8String];
+void LogRawMessage(LogLevel level, NSString* message) {
+#if !TARGET_OS_IPHONE
+  if (level >= kLogLevel_Exception) {
+    void* backtraceFrames[128];
+    int frameCount = backtrace(backtraceFrames, sizeof(backtraceFrames) / sizeof(void*));
+    char** frameStrings = backtrace_symbols(backtraceFrames, frameCount);
+    if (frameStrings) {
+      message = [NSMutableString stringWithString:message];
+      for (int i = 1; i < frameCount; ++i) {
+        [(NSMutableString*)message appendFormat:@"\n%s", frameStrings[i]];
+      }
+      free(frameStrings);  // No need to free individual strings
+    }
+  }
+#endif
+  const char* cString = [message UTF8String];
   printf("[%s] %s\n", _levelNames[level], cString);
   if (_loggingCallback) {
-    (*_loggingCallback)(level, string);
+    (*_loggingCallback)(level, message);
   }
   if (_database && (level > kLogLevel_Debug)) {
     OSSpinLockLock(&_spinLock);
@@ -312,7 +330,7 @@ void LogMessageExtended(LogLevel level, NSString* format, va_list arguments) {
     OSSpinLockUnlock(&_spinLock);
   }
   if (_stream) {
-    NSString* content = [[NSString alloc] initWithFormat:@"[%s] %@\n", _levelNames[level], string];
+    NSString* content = [[NSString alloc] initWithFormat:@"[%s] %@\n", _levelNames[level], message];
     OSSpinLockLock(&_spinLock);
     if (_stream) {
       if (CFWriteStreamGetStatus(_stream) == kCFStreamStatusOpen) {
@@ -326,7 +344,6 @@ void LogMessageExtended(LogLevel level, NSString* format, va_list arguments) {
     OSSpinLockUnlock(&_spinLock);
     [content release];
   }
-  [string autorelease];  // Needs autorelease as NSZombieEnabled reports that this is somehow accessed afterwards (at least under GDB)
   
 #ifdef NDEBUG
   if (level >= kLogLevel_Abort)
