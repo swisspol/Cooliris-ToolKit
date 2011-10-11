@@ -1221,7 +1221,7 @@ LOCK_CONNECTION();
       id primary = nil;
       int count = sqlite3_column_count(statement);
       for (int i = 0; i < count; ++i) {
-        id object = [NSNull null];
+        id object = nil;
         switch (sqlite3_column_type(statement, i)) {
           
           case SQLITE_INTEGER: {
