@@ -1270,7 +1270,14 @@ LOCK_CONNECTION();
       }
       [row release];
     }
+    if (result != SQLITE_DONE) {
+      LOG_ERROR(@"Failed executing raw SQL statement \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
+                result);
+    }
     sqlite3_finalize(statement);
+  } else {
+    LOG_ERROR(@"Failed preparing raw SQL statement \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
+              result);
   }
   
 UNLOCK_CONNECTION();
@@ -1291,12 +1298,16 @@ LOCK_CONNECTION();
       do {
         result = _ExecuteStatement(statement);
       } while (result == SQLITE_ROW);
+      sqlite3_finalize(statement);
       if (result != SQLITE_DONE) {
+        LOG_ERROR(@"Failed executing raw SQL statement \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
+                  result);
         break;
       }
-      sqlite3_finalize(statement);
       zSql = tail;
     } else {
+      LOG_ERROR(@"Failed preparing raw SQL statement \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
+                result);
       break;
     }
   }
