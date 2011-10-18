@@ -1077,7 +1077,7 @@ static void _CopyRowValues(sqlite3_stmt* statement, void* storage, DatabaseSQLTa
       break;
     }
     DatabaseObject* object = [[table->class alloc] initWithSQLTable:table];
-    object.sqlRowID = sqlite3_column_int64(statement, 0);
+    object.sqlRowID = sqlite3_column_int(statement, 0);
     _CopyRowValues(statement, object._storage, table, 1);
     [results addObject:object];
     [object release];
@@ -1091,12 +1091,12 @@ LOCK_CONNECTION();
   DatabaseSQLTable table = object.sqlTable;
   
   sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_SelectWithRowID]);
-  int result = sqlite3_bind_int64(statement, 1, object.sqlRowID);
+  int result = sqlite3_bind_int(statement, 1, object.sqlRowID);
   if (result == SQLITE_OK) {
     result = _ExecuteStatement(statement);
   }
   if (result == SQLITE_ROW) {
-    DCHECK(object.sqlRowID == sqlite3_column_int64(statement, 0));
+    DCHECK(object.sqlRowID == sqlite3_column_int(statement, 0));
     _CopyRowValues(statement, object._storage, table, 1);
     object.modified = NO;
   } else if (result == SQLITE_DONE) {
@@ -1142,7 +1142,7 @@ LOCK_CONNECTION();
   DatabaseSQLTable table = object.sqlTable;
   
   sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_UpdateWithRowID]);
-  int result = sqlite3_bind_int64(statement, 1, object.sqlRowID);
+  int result = sqlite3_bind_int(statement, 1, object.sqlRowID);
   if (result == SQLITE_OK) {
     result = _BindStatementValues(statement, object._storage, table, 2);
   }
@@ -1167,7 +1167,7 @@ LOCK_CONNECTION();
   CHECK(rowID);
   
   sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_DeleteWithRowID]);
-  int result = sqlite3_bind_int64(statement, 1, rowID);
+  int result = sqlite3_bind_int(statement, 1, rowID);
   if (result == SQLITE_OK) {
     result = _ExecuteStatement(statement);
   }
@@ -1607,7 +1607,7 @@ LOCK_CONNECTION();
   BOOL exists = NO;
   
   sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_SelectRowIDWithRowID]);
-  int result = sqlite3_bind_int64(statement, 1, rowID);
+  int result = sqlite3_bind_int(statement, 1, rowID);
   if (result == SQLITE_OK) {
     result = _ExecuteStatement(statement);
   }
@@ -1630,13 +1630,13 @@ LOCK_CONNECTION();
   DatabaseObject* object = nil;
   
   sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_SelectWithRowID]);
-  int result = sqlite3_bind_int64(statement, 1, rowID);
+  int result = sqlite3_bind_int(statement, 1, rowID);
   if (result == SQLITE_OK) {
     result = _ExecuteStatement(statement);
   }
   if (result == SQLITE_ROW) {
     object = [[[table->class alloc] initWithSQLTable:table] autorelease];
-    object.sqlRowID = sqlite3_column_int64(statement, 0);  // rowID
+    object.sqlRowID = sqlite3_column_int(statement, 0);  // rowID
     _CopyRowValues(statement, object._storage, table, 1);
   } else if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed fetching %@ object with rowID '%i' from %@: %@ (%i)", table->class, rowID, self,
@@ -1663,7 +1663,7 @@ LOCK_CONNECTION();
   }
   if (result == SQLITE_ROW) {
     object = [[[table->class alloc] initWithSQLTable:table] autorelease];
-    object.sqlRowID = sqlite3_column_int64(statement, 0);  // rowID
+    object.sqlRowID = sqlite3_column_int(statement, 0);  // rowID
     _CopyRowValues(statement, object._storage, table, 1);
   } else if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed fetching %@ object with unique property '%@' matching '%@' from %@: %@ (%i)", table->class,

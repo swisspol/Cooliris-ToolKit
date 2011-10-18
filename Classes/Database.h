@@ -17,7 +17,7 @@
 #import <libkern/OSAtomic.h>
 #endif
 
-typedef long DatabaseSQLRowID;
+typedef int DatabaseSQLRowID;
 typedef struct DatabaseSQLColumnDefinition* DatabaseSQLColumn;
 typedef struct DatabaseSQLTableDefinition* DatabaseSQLTable;
 
