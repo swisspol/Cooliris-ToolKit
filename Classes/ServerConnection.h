@@ -57,5 +57,6 @@ typedef enum {
 - (void) replyToCheckServerReachability:(BOOL)success;
 - (void) replyToConnectToServer:(BOOL)success;
 - (void) replyToDisconnectFromServer:(BOOL)success;
+- (void) recheckNow;  // Forces a recheck of the reachability status
 - (void) forceDisconnect;  // Only call if in connected state
 @end
