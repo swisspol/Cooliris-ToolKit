@@ -52,6 +52,7 @@ static void _ReachabilityCallBack(SCNetworkReachabilityRef target, SCNetworkConn
       [self->_delegate reachabilityDidUpdate:self reachable:(IS_REACHABLE(flags) ? YES : NO)];
       break;
     
+#if  TARGET_OS_IPHONE
     case kNetReachabilityMode_WiFiOnly:
       [self->_delegate reachabilityDidUpdate:self reachable:(IS_REACHABLE_WIFI(flags) ? YES : NO)];
       break;
@@ -59,6 +60,7 @@ static void _ReachabilityCallBack(SCNetworkReachabilityRef target, SCNetworkConn
     case kNetReachabilityMode_CellOnly:
       [self->_delegate reachabilityDidUpdate:self reachable:(IS_REACHABLE_CELL(flags) ? YES : NO)];
       break;
+#endif
     
     case kNetReachabilityMode_AlwaysOn:
       [self->_delegate reachabilityDidUpdate:self reachable:YES];
@@ -136,11 +138,13 @@ static void _ReachabilityCallBack(SCNetworkReachabilityRef target, SCNetworkConn
     case kNetReachabilityMode_Default:
       return (SCNetworkReachabilityGetFlags(_netReachability, &flags) && IS_REACHABLE(flags));
     
+#if  TARGET_OS_IPHONE
     case kNetReachabilityMode_WiFiOnly:
       return (SCNetworkReachabilityGetFlags(_netReachability, &flags) && IS_REACHABLE_WIFI(flags));
     
     case kNetReachabilityMode_CellOnly:
       return (SCNetworkReachabilityGetFlags(_netReachability, &flags) && IS_REACHABLE_CELL(flags));
+#endif
     
     case kNetReachabilityMode_AlwaysOn:
       return YES;

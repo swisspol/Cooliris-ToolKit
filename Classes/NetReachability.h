@@ -18,8 +18,10 @@ typedef enum {
   kNetReachabilityMode_AlwaysOff = -2,
   kNetReachabilityMode_AlwaysOn = -1,
   kNetReachabilityMode_Default = 0,
+#if  TARGET_OS_IPHONE
   kNetReachabilityMode_WiFiOnly = 1,
   kNetReachabilityMode_CellOnly = 2
+#endif
 } NetReachabilityMode;
 
 @class NetReachability;

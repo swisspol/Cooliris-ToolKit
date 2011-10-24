@@ -50,9 +50,15 @@ typedef enum {
   NetReachability* _netReachability;
   NSTimer* _checkTimer;
   NSTimeInterval _checkDelay;
+#if  TARGET_OS_IPHONE
+  BOOL _wifiOnly;
+#endif
 }
 @property(nonatomic, assign) id<ServerConnectionDelegate> delegate;
 @property(nonatomic, readonly) ServerConnectionState currentState;
+#if  TARGET_OS_IPHONE
+@property(nonatomic) BOOL wifiOnly;
+#endif
 + (ServerConnection*) sharedServerConnection;
 - (void) replyToCheckServerReachability:(BOOL)success;
 - (void) replyToConnectToServer:(BOOL)success;
