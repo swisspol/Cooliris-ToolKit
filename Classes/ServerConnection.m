@@ -182,7 +182,7 @@ static NSString* _stateNames[] = {
 }
 
 - (void) reachabilityDidUpdate:(NetReachability*)reachability reachable:(BOOL)reachable {
-  LOG_VERBOSE(@"Server connection is %@", reachable ? @"reachable" : @"unreachable");
+  LOG_VERBOSE(@"Server connection updated to %@", reachable ? @"reachable" : @"unreachable");
   if (reachable) {
     if (_currentState == kServerConnectionState_Offline) {
       _checkDelay = kCheckInitialDelay;
@@ -220,13 +220,16 @@ static NSString* _stateNames[] = {
   [self _didDisconnect];
 }
 
-- (void) recheckNow {
-  [self reachabilityDidUpdate:nil reachable:[_netReachability isReachable]];
-}
-
 - (void) forceDisconnect {
   CHECK(_currentState == kServerConnectionState_Connected);
   [self _disconnect];
+}
+
+- (void) resetReachability {
+  _netReachability.delegate = nil;
+  [_netReachability release];
+  _netReachability = [[NetReachability alloc] initWithHostName:@"example.com"];
+  _netReachability.delegate = self;
 }
 
 @end
