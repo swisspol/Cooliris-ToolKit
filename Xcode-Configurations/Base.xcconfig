@@ -21,7 +21,7 @@ GCC_ENABLE_CPP_RTTI = NO
 WARNING_CFLAGS = -Wall -Winline
 
 // iOS SDK
-ARCHS[sdk=iphoneos*] = armv6 armv7
+ARCHS[sdk=iphoneos*] = $(ARCHS_STANDARD_32_BIT)
 GCC_VERSION[sdk=iphonesimulator*][arch=*] = com.apple.compilers.llvmgcc42
 GCC_VERSION[sdk=iphoneos*][arch=*] = com.apple.compilers.llvmgcc42
 CODE_SIGN_IDENTITY[sdk=iphoneos*] = iPhone Developer
