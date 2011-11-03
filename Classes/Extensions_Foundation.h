@@ -114,8 +114,12 @@ static inline BOOL NSRangeContainsRange(NSRange range1, NSRange range2) {
 @end
 
 @interface NSMutableURLRequest (Extensions)
++ (NSData*) HTTPBodyWithMultipartBoundary:(NSString*)boundary
+                            formArguments:(NSDictionary*)arguments
+                                 fileData:(NSData*)fileData
+                                 fileType:(NSString*)fileType;
 - (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments;
-- (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments fileData:(NSData*)fileData withFileType:(NSString*)fileType;
+- (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments fileData:(NSData*)fileData fileType:(NSString*)fileType;
 @end
 
 @interface NSTimeZone (Extensions)

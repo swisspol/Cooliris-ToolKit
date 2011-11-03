@@ -788,15 +788,11 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
 
 @implementation NSMutableURLRequest (Extensions)
 
-- (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments {
-  [self setHTTPBodyWithMultipartFormArguments:arguments fileData:nil withFileType:nil];
-}
-
-- (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments fileData:(NSData*)fileData withFileType:(NSString*)fileType {
-  NSString* boundary = @"0xKhTmLbOuNdArY";
-  [self setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary] forHTTPHeaderField:@"Content-Type"];
-  
-  NSMutableData* body = [[NSMutableData alloc] init];
++ (NSData*) HTTPBodyWithMultipartBoundary:(NSString*)boundary
+                            formArguments:(NSDictionary*)arguments
+                                 fileData:(NSData*)fileData
+                                 fileType:(NSString*)fileType {
+  NSMutableData* body = [NSMutableData data];
   for (NSString* key in arguments) {
     id value = [arguments objectForKey:key];
     if ([value isKindOfClass:[NSString class]]) {
@@ -819,8 +815,17 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
     [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
   }
   [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-  [self setHTTPBody:body];
-  [body release];
+  return body;
+}
+
+- (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments {
+  [self setHTTPBodyWithMultipartFormArguments:arguments fileData:nil fileType:nil];
+}
+
+- (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments fileData:(NSData*)fileData fileType:(NSString*)fileType {
+  NSString* boundary = @"0xKhTmLbOuNdArY";
+  [self setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary] forHTTPHeaderField:@"Content-Type"];
+  [self setHTTPBody:[[self class] HTTPBodyWithMultipartBoundary:boundary formArguments:arguments fileData:fileData fileType:fileType]];
 }
 
 @end
