@@ -807,7 +807,7 @@ static void __QueueSourceCallBack(void* info) {
 }
 
 - (id) initWithURL:(NSURL*)url userAgent:(NSString*)userAgent handleCookies:(BOOL)handleCookies {
-  NSURLRequest* request = [HTTPURLConnection HTTPRequestWithURL:url method:@"GET" userAgent:userAgent handleCookies:handleCookies];
+  NSURLRequest* request = [NSClassFromString(@"HTTPURLConnection") HTTPRequestWithURL:url method:@"GET" userAgent:userAgent handleCookies:handleCookies];
   return [self initWithRequest:request];
 }
 
@@ -828,7 +828,7 @@ static void __QueueSourceCallBack(void* info) {
 
 - (BOOL) execute {
   NSDictionary* dictionary;
-  _data = [[HTTPURLConnection downloadHTTPRequestToMemory:_request delegate:(id)self headerFields:&dictionary] retain];
+  _data = [[NSClassFromString(@"HTTPURLConnection") downloadHTTPRequestToMemory:_request delegate:(id)self headerFields:&dictionary] retain];
   if (_data) {
     _headerFields = [dictionary copy];
   }
