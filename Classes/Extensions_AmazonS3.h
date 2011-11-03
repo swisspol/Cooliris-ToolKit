@@ -17,5 +17,10 @@
 // This will set appropriately the "Date" and "Authorization" HTTP headers
 // Request URL host is expected to be "s3.amazonaws.com" or "bucket.s3.amazonaws.com"
 @interface NSMutableURLRequest (AmazonS3)
++ (NSDictionary*) generateAmazonS3AuthorizationHeadersWithAccessKeyID:(NSString*)accessKeyID
+                                                      secretAccessKey:(NSString*)secretAccessKey
+                                                               method:(NSString*)method
+                                                                  url:(NSURL*)url
+                                                              headers:(NSDictionary*)headers;
 - (void) setAmazonS3AuthorizationWithAccessKeyID:(NSString*)accessKeyID secretAccessKey:(NSString*)secretAccessKey;
 @end

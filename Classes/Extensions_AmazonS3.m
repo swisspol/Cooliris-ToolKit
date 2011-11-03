@@ -41,7 +41,11 @@ static NSString* _EncodeBase64(NSData* data) {
 @implementation NSMutableURLRequest (AmazonS3)
 
 // http://docs.amazonwebservices.com/AmazonS3/latest/dev/index.html?RESTAuthentication.html
-- (void) setAmazonS3AuthorizationWithAccessKeyID:(NSString*)accessKeyID secretAccessKey:(NSString*)secretAccessKey {
++ (NSDictionary*) generateAmazonS3AuthorizationHeadersWithAccessKeyID:(NSString*)accessKeyID
+                                                      secretAccessKey:(NSString*)secretAccessKey
+                                                               method:(NSString*)method
+                                                                  url:(NSURL*)url
+                                                              headers:(NSDictionary*)headers {
   static OSSpinLock spinLock = 0;
   OSSpinLockLock(&spinLock);
   static NSDateFormatter* formatter = nil;
@@ -54,10 +58,8 @@ static NSString* _EncodeBase64(NSData* data) {
   NSString* dateString = [formatter stringFromDate:[NSDate date]];
   OSSpinLockUnlock(&spinLock);
   
-  NSURL* url = [self URL];
-  NSDictionary* headers = [self allHTTPHeaderFields];
   NSMutableString* buffer = [[NSMutableString alloc] init];
-  [buffer appendFormat:@"%@\n", [self HTTPMethod]];
+  [buffer appendFormat:@"%@\n", method];
   [buffer appendFormat:@"%@\n", ([headers objectForKey:@"Content-MD5"] ? [headers objectForKey:@"Content-MD5"] : @"")];
   [buffer appendFormat:@"%@\n", ([headers objectForKey:@"Content-Type"] ? [headers objectForKey:@"Content-Type"] : @"")];
   [buffer appendFormat:@"%@\n", dateString];
@@ -91,9 +93,20 @@ static NSString* _EncodeBase64(NSData* data) {
   }
   NSString* authorization = _EncodeBase64(_ComputeSHA1HMAC([buffer dataUsingEncoding:NSUTF8StringEncoding], secretAccessKey));
   [buffer release];
-  
-  [self setValue:dateString forHTTPHeaderField:@"Date"];
-  [self setValue:[NSString stringWithFormat:@"AWS %@:%@", accessKeyID, authorization] forHTTPHeaderField:@"Authorization"];
+  return [NSDictionary dictionaryWithObjectsAndKeys:dateString, @"Date",
+                                                    [NSString stringWithFormat:@"AWS %@:%@", accessKeyID, authorization], @"Authorization",
+                                                    nil];
+}
+
+- (void) setAmazonS3AuthorizationWithAccessKeyID:(NSString*)accessKeyID secretAccessKey:(NSString*)secretAccessKey {
+  NSDictionary* headers = [[self class] generateAmazonS3AuthorizationHeadersWithAccessKeyID:accessKeyID
+                                                                            secretAccessKey:secretAccessKey
+                                                                                     method:[self HTTPMethod]
+                                                                                        url:[self URL]
+                                                                                    headers:[self allHTTPHeaderFields]];
+  for (NSString* header in headers) {
+    [self setValue:[headers objectForKey:header] forHTTPHeaderField:header];
+  }
 }
 
 @end
