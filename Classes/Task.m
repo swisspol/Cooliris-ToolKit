@@ -54,6 +54,7 @@ NSString* const TaskQueueDidBecomeIdleNotification = @"TaskQueueDidBecomeIdleNot
 
 static TaskQueue* _sharedQueue = nil;
 static NSUInteger _defaultConcurrency = 1;
+static Class _connectionClass = nil;
 
 @implementation TaskMessage
 
@@ -798,6 +799,11 @@ static void __QueueSourceCallBack(void* info) {
 
 @synthesize request=_request, headerFields=_headerFields, data=_data;
 
++ (void) initialize {
+  _connectionClass = NSClassFromString(@"HTTPURLConnection");
+  CHECK(_connectionClass);
+}
+
 - (id) init {
   return [self initWithURL:nil];
 }
@@ -807,7 +813,7 @@ static void __QueueSourceCallBack(void* info) {
 }
 
 - (id) initWithURL:(NSURL*)url userAgent:(NSString*)userAgent handleCookies:(BOOL)handleCookies {
-  NSURLRequest* request = [NSClassFromString(@"HTTPURLConnection") HTTPRequestWithURL:url method:@"GET" userAgent:userAgent handleCookies:handleCookies];
+  NSURLRequest* request = [_connectionClass HTTPRequestWithURL:url method:@"GET" userAgent:userAgent handleCookies:handleCookies];
   return [self initWithRequest:request];
 }
 
@@ -828,7 +834,7 @@ static void __QueueSourceCallBack(void* info) {
 
 - (BOOL) execute {
   NSDictionary* dictionary;
-  _data = [[NSClassFromString(@"HTTPURLConnection") downloadHTTPRequestToMemory:_request delegate:(id)self headerFields:&dictionary] retain];
+  _data = [[_connectionClass downloadHTTPRequestToMemory:_request delegate:(id)self headerFields:&dictionary] retain];
   if (_data) {
     _headerFields = [dictionary copy];
   }
