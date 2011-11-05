@@ -1261,7 +1261,7 @@ LOCK_CONNECTION();
       if (result != SQLITE_ROW) {
         break;
       }
-      id row = [[class alloc] init];
+      id row = class ? [[class alloc] init] : [NSNull null];
       id primary = nil;
       int count = sqlite3_column_count(statement);
       for (int i = 0; i < count; ++i) {
