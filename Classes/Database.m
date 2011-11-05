@@ -28,6 +28,7 @@ enum {
   kObjectStatement_SelectRowIDWithRowID,
   kObjectStatement_SelectWithRowID,
   kObjectStatement_Insert,
+  kObjectStatement_Replace,
   kObjectStatement_UpdateWithRowID,
   kObjectStatement_DeleteWithRowID,
   kObjectStatement_DeleteAll,
@@ -243,6 +244,25 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
       }
       [statement appendString:@")"];
       table->statements[kObjectStatement_Insert] = _CopyAsCString(statement);
+      [statement release];
+    }
+    {
+      NSMutableString* statement = [[NSMutableString alloc] init];
+      [statement appendFormat:@"REPLACE INTO %@ (", table->tableName];
+      [statement appendString:table->columnList[0].columnName];
+      for (unsigned int i = 1; i < table->columnCount; ++i) {
+        if (table->columnList[i].setter) {
+          [statement appendFormat:@", %@", table->columnList[i].columnName];
+        }
+      }
+      [statement appendString:@") VALUES (?1"];
+      for (unsigned int i = 1; i < table->columnCount; ++i) {
+        if (table->columnList[i].setter) {
+          [statement appendFormat:@", ?%i", i + 1];
+        }
+      }
+      [statement appendString:@")"];
+      table->statements[kObjectStatement_Replace] = _CopyAsCString(statement);
       [statement release];
     }
     {
@@ -1136,6 +1156,30 @@ UNLOCK_CONNECTION();
   return (result == SQLITE_DONE);
 }
 
+- (BOOL) replaceObject:(DatabaseObject*)object {
+LOCK_CONNECTION();
+  CHECK(object && !object.sqlRowID);
+  DatabaseSQLTable table = object.sqlTable;
+  
+  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_Replace]);
+  int result = _BindStatementValues(statement, object._storage, table, 1);
+  if (result == SQLITE_OK) {
+    result = _ExecuteStatement(statement);
+  }
+  if (result == SQLITE_DONE) {
+    object.sqlRowID = sqlite3_last_insert_rowid(_database);
+    object.modified = NO;
+  } else {
+    LOG_ERROR(@"Failed replacing %@ into %@: %@ (%i)", [object miniDescription], self,
+              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+  }
+  sqlite3_reset(statement);
+  sqlite3_clear_bindings(statement);
+  
+UNLOCK_CONNECTION();
+  return (result == SQLITE_DONE);
+}
+
 - (BOOL) updateObject:(DatabaseObject*)object {
 LOCK_CONNECTION();
   CHECK(object.sqlRowID);
@@ -1444,6 +1488,10 @@ UNLOCK_CONNECTION();
   }
   CHECK(column);
   return [self deleteObjectsInSQLTable:table withSQLColumn:column matchingValue:value];
+}
+
+- (BOOL) deleteObjectsOfClass:(Class)class withSQLWhereClause:(NSString*)clause {
+  return [self deleteObjectsInSQLTable:_SQLTableForClass(class) withSQLWhereClause:clause];
 }
 
 @end
@@ -1826,6 +1874,25 @@ LOCK_CONNECTION();
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed deleting %@ objects with property '%@' matching '%@' from %@: %@ (%i)", table->class, column->name,
               value, self, [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+  }
+  sqlite3_finalize(statement);
+  
+UNLOCK_CONNECTION();
+  return (result == SQLITE_DONE);
+}
+
+- (BOOL) deleteObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause {
+
+LOCK_CONNECTION();
+  CHECK(clause);
+  
+  NSMutableString* string = [NSMutableString stringWithFormat:@"DELETE FROM %@ WHERE %@", table->tableName, clause];
+  sqlite3_stmt* statement = NULL;
+  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
+  int result = _ExecuteStatement(statement);
+  if (result != SQLITE_DONE) {
+    LOG_ERROR(@"Failed deleting %@ objects with SQL where clause \"%@\" from %@: %@ (%i)", table->class, clause, self,
+              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
   }
   sqlite3_finalize(statement);
   

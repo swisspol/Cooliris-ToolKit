@@ -103,6 +103,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (BOOL) refetchObject:(DatabaseObject*)object;  // Return NO on error or if object is not in database
 - (BOOL) insertObject:(DatabaseObject*)object;
 - (BOOL) updateObject:(DatabaseObject*)object;
+- (BOOL) replaceObject:(DatabaseObject*)object;
 - (BOOL) deleteObject:(DatabaseObject*)object;
 - (BOOL) vacuum;
 - (NSArray*) executeRawSQLStatement:(NSString*)sql;  // Returns nil on error or an NSArray of NSDictionaries
@@ -127,6 +128,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (BOOL) deleteAllObjectsOfClass:(Class)class;
 - (BOOL) deleteObjectOfClass:(Class)class withSQLRowID:(DatabaseSQLRowID)rowID;
 - (BOOL) deleteObjectsOfClass:(Class)class withProperty:(NSString*)property matchingValue:(id)value;  // Returns NO on error or if none
+- (BOOL) deleteObjectsOfClass:(Class)class withSQLWhereClause:(NSString*)clause;  // Returns NO on error or if none
 @end
 
 // SQL column definition
@@ -177,6 +179,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (BOOL) deleteAllObjectsInSQLTable:(DatabaseSQLTable)table;
 - (BOOL) deleteObjectInSQLTable:(DatabaseSQLTable)table withSQLRowID:(DatabaseSQLRowID)rowID;
 - (BOOL) deleteObjectsInSQLTable:(DatabaseSQLTable)table withSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value;  // Returns NO on error or if none
+- (BOOL) deleteObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause;  // Returns NO on error or if none
 @end
 
 // Thread-safe pool of database connections
