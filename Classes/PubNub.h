@@ -52,6 +52,7 @@
 - (void) subscribeToChannel:(NSString*)channel;  // Does nothing if already subscribed
 - (void) unsubscribeFromChannel:(NSString*)channel;  // Does nothing if not subscribed
 - (BOOL) isSubscribedToChannel:(NSString*)channel;
+- (void) unsubscribeFromAllChannels;
 - (void) fetchHistory:(NSUInteger)limit forChannel:(NSString*)channel;
 - (void) getTime;
 @end

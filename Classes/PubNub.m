@@ -211,10 +211,10 @@ typedef enum {
 
 - (void) unsubscribeFromChannel:(NSString*)channel {
   for (PubNubConnection* connection in _connections) {
-    if ((connection.command == kCommand_ReceiveMessage) && [connection.channel isEqualToString:channel]) {
+    if ((connection.command == kCommand_ReceiveMessage) && (!channel || [connection.channel isEqualToString:channel])) {
+      LOG_VERBOSE(@"Did unsubscribe from PubNub channel \"%@\"", connection.channel);
       [connection cancel];
       [_connections removeObject:connection];
-      LOG_VERBOSE(@"Did unsubscribe from PubNub channel \"%@\"", channel);
     }
   }
   [NSObject cancelPreviousPerformRequestsWithTarget:self];
@@ -227,6 +227,10 @@ typedef enum {
     }
   }
   return NO;
+}
+
+- (void) unsubscribeFromAllChannels {
+  [self unsubscribeFromChannel:nil];
 }
 
 - (void) fetchHistory:(NSUInteger)limit forChannel:(NSString*)channel {
