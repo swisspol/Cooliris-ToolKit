@@ -91,14 +91,11 @@ static NSMutableDictionary* _configurationDictionary = nil;
 static Task* _configurationTask = nil;
 static CGFloat _overlaysOpacity = 0.75;
 
-static void _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reason, NSDictionary* userInfo) {
-  _exceptionInitializerIMP(self, cmd, name, reason, userInfo);
-  
-  LOG_EXCEPTION(self);
-}
-
-static void _UncaughtExceptionHandler(NSException* exception) {
-  LOG_EXCEPTION(exception);
+static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reason, NSDictionary* userInfo) {
+  if ((self = _exceptionInitializerIMP(self, cmd, name, reason, userInfo))) {
+    LOG_EXCEPTION(self);
+  }
+  return self;
 }
 
 @implementation ConfigurationDownloader
@@ -373,9 +370,6 @@ static void _UncaughtExceptionHandler(NSException* exception) {
   _exceptionInitializerIMP = method_setImplementation(class_getInstanceMethod([NSException class],
                                                                               @selector(initWithName:reason:userInfo:)),
                                                       (IMP)&_exceptionInitializer);
-  
-  // Install uncaught exception handler
-  NSSetUncaughtExceptionHandler(&_UncaughtExceptionHandler);
   
   // Initialize overlay window
   _overlayWindow = [[ApplicationWindow alloc] initWithScreen:[UIScreen mainScreen]];
