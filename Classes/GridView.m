@@ -435,14 +435,20 @@ static BOOL _showBorders = NO;
   [self _updateVisibleRows:NO];
 }
 
+- (void) scrollViewWillBeginDragging:(UIScrollView*)scrollView {
+  [_delegate gridViewDidBeginScrolling:self];
+}
+
 - (void) scrollViewDidEndDragging:(UIScrollView*)scrollView willDecelerate:(BOOL)decelerate {
   if (decelerate == NO) {
     [self _updateScrolling];
+    [_delegate gridViewDidEndScrolling:self];
   }
 }
 
 - (void) scrollViewDidEndDecelerating:(UIScrollView*)scrollView {
   [self _updateScrolling];
+  [_delegate gridViewDidEndScrolling:self];
 }
 
 @end

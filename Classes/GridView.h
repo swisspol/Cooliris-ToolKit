@@ -24,6 +24,8 @@
 - (void) gridView:(GridView*)gridView didHideView:(UIView*)view forItem:(id)item;
 - (void) gridViewDidEndUpdatingViewsVisibility:(GridView*)gridView;
 - (void) gridViewDidUpdateScrollingAmount:(GridView*)gridView;
+- (void) gridViewDidBeginScrolling:(GridView*)gridView;
+- (void) gridViewDidEndScrolling:(GridView*)gridView;
 @end
 
 // Views returned for items must have fixed dimensions
