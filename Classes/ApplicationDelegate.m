@@ -451,6 +451,10 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
                   [[UIApplication sharedApplication] backgroundTimeRemaining]);
     }
   }
+  // Otherwise, save state immediately
+  else {
+    [self saveState];
+  }
   
   // Make sure user defaults are synchronized
   [[NSUserDefaults standardUserDefaults] synchronize];
