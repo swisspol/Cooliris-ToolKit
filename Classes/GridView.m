@@ -436,19 +436,25 @@ static BOOL _showBorders = NO;
 }
 
 - (void) scrollViewWillBeginDragging:(UIScrollView*)scrollView {
-  [_delegate gridViewDidBeginScrolling:self];
+  if ([_delegate respondsToSelector:@selector(gridViewDidBeginScrolling:)]) {
+    [_delegate gridViewDidBeginScrolling:self];
+  }
 }
 
 - (void) scrollViewDidEndDragging:(UIScrollView*)scrollView willDecelerate:(BOOL)decelerate {
   if (decelerate == NO) {
     [self _updateScrolling];
-    [_delegate gridViewDidEndScrolling:self];
+    if ([_delegate respondsToSelector:@selector(gridViewDidEndScrolling:)]) {
+      [_delegate gridViewDidEndScrolling:self];
+    }
   }
 }
 
 - (void) scrollViewDidEndDecelerating:(UIScrollView*)scrollView {
   [self _updateScrolling];
-  [_delegate gridViewDidEndScrolling:self];
+  if ([_delegate respondsToSelector:@selector(gridViewDidEndScrolling:)]) {
+    [_delegate gridViewDidEndScrolling:self];
+  }
 }
 
 @end
