@@ -19,9 +19,9 @@ typedef enum {
   kLogLevel_Verbose,
   kLogLevel_Info,
   kLogLevel_Warning,
-  kLogLevel_Error,  // Traps in Debug builds
-  kLogLevel_Exception,  // Traps in Debug builds
-  kLogLevel_Abort,  // Always traps
+  kLogLevel_Error,  // Aborts in Debug builds
+  kLogLevel_Exception,  // Aborts in Debug builds
+  kLogLevel_Abort,  // Always aborts
 } LogLevel;
 
 #define LOG_MESSAGE(__LEVEL__, ...) { if ((__LEVEL__) >= _minimumLogLevel) LogMessage(__LEVEL__, __VA_ARGS__); }

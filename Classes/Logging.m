@@ -352,23 +352,7 @@ void LogRawMessage(LogLevel level, NSString* message) {
 #endif
   {
     LoggingDisableHistory();  // Ensure database is in a clean state
-#ifdef NDEBUG
     abort();
-#else
-#if defined(__ppc__)
-    asm {trap}
-#elif defined(__i386__)
-#if __llvm__
-    __builtin_trap();
-#else
-    __asm {int 3}
-#endif
-#elif defined(__arm__)
-    __builtin_trap();
-#else
-#error Unsupported architecture!
-#endif
-#endif
   }
 }
 
