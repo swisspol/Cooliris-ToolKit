@@ -118,13 +118,15 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
 }
 
 - (BOOL) execute {
+  Class class = NSClassFromString(@"HTTPURLConnection");
+  CHECK(class);
   for (NSURL* url in _urls) {
-    NSMutableURLRequest* request = [HTTPURLConnection HTTPRequestWithURL:url method:@"GET" userAgent:nil handleCookies:NO];
+    NSMutableURLRequest* request = [class HTTPRequestWithURL:url method:@"GET" userAgent:nil handleCookies:NO];
     if ([url.host containsString:@"10.0."] || [url.host containsString:@"172.16."] || [url.host containsString:@"192.168."] ||
       [url.host hasSuffix:@".local"]) {
       [request setTimeoutInterval:kConfigurationLocalDownloadTimeOut];
     }
-    NSData* data = [HTTPURLConnection downloadHTTPRequestToMemory:request delegate:(id)self headerFields:NULL];
+    NSData* data = [class downloadHTTPRequestToMemory:request delegate:(id)self headerFields:NULL];
     if (data) {
       NSString* error = nil;
       _configuration = [[NSPropertyListSerialization propertyListFromData:data
