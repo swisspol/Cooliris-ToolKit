@@ -15,7 +15,8 @@
 #import "NetReachability.h"
 
 typedef enum {
-  kServerConnectionState_Offline = 0,  // No internet connection
+  kServerConnectionState_Unknown = 0,  // Initial state (never re-used)
+  kServerConnectionState_Offline,  // No internet connection
   kServerConnectionState_Online,  // Internet connection available and checks with exponential delay is server is reachable
   kServerConnectionState_Checking,  // Currently checking if server is available
   kServerConnectionState_Connecting,  // Server reachable and currently attempting to authenticate

@@ -20,6 +20,7 @@
 #define kCheckMaxDelay 3600.0
 
 static NSString* _stateNames[] = {
+                                  @"Unknown",
                                   @"Offline",
                                   @"Online",
                                   @"Checking",
@@ -45,7 +46,7 @@ static NSString* _stateNames[] = {
 
 - (id) init {
   if ((self = [super init])) {
-    _currentState = kServerConnectionState_Offline;
+    _currentState = kServerConnectionState_Unknown;
     
     _netReachability = [[NetReachability alloc] initWithHostName:@"example.com"];
 #if  TARGET_OS_IPHONE
@@ -201,7 +202,7 @@ static NSString* _stateNames[] = {
 - (void) reachabilityDidUpdate:(NetReachability*)reachability reachable:(BOOL)reachable {
   LOG_VERBOSE(@"Server connection updated to %@", reachable ? @"reachable" : @"unreachable");
   if (reachable) {
-    if (_currentState == kServerConnectionState_Offline) {
+    if ((_currentState == kServerConnectionState_Unknown) || (_currentState == kServerConnectionState_Offline)) {
       _checkDelay = kCheckInitialDelay;
       [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
       [self _setState:kServerConnectionState_Online];
@@ -216,6 +217,8 @@ static NSString* _stateNames[] = {
       [self _disconnect];
     } else if (_currentState == kServerConnectionState_Online) {
       [_checkTimer setFireDate:[NSDate distantFuture]];
+      [self _setState:kServerConnectionState_Offline];
+    } else if (_currentState == kServerConnectionState_Unknown) {
       [self _setState:kServerConnectionState_Offline];
     }
   }
