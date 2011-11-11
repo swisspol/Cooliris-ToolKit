@@ -18,16 +18,28 @@ typedef enum {
   kNetReachabilityMode_AlwaysOff = -2,
   kNetReachabilityMode_AlwaysOn = -1,
   kNetReachabilityMode_Default = 0,
-#if  TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
   kNetReachabilityMode_WiFiOnly = 1,
   kNetReachabilityMode_CellOnly = 2
 #endif
 } NetReachabilityMode;
 
+typedef enum {
+#if TARGET_OS_IPHONE
+  kNetReachabilityState_CellReachable = -1,
+#endif
+  kNetReachabilityState_NotReachable = 0,
+#if TARGET_OS_IPHONE
+  kNetReachabilityState_WiFiReachable = 1
+#else
+  kNetReachabilityState_Reachable = 1
+#endif
+} NetReachabilityState;
+
 @class NetReachability;
 
 @protocol NetReachabilityDelegate <NSObject>
-- (void) reachabilityDidUpdate:(NetReachability*)reachability reachable:(BOOL)reachable;  // May be called even if "reachable" has not changed
+- (void) reachabilityDidUpdate:(NetReachability*)reachability state:(NetReachabilityState)state;  // May be called even if "state" has not changed
 @end
 
 // If initializing with a specific host or address (i.e. not with -init) and a delegate is set, it will be called immediately
@@ -40,9 +52,9 @@ typedef enum {
 }
 @property(nonatomic) NetReachabilityMode reachabilityMode;
 @property(nonatomic, assign) id<NetReachabilityDelegate> delegate;  // Uses the runloop current at the time of creation
-@property(nonatomic, readonly, getter=isReachable) BOOL reachable;  // Uses "reachabilityMode"
+@property(nonatomic, readonly) NetReachabilityState state;  // Uses "reachabilityMode"
 + (NetReachability*) sharedNetReachability;
 - (id) initWithIPv4Address:(UInt32)address;  // The "address" is assumed to be in host-endian
 - (id) initWithHostName:(NSString*)name;
-- (BOOL) isReachableWithMode:(NetReachabilityMode)mode;  // Cannot override "always" modes
+- (NetReachabilityState) stateWithMode:(NetReachabilityMode)mode;  // Cannot override "always" modes
 @end

@@ -20,7 +20,12 @@ typedef enum {
   kServerConnectionState_Online,  // Internet connection available and checks with exponential delay is server is reachable
   kServerConnectionState_Checking,  // Currently checking if server is available
   kServerConnectionState_Connecting,  // Server reachable and currently attempting to authenticate
+#if TARGET_OS_IPHONE
+  kServerConnectionState_Connected_WiFi,  // Connected and authenticated with server over WiFi
+  kServerConnectionState_Connected_Cell,  // Connected and authenticated with server over cell
+#else
   kServerConnectionState_Connected,  // Connected and authenticated with server
+#endif
   kServerConnectionState_Disconnecting  // Currently disconnecting from server
 } ServerConnectionState;
 
@@ -51,13 +56,14 @@ typedef enum {
   NetReachability* _netReachability;
   NSTimer* _checkTimer;
   NSTimeInterval _checkDelay;
-#if  TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
   BOOL _wifiOnly;
 #endif
 }
 @property(nonatomic, assign) id<ServerConnectionDelegate> delegate;
 @property(nonatomic, readonly) ServerConnectionState currentState;
-#if  TARGET_OS_IPHONE
+@property(nonatomic, readonly, getter=isConnected) BOOL connected;
+#if TARGET_OS_IPHONE
 @property(nonatomic) BOOL wifiOnly;
 #endif
 + (ServerConnection*) sharedServerConnection;

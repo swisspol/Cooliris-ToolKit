@@ -43,34 +43,58 @@
 
 @synthesize reachabilityMode=_mode, delegate=_delegate;
 
-static void _ReachabilityCallBack(SCNetworkReachabilityRef target, SCNetworkConnectionFlags flags, void* info) {
-  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-  NetReachability* self = (NetReachability*)info;
-  switch (self->_mode) {
++ (NetReachabilityState) reachabilityStateWithMode:(NetReachabilityMode)mode flags:(SCNetworkConnectionFlags)flags {
+  NetReachabilityState state = kNetReachabilityState_NotReachable;
+  switch (mode) {
     
     case kNetReachabilityMode_Default:
-      [self->_delegate reachabilityDidUpdate:self reachable:(IS_REACHABLE(flags) ? YES : NO)];
+#if TARGET_OS_IPHONE
+      if (IS_REACHABLE_WIFI(flags)) {
+        state = kNetReachabilityState_WiFiReachable;
+      } else if (IS_REACHABLE_CELL(flags)) {
+        state = kNetReachabilityState_CellReachable;
+      }
+#else
+      if (IS_REACHABLE(flags)) {
+        state = kNetReachabilityState_Reachable;
+      }
+#endif
       break;
     
-#if  TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
     case kNetReachabilityMode_WiFiOnly:
-      [self->_delegate reachabilityDidUpdate:self reachable:(IS_REACHABLE_WIFI(flags) ? YES : NO)];
+      if (IS_REACHABLE_WIFI(flags)) {
+        state = kNetReachabilityState_WiFiReachable;
+      }
       break;
     
     case kNetReachabilityMode_CellOnly:
-      [self->_delegate reachabilityDidUpdate:self reachable:(IS_REACHABLE_CELL(flags) ? YES : NO)];
+      if (IS_REACHABLE_CELL(flags)) {
+        state = kNetReachabilityState_CellReachable;
+      }
       break;
 #endif
     
     case kNetReachabilityMode_AlwaysOn:
-      [self->_delegate reachabilityDidUpdate:self reachable:YES];
+#if TARGET_OS_IPHONE
+      state = kNetReachabilityState_WiFiReachable;
+#else
+      state = kNetReachabilityState_Reachable;
+#endif
       break;
     
     case kNetReachabilityMode_AlwaysOff:
-      [self->_delegate reachabilityDidUpdate:self reachable:NO];
       break;
     
   }
+  return state;
+}
+
+static void _ReachabilityCallBack(SCNetworkReachabilityRef target, SCNetworkConnectionFlags flags, void* info) {
+  NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+  NetReachability* self = (NetReachability*)info;
+  NetReachabilityState state = [NetReachability reachabilityStateWithMode:self->_mode flags:flags];
+  [self->_delegate reachabilityDidUpdate:self state:state];
   [pool release];
 }
 
@@ -131,37 +155,20 @@ static void _ReachabilityCallBack(SCNetworkReachabilityRef target, SCNetworkConn
   [super dealloc];
 }
 
-- (BOOL) _checkReachabilityWithMode:(NetReachabilityMode)mode {
+- (NetReachabilityState) state {
   SCNetworkConnectionFlags flags;
-  switch (mode) {
-    
-    case kNetReachabilityMode_Default:
-      return (SCNetworkReachabilityGetFlags(_netReachability, &flags) && IS_REACHABLE(flags));
-    
-#if  TARGET_OS_IPHONE
-    case kNetReachabilityMode_WiFiOnly:
-      return (SCNetworkReachabilityGetFlags(_netReachability, &flags) && IS_REACHABLE_WIFI(flags));
-    
-    case kNetReachabilityMode_CellOnly:
-      return (SCNetworkReachabilityGetFlags(_netReachability, &flags) && IS_REACHABLE_CELL(flags));
-#endif
-    
-    case kNetReachabilityMode_AlwaysOn:
-      return YES;
-    
-    case kNetReachabilityMode_AlwaysOff:
-      return NO;
-    
+  if (SCNetworkReachabilityGetFlags(_netReachability, &flags)) {
+    return [NetReachability reachabilityStateWithMode:_mode flags:flags];
   }
-  return NO;
+  return kNetReachabilityState_NotReachable;
 }
 
-- (BOOL) isReachable {
-  return [self _checkReachabilityWithMode:_mode];
-}
-
-- (BOOL) isReachableWithMode:(NetReachabilityMode)mode {
-  return [self _checkReachabilityWithMode:(_mode < 0 ? _mode : mode)];
+- (NetReachabilityState) stateWithMode:(NetReachabilityMode)mode {
+  SCNetworkConnectionFlags flags;
+  if (SCNetworkReachabilityGetFlags(_netReachability, &flags)) {
+    return [NetReachability reachabilityStateWithMode:(_mode < 0 ? _mode : mode) flags:flags];
+  }
+  return kNetReachabilityState_NotReachable;
 }
 
 - (void) setDelegate:(id<NetReachabilityDelegate>)delegate {

@@ -25,14 +25,19 @@ static NSString* _stateNames[] = {
                                   @"Online",
                                   @"Checking",
                                   @"Connecting",
+#if TARGET_OS_IPHONE
+                                  @"Connected (WiFi)",
+                                  @"Connected (Cell)",
+#else
                                   @"Connected",
+#endif
                                   @"Disconnecting"
                                 };
 
 @implementation ServerConnection
 
 @synthesize delegate=_delegate, currentState=_currentState;
-#if  TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
 @synthesize wifiOnly=_wifiOnly;
 #endif
 
@@ -49,7 +54,7 @@ static NSString* _stateNames[] = {
     _currentState = kServerConnectionState_Unknown;
     
     _netReachability = [[NetReachability alloc] initWithHostName:@"example.com"];
-#if  TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
     _netReachability.reachabilityMode = kNetReachabilityMode_Default;
 #endif
     _netReachability.delegate = self;
@@ -72,7 +77,15 @@ static NSString* _stateNames[] = {
   [super dealloc];
 }
 
-#if  TARGET_OS_IPHONE
+- (BOOL) isConnected {
+#if TARGET_OS_IPHONE
+  return (_currentState == kServerConnectionState_Connected_WiFi) || (_currentState == kServerConnectionState_Connected_Cell);
+#else
+  return (_currentState == kServerConnectionState_Connected);
+#endif
+}
+
+#if TARGET_OS_IPHONE
 
 - (void) setWifiOnly:(BOOL)flag {
   if (flag != _wifiOnly) {
@@ -94,9 +107,14 @@ static NSString* _stateNames[] = {
 }
 
 - (void) _didConnect:(BOOL)success {
+  NetReachabilityState state = _netReachability.state;
   if (success) {
-    if (_netReachability.reachable) {
+    if (state) {
+#if TARGET_OS_IPHONE
+      [self _setState:(state < 0 ? kServerConnectionState_Connected_Cell : kServerConnectionState_Connected_WiFi)];
+#else
       [self _setState:kServerConnectionState_Connected];
+#endif
       if ([_delegate respondsToSelector:@selector(serverConnectionDidConnect:)]) {
         [_delegate serverConnectionDidConnect:self];
       }
@@ -105,7 +123,7 @@ static NSString* _stateNames[] = {
       [self forceDisconnect];
     }
   } else {
-    if (_netReachability.reachable) {
+    if (state) {
       _checkDelay = kCheckInitialDelay;
       [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
       [self _setState:kServerConnectionState_Online];
@@ -138,7 +156,7 @@ static NSString* _stateNames[] = {
       
     }
   } else {
-    if (_netReachability.reachable) {
+    if (_netReachability.state) {
       _checkDelay = MIN(_checkDelay * 2.0, kCheckMaxDelay);
       [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
       [self _setState:kServerConnectionState_Online];
@@ -173,7 +191,7 @@ static NSString* _stateNames[] = {
 }
 
 - (void) _didDisconnect {
-  if (_netReachability.reachable) {
+  if (_netReachability.state) {
     _checkDelay = kCheckInitialDelay;
     [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
     [self _setState:kServerConnectionState_Online];
@@ -199,9 +217,13 @@ static NSString* _stateNames[] = {
   }
 }
 
-- (void) reachabilityDidUpdate:(NetReachability*)reachability reachable:(BOOL)reachable {
-  LOG_VERBOSE(@"Server connection updated to %@", reachable ? @"reachable" : @"unreachable");
-  if (reachable) {
+- (void) reachabilityDidUpdate:(NetReachability*)reachability state:(NetReachabilityState)state {
+#if TARGET_OS_IPHONE
+  LOG_VERBOSE(@"Server connection updated to %@", state ? (state < 0 ? @"cell reachable" : @"wifi reachable") : @"unreachable");
+#else
+  LOG_VERBOSE(@"Server connection updated to %@", state ? @"reachable" : @"unreachable");
+#endif
+  if (state) {
     if ((_currentState == kServerConnectionState_Unknown) || (_currentState == kServerConnectionState_Offline)) {
       _checkDelay = kCheckInitialDelay;
       [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
@@ -212,8 +234,20 @@ static NSString* _stateNames[] = {
     } else if (_currentState == kServerConnectionState_Checking) {
       _checkDelay = kCheckInitialDelay;
     }
+#if TARGET_OS_IPHONE
+    else if ((_currentState == kServerConnectionState_Connected_WiFi) && (state == kNetReachabilityState_CellReachable)) {
+      [self _setState:kServerConnectionState_Connected_Cell];
+    } else if ((_currentState == kServerConnectionState_Connected_Cell) && (state == kNetReachabilityState_WiFiReachable)) {
+      [self _setState:kServerConnectionState_Connected_WiFi];
+    }
+#endif
   } else {
-    if (_currentState == kServerConnectionState_Connected) {
+#if TARGET_OS_IPHONE
+    if ((_currentState == kServerConnectionState_Connected_WiFi) || (_currentState == kServerConnectionState_Connected_Cell))
+#else
+    if (_currentState == kServerConnectionState_Connected)
+#endif
+    {
       [self _disconnect];
     } else if (_currentState == kServerConnectionState_Online) {
       [_checkTimer setFireDate:[NSDate distantFuture]];
@@ -241,7 +275,11 @@ static NSString* _stateNames[] = {
 }
 
 - (void) forceDisconnect {
+#if TARGET_OS_IPHONE
+  CHECK((_currentState == kServerConnectionState_Connected_WiFi) || (_currentState == kServerConnectionState_Connected_Cell));
+#else
   CHECK(_currentState == kServerConnectionState_Connected);
+#endif
   [self _disconnect];
 }
 
@@ -249,7 +287,7 @@ static NSString* _stateNames[] = {
   _netReachability.delegate = nil;
   [_netReachability release];
   _netReachability = [[NetReachability alloc] initWithHostName:@"example.com"];
-#if  TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
   _netReachability.reachabilityMode = _wifiOnly ? kNetReachabilityMode_WiFiOnly : kNetReachabilityMode_Default;
 #endif
   _netReachability.delegate = self;
