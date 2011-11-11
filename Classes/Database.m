@@ -722,7 +722,7 @@ static int _CaseInsensitiveUTF8Compare(void* context, int length1, const void* b
 }
 
 static int _OpenDatabase(NSString* path, int flags, sqlite3** database) {
-  int result = sqlite3_open_v2([path fileSystemRepresentation], database, flags, NULL);
+  int result = sqlite3_open_v2([path fileSystemRepresentation], database, flags | SQLITE_OPEN_NOMUTEX, NULL);  // http://www.sqlite.org/threadsafe.html
   if (result == SQLITE_OK) {
     result = sqlite3_create_collation(*database, "utf8", SQLITE_UTF8, NULL, _CaseInsensitiveUTF8Compare);
   }
