@@ -424,6 +424,30 @@ static BOOL _showBorders = NO;
   return nil;
 }
 
+- (NSArray*) visibleItems {
+  NSMutableArray* array = nil;
+  if (_visibleRows.location != NSNotFound) {
+    array = [NSMutableArray array];
+    NSUInteger min = _visibleRows.location;
+    NSUInteger max = _visibleRows.location + _visibleRows.length;
+    for (GridItem* gridItem in _items) {
+      if ((gridItem.row >= min) && (gridItem.row < max)) {
+        [array addObject:gridItem.item];
+      }
+    }
+  }
+  return array;
+}
+
+- (void) scrollToItem:(id)item animated:(BOOL)animated {
+  for (GridItem* gridItem in _items) {
+    if ([gridItem.item isEqual:item]) {
+      [_scrollView scrollRectToVisible:gridItem.view.frame animated:animated];
+      break;
+    }
+  }
+}
+
 - (void) layoutSubviews {
   if (!CGRectEqualToRect(_scrollView.frame, self.bounds)) {
     _scrollView.frame = self.bounds;

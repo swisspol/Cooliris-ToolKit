@@ -62,6 +62,8 @@
 - (id) itemForItem:(id)item;  // Uses -isEqual:
 - (UIView*) viewForItem:(id)item;  // Uses -isEqual:
 - (id) itemAtLocation:(CGPoint)location view:(UIView**)view;
+- (NSArray*) visibleItems;
+- (void) scrollToItem:(id)item animated:(BOOL)animated;
 @end
 
 @interface GridView (Subclassing)
