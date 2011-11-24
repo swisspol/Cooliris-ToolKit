@@ -25,7 +25,7 @@
 @property(nonatomic, readonly) NSUInteger numberOfSuccesses;
 @property(nonatomic, readonly) NSUInteger numberOfFailures;
 - (id) initWithAbortOnFailure:(BOOL)abortOnFailure;
-+ (NSUInteger) runTests:(NSArray*)tests abortOnFailure:(BOOL)abortOnFailure;
++ (NSUInteger) runTests:(NSSet*)tests inClasses:(NSSet*)classes abortOnFailure:(BOOL)abortOnFailure;
 @end
 
 @implementation UnitTest
@@ -75,7 +75,7 @@ static NSComparisonResult _SelectorSortFunction(NSValue* value1, NSValue* value2
   return [NSStringFromSelector([value1 pointerValue]) caseInsensitiveCompare:NSStringFromSelector([value2 pointerValue])];
 }
 
-+ (NSUInteger) runTests:(NSArray*)tests abortOnFailure:(BOOL)abortOnFailure {
++ (NSUInteger) runTests:(NSSet*)filteredTests inClasses:(NSSet*)filteredClasses abortOnFailure:(BOOL)abortOnFailure {
   NSUInteger failures = 0;
   if (self == [UnitTest class]) {
     NSMutableArray* array = [[NSMutableArray alloc] init];
@@ -102,14 +102,14 @@ static NSComparisonResult _SelectorSortFunction(NSValue* value1, NSValue* value2
           continue;
         }
         class = objc_getClass(classes[i2]);
-        if (!tests || [tests containsObject:NSStringFromClass(class)]) {
+        if (!filteredClasses || [filteredClasses containsObject:NSStringFromClass(class)]) {
           [array addObject:class];
         }
       }
     }
     [array sortUsingFunction:_ClassSortFunction context:NULL];
     for (Class class in array) {
-      failures += [class runTests:tests abortOnFailure:abortOnFailure];
+      failures += [class runTests:filteredTests inClasses:filteredClasses abortOnFailure:abortOnFailure];
     }
     [array release];
   } else {
@@ -119,7 +119,9 @@ static NSComparisonResult _SelectorSortFunction(NSValue* value1, NSValue* value2
     for (unsigned int i = 0; i < count; ++i) {
       SEL method = method_getName(methods[i]);
       if (strncmp(sel_getName(method), kTestMethodPrefix, strlen(kTestMethodPrefix)) == 0) {
-        [array addObject:[NSValue valueWithPointer:method]];
+        if (!filteredTests || [filteredTests containsObject:NSStringFromSelector(method)]) {
+          [array addObject:[NSValue valueWithPointer:method]];
+        }
       }
     }
     [array sortUsingFunction:_SelectorSortFunction context:NULL];
@@ -160,11 +162,23 @@ static NSComparisonResult _SelectorSortFunction(NSValue* value1, NSValue* value2
 
 int main(int argc, const char* argv[]) {
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-  NSMutableArray* tests = [[NSMutableArray alloc] initWithArray:[[NSProcessInfo processInfo] arguments]];
-  [tests removeObjectAtIndex:0];
+  NSMutableArray* arguments = [[NSMutableArray alloc] initWithArray:[[NSProcessInfo processInfo] arguments]];
+  [arguments removeObjectAtIndex:0];
+  NSMutableSet* classes = [[NSMutableSet alloc] init];
+  NSMutableSet* tests = [[NSMutableSet alloc] init];
+  for (NSString* argument in arguments) {
+    if ([argument hasPrefix:@kTestMethodPrefix]) {
+      [tests addObject:argument];
+    } else {
+      [classes addObject:argument];
+    }
+  }
   NSUInteger failures = [UnitTest runTests:(tests.count ? tests : nil)
+                                 inClasses:(classes.count ? classes : nil)
                             abortOnFailure:([[[NSProcessInfo processInfo] environment] objectForKey:@"AbortOnFailure"] ? YES : NO)];
   [tests release];
+  [classes release];
+  [arguments release];
   [pool release];
   return failures;
 }
