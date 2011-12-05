@@ -95,6 +95,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
   OSSpinLock _lock;
 #endif
 }
+@property(nonatomic, readonly) void* rawHandle;  // Raw sqlite3* connection handle - Use carefully!
 - (id) initWithDatabaseAtPath:(NSString*)path;  // Requests read-write by default
 - (id) initWithDatabaseAtPath:(NSString*)path readWrite:(BOOL)readWrite;  // Requires database to have been initialized
 - (BOOL) beginTransaction;  // Nestable

@@ -110,6 +110,7 @@
 - (void) testConnection {
   DatabaseConnection* connection = [DatabaseConnection defaultDatabaseConnection];
   AssertNotNil(connection);
+  AssertNotNil(connection.rawHandle);
   
   AssertTrue([DatabaseConnection initializeDatabaseAtPath:[DatabaseConnection defaultDatabasePath]]);
   

@@ -706,6 +706,8 @@ static DatabaseSQLTable _RegisterSQLTableFromDatabaseObjectSubclass(Class class)
 
 @implementation DatabaseConnection
 
+@synthesize rawHandle=_database;
+
 + (void) initialize {
   CHECK(sqlite3_threadsafe());
   
@@ -1344,13 +1346,13 @@ LOCK_CONNECTION();
       } while (result == SQLITE_ROW);
       sqlite3_finalize(statement);
       if (result != SQLITE_DONE) {
-        LOG_ERROR(@"Failed executing raw SQL statement \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
+        LOG_ERROR(@"Failed executing raw SQL statements \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
                   result);
         break;
       }
       zSql = tail;
     } else {
-      LOG_ERROR(@"Failed preparing raw SQL statement \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
+      LOG_ERROR(@"Failed preparing raw SQL statements \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
                 result);
       break;
     }
