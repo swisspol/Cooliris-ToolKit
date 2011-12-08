@@ -89,7 +89,7 @@ do { \
 do { \
   __typeof__(__VALUE1__) __value1 = (__VALUE1__); \
   __typeof__(__VALUE2__) __value2 = (__VALUE2__); \
-  if (!strcmp(@encode(__typeof__(__value1)), @encode(__typeof__(__value2))) && (__value1 == __value2)) { \
+  if (strcmp(@encode(__typeof__(__value1)), @encode(__typeof__(__value2))) || (__value1 == __value2)) { \
     NSString* __message = [NSString stringWithFormat:@"(%@) == (%@)", [NSString stringWithUTF8String: #__VALUE1__], \
                                                     [NSString stringWithUTF8String: #__VALUE2__]]; \
     LOG_FAILURE(__message); \
@@ -135,6 +135,20 @@ do { \
     [self reportResult:YES]; \
   } else { \
     NSString* __message = [NSString stringWithFormat:@"(%@) != (%@)", [NSString stringWithUTF8String: #__OBJECT1__], \
+                                                    [NSString stringWithUTF8String: #__OBJECT2__]]; \
+    LOG_FAILURE(__message); \
+    [self reportResult:NO]; \
+  } \
+} while(0)
+
+#define AssertNotEqualObjects(__OBJECT1__, __OBJECT2__) \
+do { \
+  id __object1 = (__OBJECT1__); \
+  id __object2 = (__OBJECT2__); \
+  if ((__object1 == nil) || (__object2 == nil) || ![__object1 isEqual:__object2]) { \
+    [self reportResult:YES]; \
+  } else { \
+    NSString* __message = [NSString stringWithFormat:@"(%@) == (%@)", [NSString stringWithUTF8String: #__OBJECT1__], \
                                                     [NSString stringWithUTF8String: #__OBJECT2__]]; \
     LOG_FAILURE(__message); \
     [self reportResult:NO]; \
