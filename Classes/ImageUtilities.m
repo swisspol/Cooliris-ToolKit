@@ -160,8 +160,8 @@ CGImageRef CreateTintedImage(CGImageRef image, CGColorRef tintColor, CGColorRef 
 
 // This assumes color matching is disabled on the iPhone OS
 CGImageRef CreateScaledImage(CGImageRef image, CGSize size, ImageScalingMode scaling, CGColorRef backgroundColor) {
-  size_t contextWidth;
-  size_t contextHeight;
+  size_t contextWidth = 0;
+  size_t contextHeight = 0;
   CGRect rect;
   switch (scaling) {
     
@@ -516,8 +516,8 @@ CGFloat CompareImages(CGImageRef baseImage, CGImageRef image, CGImageRef* differ
 
 CGImageRef CreateRenderedPDFPage(CGPDFPageRef page, CGSize size, ImageScalingMode scaling, CGColorRef backgroundColor) {
   CGRect rect = CGPDFPageGetBoxRect(page, kCGPDFMediaBox);
-  size_t contextWidth;
-  size_t contextHeight;
+  size_t contextWidth = 0;
+  size_t contextHeight = 0;
   CGAffineTransform transform;
   if ((size.width > 0.0) && (size.height > 0.0)) {
     switch (scaling) {
