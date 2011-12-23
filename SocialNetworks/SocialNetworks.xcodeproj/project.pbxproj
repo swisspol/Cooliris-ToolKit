@@ -13,8 +13,8 @@
 		E225E7941393CF4400722275 /* SBJsonBase.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E7871393CF4400722275 /* SBJsonBase.m */; };
 		E225E7961393CF4400722275 /* SBJsonParser.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E7891393CF4400722275 /* SBJsonParser.m */; };
 		E225E7981393CF4400722275 /* SBJsonWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E78B1393CF4400722275 /* SBJsonWriter.m */; };
-		E272FB8F12CDCD8600D25967 /* FacebookComposeViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = E2AA225C12CD7160005D67CE /* FacebookComposeViewController.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		E272FB9012CDCD8600D25967 /* TwitterComposeViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = E2AA226012CD7160005D67CE /* TwitterComposeViewController.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E272FB8F12CDCD8600D25967 /* FacebookComposeViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = E2AA225C12CD7160005D67CE /* FacebookComposeViewController.h */; settings = {ATTRIBUTES = (); }; };
+		E272FB9012CDCD8600D25967 /* TwitterComposeViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = E2AA226012CD7160005D67CE /* TwitterComposeViewController.h */; settings = {ATTRIBUTES = (); }; };
 		E2AA229612CD7160005D67CE /* FacebookComposeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA225D12CD7160005D67CE /* FacebookComposeViewController.m */; };
 		E2AA229712CD7160005D67CE /* FacebookFormViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA225F12CD7160005D67CE /* FacebookFormViewController.m */; };
 		E2AA229812CD7160005D67CE /* TwitterComposeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E2AA226112CD7160005D67CE /* TwitterComposeViewController.m */; };
@@ -275,6 +275,9 @@
 /* Begin PBXProject section */
 		0867D690FE84028FC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0420;
+			};
 			buildConfigurationList = 1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "SocialNetworks" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
@@ -338,7 +341,7 @@
 				GCC_PREFIX_HEADER = "";
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				PRODUCT_NAME = SocialNetworks;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 				USER_HEADER_SEARCH_PATHS = "../Classes  ../JSON";
 				WARNING_CFLAGS = (
 					"$(inherited)",
@@ -353,7 +356,7 @@
 				GCC_PREFIX_HEADER = "";
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				PRODUCT_NAME = SocialNetworks;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 				USER_HEADER_SEARCH_PATHS = "../Classes  ../JSON";
 				WARNING_CFLAGS = (
 					"$(inherited)",

@@ -20,7 +20,7 @@
 		E2257ADD121CC651001403E0 /* HTTPConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = E2257AD0121CC639001403E0 /* HTTPConnection.m */; };
 		E2257AE0121CC656001403E0 /* HTTPServer.m in Sources */ = {isa = PBXBuildFile; fileRef = E2257AD6121CC639001403E0 /* HTTPServer.m */; };
 		E25917EE1284F283002273A7 /* WebSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = E25917ED1284F283002273A7 /* WebSocket.m */; };
-		E2AA234812CD74E0005D67CE /* DAVServer.h in Headers */ = {isa = PBXBuildFile; fileRef = E2257AB2121CC611001403E0 /* DAVServer.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E2AA234812CD74E0005D67CE /* DAVServer.h in Headers */ = {isa = PBXBuildFile; fileRef = E2257AB2121CC611001403E0 /* DAVServer.h */; settings = {ATTRIBUTES = (); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -192,6 +192,9 @@
 /* Begin PBXProject section */
 		0867D690FE84028FC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0420;
+			};
 			buildConfigurationList = 1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "DAVServer" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
@@ -243,7 +246,7 @@
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				HEADER_SEARCH_PATHS = "${SDKROOT}/usr/include/libxml2";
 				PRODUCT_NAME = DAVServer;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 			};
 			name = Debug;
 		};
@@ -254,7 +257,7 @@
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				HEADER_SEARCH_PATHS = "${SDKROOT}/usr/include/libxml2";
 				PRODUCT_NAME = DAVServer;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 			};
 			name = Release;
 		};

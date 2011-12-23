@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E2AA231E12CD7483005D67CE /* MiniZip.h in Headers */ = {isa = PBXBuildFile; fileRef = E2D8CA7F121CE6A100F14BFB /* MiniZip.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E2AA231E12CD7483005D67CE /* MiniZip.h in Headers */ = {isa = PBXBuildFile; fileRef = E2D8CA7F121CE6A100F14BFB /* MiniZip.h */; settings = {ATTRIBUTES = (); }; };
 		E2D8CA7B121CE68F00F14BFB /* ioapi.c in Sources */ = {isa = PBXBuildFile; fileRef = E2D8CA73121CE68F00F14BFB /* ioapi.c */; };
 		E2D8CA7C121CE68F00F14BFB /* mztools.c in Sources */ = {isa = PBXBuildFile; fileRef = E2D8CA75121CE68F00F14BFB /* mztools.c */; };
 		E2D8CA7D121CE68F00F14BFB /* unzip.c in Sources */ = {isa = PBXBuildFile; fileRef = E2D8CA77121CE68F00F14BFB /* unzip.c */; };
@@ -116,6 +116,9 @@
 /* Begin PBXProject section */
 		0867D690FE84028FC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0420;
+			};
 			buildConfigurationList = 1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "MiniZip" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
@@ -159,7 +162,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = USE_FILE32API;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				PRODUCT_NAME = MiniZip;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 			};
 			name = Debug;
 		};
@@ -170,7 +173,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = USE_FILE32API;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				PRODUCT_NAME = MiniZip;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 			};
 			name = Release;
 		};

@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		E2837204121CF067004711BF /* UnRAR.m in Sources */ = {isa = PBXBuildFile; fileRef = E2837203121CF067004711BF /* UnRAR.m */; };
-		E2AA233412CD74AE005D67CE /* UnRAR.h in Headers */ = {isa = PBXBuildFile; fileRef = E2837202121CF067004711BF /* UnRAR.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E2AA233412CD74AE005D67CE /* UnRAR.h in Headers */ = {isa = PBXBuildFile; fileRef = E2837202121CF067004711BF /* UnRAR.h */; settings = {ATTRIBUTES = (); }; };
 		E2ED80C1121CF0A4002C2FBD /* archive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E2ED8043121CF0A4002C2FBD /* archive.cpp */; };
 		E2ED80C2121CF0A4002C2FBD /* arcread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E2ED8045121CF0A4002C2FBD /* arcread.cpp */; };
 		E2ED80C4121CF0A4002C2FBD /* cmddata.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E2ED8048121CF0A4002C2FBD /* cmddata.cpp */; };
@@ -388,6 +388,9 @@
 /* Begin PBXProject section */
 		0867D690FE84028FC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0420;
+			};
 			buildConfigurationList = 1DEB922208733DC00010E9CD /* Build configuration list for PBXProject "UnRAR" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
@@ -470,7 +473,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = RARDLL;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				PRODUCT_NAME = UnRAR;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 				WARNING_CFLAGS = "";
 			};
 			name = Debug;
@@ -483,7 +486,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = RARDLL;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				PRODUCT_NAME = UnRAR;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 				WARNING_CFLAGS = "";
 			};
 			name = Release;

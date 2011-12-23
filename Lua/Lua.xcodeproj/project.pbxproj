@@ -7,10 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E208990812FAA4C5001F1D2F /* lualib.h in Headers */ = {isa = PBXBuildFile; fileRef = E2836E21121CEB7B004711BF /* lualib.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		E208990A12FAA4D5001F1D2F /* lauxlib.h in Headers */ = {isa = PBXBuildFile; fileRef = E2836DF5121CEB7B004711BF /* lauxlib.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		E208994A12FAA623001F1D2F /* lua.h in Headers */ = {isa = PBXBuildFile; fileRef = E2836E1E121CEB7B004711BF /* lua.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		E208994F12FAA644001F1D2F /* luaconf.h in Headers */ = {isa = PBXBuildFile; fileRef = E2836E20121CEB7B004711BF /* luaconf.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E208990812FAA4C5001F1D2F /* lualib.h in Headers */ = {isa = PBXBuildFile; fileRef = E2836E21121CEB7B004711BF /* lualib.h */; settings = {ATTRIBUTES = (); }; };
+		E208990A12FAA4D5001F1D2F /* lauxlib.h in Headers */ = {isa = PBXBuildFile; fileRef = E2836DF5121CEB7B004711BF /* lauxlib.h */; settings = {ATTRIBUTES = (); }; };
+		E208994A12FAA623001F1D2F /* lua.h in Headers */ = {isa = PBXBuildFile; fileRef = E2836E1E121CEB7B004711BF /* lua.h */; settings = {ATTRIBUTES = (); }; };
+		E208994F12FAA644001F1D2F /* luaconf.h in Headers */ = {isa = PBXBuildFile; fileRef = E2836E20121CEB7B004711BF /* luaconf.h */; settings = {ATTRIBUTES = (); }; };
 		E208AB6A12FECB84001F1D2F /* lstrlib.c in Sources */ = {isa = PBXBuildFile; fileRef = E2836E17121CEB7B004711BF /* lstrlib.c */; };
 		E2836EFB121CEBA2004711BF /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = E2836DF2121CEB7B004711BF /* lapi.c */; };
 		E2836EFC121CEBA3004711BF /* lauxlib.c in Sources */ = {isa = PBXBuildFile; fileRef = E2836DF4121CEB7B004711BF /* lauxlib.c */; };
@@ -292,7 +292,7 @@
 				GCC_PREFIX_HEADER = "";
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				PRODUCT_NAME = lua;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 			};
 			name = Debug;
 		};
@@ -302,7 +302,7 @@
 				GCC_PREFIX_HEADER = "";
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				PRODUCT_NAME = lua;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 			};
 			name = Release;
 		};

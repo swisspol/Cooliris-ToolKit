@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		E225E7ED1393D07600722275 /* JSONKit.m in Sources */ = {isa = PBXBuildFile; fileRef = E225E7EA1393D07600722275 /* JSONKit.m */; };
-		E2C2CBA112CDBB6C00344A11 /* JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = E2C2CB9F12CDBB6C00344A11 /* JSON.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E2C2CBA112CDBB6C00344A11 /* JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = E2C2CB9F12CDBB6C00344A11 /* JSON.h */; settings = {ATTRIBUTES = (); }; };
 		E2C2CBA212CDBB6C00344A11 /* JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = E2C2CBA012CDBB6C00344A11 /* JSON.m */; };
 /* End PBXBuildFile section */
 
@@ -141,7 +141,7 @@
 				GCC_PREFIX_HEADER = "";
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				PRODUCT_NAME = JSON;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 			};
 			name = Debug;
 		};
@@ -151,7 +151,7 @@
 				GCC_PREFIX_HEADER = "";
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				PRODUCT_NAME = JSON;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SKIP_INSTALL = YES;
 			};
 			name = Release;
 		};
