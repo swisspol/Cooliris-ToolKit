@@ -14,11 +14,18 @@
 
 #import <UIKit/UIKit.h>
 
+typedef enum {
+  kZoomViewFillModeNone,
+  kZoomViewFillModeZoomToFit,
+  kZoomViewFillModeZoomToFill,
+} ZoomViewFillMode;
+
 @interface ZoomView : UIScrollView <UIScrollViewDelegate> {
 @private
   UIView* _displayView;
-  BOOL _zoomsToFit;
+  ZoomViewFillMode _fillMode;
   CGFloat _maximumScale;
+  CGFloat _zoomToFillScale;
 
   // Used in layoutSubviews to see if the dimensions have changed
   CGSize _oldSize;
@@ -29,7 +36,7 @@
 // Also, when the view is rotated while at the minimum zoom level, the zoom level will be translated to the
 // minimum level of the new orientation
 // Default: YES
-@property(nonatomic) BOOL zoomsToFit;
+@property(nonatomic) ZoomViewFillMode fillMode;
 // The maximum level to zoom the display view. When zoomsToFit is YES the scale is treated as a factor multiplying the
 // size required to fit to the edges of the zoom view
 // When NO it's treated as an absolute value

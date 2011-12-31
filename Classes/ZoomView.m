@@ -21,7 +21,7 @@
 
 @implementation ZoomView
 
-@synthesize displayView=_displayView, zoomsToFit=_zoomsToFit, maximumScale=_maximumScale;
+@synthesize displayView=_displayView, fillMode=_fillMode, maximumScale=_maximumScale;
 
 - (id) initWithFrame:(CGRect)frame {
   if ((self = [super initWithFrame:frame])) {
@@ -36,7 +36,7 @@
     self.scrollsToTop = NO;
     self.delegate = self;
     
-    _zoomsToFit = YES;
+    _fillMode = kZoomViewFillModeZoomToFit;
     _maximumScale = 2.0;
         
     UITapGestureRecognizer* recognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(_handleDoubleTap:)];
@@ -126,7 +126,8 @@
 // Adjusts content offset and scale to try to preserve the old zoomscale and center.
 - (void) _restoreCenterPoint:(CGPoint)oldCenter scale:(CGFloat)oldScale {
   // Step 1: restore zoom scale, first making sure it is within the allowable range.
-  self.zoomScale = MIN(self.maximumZoomScale, MAX(self.minimumZoomScale, oldScale));
+  CGFloat defaultZoomScale = _fillMode == kZoomViewFillModeZoomToFill ? _zoomToFillScale : self.minimumZoomScale;
+  self.zoomScale = MIN(self.maximumZoomScale, MAX(defaultZoomScale, oldScale));
   
   // Step 2: restore center point, first making sure it is within the allowable range.
   // 2a: convert our desired center point back to our own coordinate space
@@ -137,7 +138,7 @@
   // 2c: restore offset, adjusted to be within the allowable range
   CGSize boundsSize = self.bounds.size;
   CGPoint maxOffset = CGPointMake(self.contentSize.width - boundsSize.width, self.contentSize.height - boundsSize.height);
-  CGPoint minOffset = CGPointZero;
+  CGPoint minOffset = _fillMode != kZoomViewFillModeZoomToFill ? CGPointZero : CGPointMake(-boundsCenter.x, -boundsCenter.y);
   offset.x = MAX(minOffset.x, MIN(maxOffset.x, offset.x));
   offset.y = MAX(minOffset.y, MIN(maxOffset.y, offset.y));
   self.contentOffset = offset;
@@ -151,12 +152,13 @@
   CGFloat xScale = boundsSize.width / imageSize.width;
   CGFloat yScale = boundsSize.height / imageSize.height;
   CGFloat minScale = MIN(xScale, yScale);
-  if (!_zoomsToFit) {
+  _zoomToFillScale = MAX(xScale, yScale);
+  if (_fillMode == kZoomViewFillModeNone) {
     minScale = MIN(1.0, minScale);
   }
   
   self.minimumZoomScale = minScale;
-  if (_zoomsToFit) {
+  if (_fillMode == kZoomViewFillModeZoomToFit) {
     self.maximumZoomScale = ((minScale * _maximumScale) >= 1.0) ?  (minScale * _maximumScale) : 1.0;
   } else {
     self.maximumZoomScale = _maximumScale;
