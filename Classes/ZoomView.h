@@ -42,4 +42,6 @@ typedef enum {
 // When NO it's treated as an absolute value
 // Default: 2.0
 @property(nonatomic) CGFloat maximumScale;
+// The zoom level so that the image fills the view
+@property(nonatomic, readonly) CGFloat zoomToFillScale;
 @end

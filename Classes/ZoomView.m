@@ -21,7 +21,7 @@
 
 @implementation ZoomView
 
-@synthesize displayView=_displayView, fillMode=_fillMode, maximumScale=_maximumScale;
+@synthesize displayView=_displayView, fillMode=_fillMode, maximumScale=_maximumScale, zoomToFillScale=_zoomToFillScale;
 
 - (id) initWithFrame:(CGRect)frame {
   if ((self = [super initWithFrame:frame])) {
@@ -69,10 +69,18 @@
 - (void) _handleDoubleTap:(UIGestureRecognizer*)gestureRecognizer {
   if (self.minimumZoomScale == self.maximumZoomScale) {
     // Do nothing
-  } else if (self.zoomScale == self.minimumZoomScale) {
+  } else if (self.zoomScale == self.minimumZoomScale
+             || (_fillMode == kZoomViewFillModeZoomToFill && self.zoomScale <= _zoomToFillScale + FLT_EPSILON)) {
     CGPoint point = [gestureRecognizer locationInView:_displayView];
     CGRect zoomRect = CGRectMake(point.x - 1.0, point.y - 1.0, 2.0, 2.0);
     [self zoomToRect:zoomRect animated:YES];
+  } else if (_fillMode == kZoomViewFillModeZoomToFill) {
+    [self setZoomScale:_zoomToFillScale animated:YES];
+    CGSize contentSize = self.contentSize;
+    CGSize frameSize = self.frame.size;
+    CGPoint contentOffset = CGPointMake(-floorf((frameSize.width - contentSize.width) / 2.0f),
+                                        -floorf((frameSize.height - contentSize.height) / 2.0f));
+    [self setContentOffset:contentOffset animated:YES];
   } else {
     [self setZoomScale:self.minimumZoomScale animated:YES];
   }
@@ -138,7 +146,7 @@
   // 2c: restore offset, adjusted to be within the allowable range
   CGSize boundsSize = self.bounds.size;
   CGPoint maxOffset = CGPointMake(self.contentSize.width - boundsSize.width, self.contentSize.height - boundsSize.height);
-  CGPoint minOffset = _fillMode != kZoomViewFillModeZoomToFill ? CGPointZero : CGPointMake(-boundsCenter.x, -boundsCenter.y);
+  CGPoint minOffset = CGPointZero;
   offset.x = MAX(minOffset.x, MIN(maxOffset.x, offset.x));
   offset.y = MAX(minOffset.y, MIN(maxOffset.y, offset.y));
   self.contentOffset = offset;
@@ -158,7 +166,7 @@
   }
   
   self.minimumZoomScale = minScale;
-  if (_fillMode == kZoomViewFillModeZoomToFit) {
+  if (_fillMode == kZoomViewFillModeZoomToFit || _fillMode == kZoomViewFillModeZoomToFill) {
     self.maximumZoomScale = ((minScale * _maximumScale) >= 1.0) ?  (minScale * _maximumScale) : 1.0;
   } else {
     self.maximumZoomScale = _maximumScale;
