@@ -106,8 +106,7 @@ static NSString* _stateNames[] = {
   }
 }
 
-- (void) _didConnect:(BOOL)success {
-  NetReachabilityState state = _netReachability.state;
+- (void) _didConnect:(BOOL)success reachabilityState:(NetReachabilityState)state {
   if (success) {
     if (state) {
 #if TARGET_OS_IPHONE
@@ -134,7 +133,7 @@ static NSString* _stateNames[] = {
   }
 }
 
-- (void) _didCheck:(BOOL)success {
+- (void) _didCheck:(BOOL)success reachabilityState:(NetReachabilityState)state {
   if (success) {
     ServerConnectionReply reply = kServerConnectionReply_Success;
     if ([_delegate respondsToSelector:@selector(serverConnectionConnect:)]) {
@@ -143,7 +142,7 @@ static NSString* _stateNames[] = {
     switch (reply) {
       
       case kServerConnectionReply_Failure:
-        [self _didConnect:NO];
+        [self _didConnect:NO reachabilityState:state];
         break;
       
       case kServerConnectionReply_Later:
@@ -151,12 +150,12 @@ static NSString* _stateNames[] = {
         break;
       
       case kServerConnectionReply_Success:
-        [self _didConnect:YES];
+        [self _didConnect:YES reachabilityState:state];
         break;
       
     }
   } else {
-    if (_netReachability.state) {
+    if (state) {
       _checkDelay = MIN(_checkDelay * 2.0, kCheckMaxDelay);
       [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
       [self _setState:kServerConnectionState_Online];
@@ -176,7 +175,7 @@ static NSString* _stateNames[] = {
   switch (reply) {
     
     case kServerConnectionReply_Failure:
-      [self _didCheck:NO];
+      [self _didCheck:NO reachabilityState:_netReachability.state];
       break;
     
     case kServerConnectionReply_Later:
@@ -184,14 +183,14 @@ static NSString* _stateNames[] = {
       break;
     
     case kServerConnectionReply_Success:
-      [self _didCheck:YES];
+      [self _didCheck:YES reachabilityState:_netReachability.state];
       break;
     
   }
 }
 
-- (void) _didDisconnect {
-  if (_netReachability.state) {
+- (void) _didDisconnect:(NetReachabilityState)state {
+  if (state) {
     _checkDelay = kCheckInitialDelay;
     [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
     [self _setState:kServerConnectionState_Online];
@@ -213,7 +212,7 @@ static NSString* _stateNames[] = {
   if (reply == kServerConnectionReply_Later) {
     [self _setState:kServerConnectionState_Disconnecting];
   } else {
-    [self _didDisconnect];
+    [self _didDisconnect:_netReachability.state];
   }
 }
 
@@ -223,6 +222,19 @@ static NSString* _stateNames[] = {
 #else
   LOG_VERBOSE(@"Server connection updated to %@", state ? @"reachable" : @"unreachable");
 #endif
+  
+  if (!state) {
+    if ((_currentState == kServerConnectionState_Checking) && [_delegate respondsToSelector:@selector(serverConnectionShouldAbortCheckReachability:)]) {
+      if ([_delegate serverConnectionShouldAbortCheckReachability:self]) {
+        [self _didCheck:NO reachabilityState:state];  // This will update _currentState
+      }
+    } else if ((_currentState == kServerConnectionState_Connecting) && [_delegate respondsToSelector:@selector(serverConnectionShouldAbortConnect:)]) {
+      if ([_delegate serverConnectionShouldAbortConnect:self]) {
+        [self _didConnect:NO reachabilityState:state];  // This will update _currentState
+      }
+    }
+  }
+  
   if (state) {
     if ((_currentState == kServerConnectionState_Unknown) || (_currentState == kServerConnectionState_Offline)) {
       _checkDelay = kCheckInitialDelay;
@@ -232,7 +244,7 @@ static NSString* _stateNames[] = {
       _checkDelay = kCheckInitialDelay;
       [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
     } else if (_currentState == kServerConnectionState_Checking) {
-      _checkDelay = kCheckInitialDelay;
+      _checkDelay = kCheckInitialDelay;  // Reset delay for next check
     }
 #if TARGET_OS_IPHONE
     else if ((_currentState == kServerConnectionState_Connected_WiFi) && (state == kNetReachabilityState_CellReachable)) {
@@ -260,18 +272,18 @@ static NSString* _stateNames[] = {
 
 - (void) replyToCheckServerReachability:(BOOL)success {
   CHECK(_currentState == kServerConnectionState_Checking);
-  [self _didCheck:success];
+  [self _didCheck:success reachabilityState:_netReachability.state];
 }
 
 - (void) replyToConnectToServer:(BOOL)success {
   CHECK(_currentState == kServerConnectionState_Connecting);
-  [self _didConnect:success];
+  [self _didConnect:success reachabilityState:_netReachability.state];
 }
 
 - (void) replyToDisconnectFromServer:(BOOL)success {
   CHECK(_currentState == kServerConnectionState_Disconnecting);
   DCHECK(success);
-  [self _didDisconnect];
+  [self _didDisconnect:_netReachability.state];
 }
 
 - (void) forceDisconnect {

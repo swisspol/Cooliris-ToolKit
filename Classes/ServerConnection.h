@@ -18,15 +18,15 @@ typedef enum {
   kServerConnectionState_Unknown = 0,  // Initial state (never re-used)
   kServerConnectionState_Offline,  // No internet connection
   kServerConnectionState_Online,  // Internet connection available and checks with exponential delay is server is reachable
-  kServerConnectionState_Checking,  // Currently checking if server is available
-  kServerConnectionState_Connecting,  // Server reachable and currently attempting to authenticate
+  kServerConnectionState_Checking,  // Currently checking if server is available (waiting for delegate)
+  kServerConnectionState_Connecting,  // Server reachable and currently attempting to authenticate (waiting for delegate)
 #if TARGET_OS_IPHONE
   kServerConnectionState_Connected_WiFi,  // Connected and authenticated with server over WiFi
   kServerConnectionState_Connected_Cell,  // Connected and authenticated with server over cell
 #else
   kServerConnectionState_Connected,  // Connected and authenticated with server
 #endif
-  kServerConnectionState_Disconnecting  // Currently disconnecting from server
+  kServerConnectionState_Disconnecting  // Currently disconnecting from server (waiting for delegate)
 } ServerConnectionState;
 
 typedef enum {
@@ -47,6 +47,9 @@ typedef enum {
 - (ServerConnectionReply) serverConnectionCheckReachability:(ServerConnection*)connection;
 - (ServerConnectionReply) serverConnectionConnect:(ServerConnection*)connection;
 - (ServerConnectionReply) serverConnectionDisconnect:(ServerConnection*)connection;
+
+- (BOOL) serverConnectionShouldAbortCheckReachability:(ServerConnection*)connection;  // Only called if in kServerConnectionState_Checking state - Returning YES is equivalent to calling -replyToCheckServerReachability:NO
+- (BOOL) serverConnectionShouldAbortConnect:(ServerConnection*)connection;  // Only called if in kServerConnectionState_Connecting state - Returning YES is equivalent to calling -replyToConnectToServer:NO
 @end
 
 @interface ServerConnection : NSObject <NetReachabilityDelegate> {
