@@ -991,7 +991,7 @@ static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp,
   return _spinnerView ? YES : NO;
 }
 
-- (void) showSpinnerWithMessage:(NSString*)message animated:(BOOL)animated {
+- (void) showSpinnerWithMessage:(NSString*)message fullScreen:(BOOL)fullScreen animated:(BOOL)animated {
   CGRect frame;
   
   [self hideSpinner:NO];
@@ -1030,15 +1030,23 @@ static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp,
   CGRect bounds = _overlayWindow.bounds;
   frame.origin.x = roundf(bounds.size.width / 2.0 - frame.size.width / 2.0);
   frame.origin.y = roundf(bounds.size.height / 2.0 - frame.size.height / 2.0);
-  _spinnerView = [[UIView alloc] initWithFrame:frame];
-  _spinnerView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin |
+  UIView* spinnerView = [[UIView alloc] initWithFrame:frame];
+  spinnerView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin |
                                  UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
-  _spinnerView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:_overlaysOpacity];
-  _spinnerView.layer.cornerRadius = 10.0;
-  [_spinnerView addSubview:indicator];
+  [spinnerView addSubview:indicator];
   if (label) {
-    [_spinnerView addSubview:label];
+    [spinnerView addSubview:label];
   }
+  if (fullScreen) {
+    _spinnerView = [[UIView alloc] initWithFrame:bounds];
+    _spinnerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [_spinnerView addSubview:spinnerView];
+    [spinnerView release];
+  } else {
+    _spinnerView = spinnerView;
+    _spinnerView.layer.cornerRadius = 10.0;
+  }
+  _spinnerView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:_overlaysOpacity];
   [_overlayWindow presentView:_spinnerView];
   if (animated) {
     _spinnerView.alpha = 0.0;

@@ -151,7 +151,7 @@ typedef NSUInteger ApplicationMessageIdentifier;
 // Spinner is shown in the current top view controller
 @interface ApplicationDelegate (Spinner)
 - (BOOL) isSpinnerVisible;
-- (void) showSpinnerWithMessage:(NSString*)message animated:(BOOL)animated;  // Message may be nil
+- (void) showSpinnerWithMessage:(NSString*)message fullScreen:(BOOL)fullScreen animated:(BOOL)animated;  // Message may be nil
 - (void) hideSpinner:(BOOL)animated;
 @end
 
