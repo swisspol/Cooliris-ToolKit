@@ -145,10 +145,15 @@
                                boundsCenter.y - self.bounds.size.height / 2.0);
   // 2c: restore offset, adjusted to be within the allowable range
   CGSize boundsSize = self.bounds.size;
-  CGPoint maxOffset = CGPointMake(self.contentSize.width - boundsSize.width, self.contentSize.height - boundsSize.height);
-  CGPoint minOffset = CGPointZero;
-  offset.x = MAX(minOffset.x, MIN(maxOffset.x, offset.x));
-  offset.y = MAX(minOffset.y, MIN(maxOffset.y, offset.y));
+  CGSize contentSize = self.contentSize;
+  if (_fillMode == kZoomViewFillModeZoomToFill && self.zoomScale <= _zoomToFillScale) {  // Center display view below zoomToFillScale
+    offset = CGPointMake(floorf((contentSize.width - boundsSize.width) / 2.0f), floorf((contentSize.height - boundsSize.height) / 2.0f));
+  } else {
+    CGPoint maxOffset = CGPointMake(contentSize.width - boundsSize.width, contentSize.height - boundsSize.height);
+    CGPoint minOffset = CGPointZero;
+    offset.x = MAX(minOffset.x, MIN(maxOffset.x, offset.x));
+    offset.y = MAX(minOffset.y, MIN(maxOffset.y, offset.y));
+  }
   self.contentOffset = offset;
 }
 
