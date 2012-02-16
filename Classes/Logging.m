@@ -39,6 +39,7 @@ LogLevel _minimumLogLevel = kLogLevel_Debug;
 #endif
 
 static LoggingLiveCallback _loggingCallback = NULL;
+static void* _loggingContext = NULL;
 static const char* _levelNames[] = {"DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "EXCEPTION", "ABORT"};  // Must match LogLevel
 static OSSpinLock _spinLock = 0;
 static sqlite3* _database = NULL;
@@ -58,8 +59,9 @@ LogLevel LoggingGetMinimumLevel() {
   return _minimumLogLevel;
 }
 
-void LoggingSetCallback(LoggingLiveCallback callback) {
+void LoggingSetCallback(LoggingLiveCallback callback, void* context) {
   _loggingCallback = callback;
+  _loggingContext = context;
 }
 
 LoggingLiveCallback LoggingGetCallback() {
@@ -317,15 +319,16 @@ void LogRawMessage(LogLevel level, NSString* message) {
     }
   }
 #endif
+  double timestamp = CFAbsoluteTimeGetCurrent();
   const char* cString = [message UTF8String];
   printf("[%s] %s\n", _levelNames[level], cString);
   if (_loggingCallback) {
-    (*_loggingCallback)(level, message);
+    (*_loggingCallback)(timestamp, level, message, _loggingContext);
   }
   if (_database && (level > kLogLevel_Debug)) {
     OSSpinLockLock(&_spinLock);
     if (_database) {
-      _AppendHistory(CFAbsoluteTimeGetCurrent(), level, cString);
+      _AppendHistory(timestamp, level, cString);
     }
     OSSpinLockUnlock(&_spinLock);
   }
@@ -345,12 +348,7 @@ void LogRawMessage(LogLevel level, NSString* message) {
     [content release];
   }
   
-#ifdef NDEBUG
-  if (level >= kLogLevel_Abort)
-#else
-  if ((level >= kLogLevel_Error) && !getenv("logNoAbort"))
-#endif
-  {
+  if (level >= kLogLevel_Abort) {
     LoggingDisableHistory();  // Ensure database is in a clean state
     abort();
   }

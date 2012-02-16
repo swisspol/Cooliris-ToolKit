@@ -1230,7 +1230,7 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
 @implementation ApplicationDelegate (LoggingOverlay)
 
 // Called from arbitrary threads
-static void _LoggingCallback(LogLevel level, NSString* message) {
+static void _LoggingCallback(NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
   message = [NSString stringWithFormat:@"[%s] %@\n", LoggingGetLevelName(level), message];
   [[TaskQueue sharedTaskQueue] performSelectorOnMainThread:@selector(_loggedMessage:)
                                               withArgument:message
@@ -1294,9 +1294,9 @@ static void _LoggingCallback(LogLevel level, NSString* message) {
                                                     selector:@selector(_hideLoggingOverlay)
                                                     userInfo:nil repeats:YES];
     [[NSRunLoop currentRunLoop] addTimer:_loggingOverlayTimer forMode:NSRunLoopCommonModes];
-    LoggingSetCallback(_LoggingCallback);
+    LoggingSetCallback(_LoggingCallback, NULL);
   } else if (!flag && _loggingOverlayView) {
-    LoggingSetCallback(NULL);
+    LoggingSetCallback(NULL, NULL);
     [_loggingOverlayTimer invalidate];
     [_loggingOverlayTimer release];
     _loggingOverlayTimer = nil;

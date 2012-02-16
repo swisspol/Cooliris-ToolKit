@@ -80,7 +80,7 @@ do { \
 
 #endif
 
-typedef void (*LoggingLiveCallback)(LogLevel level, NSString* message);
+typedef void (*LoggingLiveCallback)(NSTimeInterval timestamp, LogLevel level, NSString* message, void* context);
 typedef void (*LoggingReplayCallback)(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context);
 
 #ifdef __cplusplus
@@ -93,7 +93,7 @@ const char* LoggingGetLevelName(LogLevel level);
 void LoggingSetMinimumLevel(LogLevel level);  // Default is kLogLevel_Debug unless overridden by "logLevel" environment variable
 LogLevel LoggingGetMinimumLevel();
 
-void LoggingSetCallback(LoggingLiveCallback callback);  // Callback must be thread-safe - Parameter "timestamp" is undefined
+void LoggingSetCallback(LoggingLiveCallback callback, void* context);  // Callback must be thread-safe - Parameter "timestamp" is undefined
 LoggingLiveCallback LoggingGetCallback();
 
 BOOL LoggingIsHistoryEnabled();
