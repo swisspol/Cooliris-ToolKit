@@ -189,9 +189,11 @@ typedef NSUInteger DatabaseSQLColumnOptions;
   NSString* _path;
   NSMutableSet* _pool;
   NSLock* _lock;
+  BOOL _readWrite;
 }
 - (id) initWithDatabasePath:(NSString*)path;
-- (DatabaseConnection*) retrieveNewConnection;
+- (id) initWithDatabasePath:(NSString*)path readWrite:(BOOL)readWrite;
+- (DatabaseConnection*) retrieveConnection;
 - (void) recycleUsedConnection:(DatabaseConnection*)connection;
 - (void) purge;  // Destroy all unused connections
 @end

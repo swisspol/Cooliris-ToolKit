@@ -1924,14 +1924,19 @@ UNLOCK_CONNECTION();
   return [self initWithDatabasePath:[DatabaseConnection defaultDatabasePath]];
 }
 
-- (id) initWithDatabasePath:(NSString*)path {
+- (id) initWithDatabasePath:(NSString*)path readWrite:(BOOL)readWrite {
   CHECK(path);
   if ((self = [super init])) {
     _path = [path copy];
     _pool = [[NSMutableSet alloc] init];
     _lock = [[NSLock alloc] init];
+    _readWrite = readWrite;
   }
   return self;
+}
+
+- (id) initWithDatabasePath:(NSString*)path {
+  return [self initWithDatabasePath:path readWrite:YES];
 }
 
 - (void) dealloc {
@@ -1945,13 +1950,13 @@ UNLOCK_CONNECTION();
   [super dealloc];
 }
 
-- (DatabaseConnection*) retrieveNewConnection {
+- (DatabaseConnection*) retrieveConnection {
   [_lock lock];
   DatabasePoolConnection* connection = [[_pool anyObject] retain];
   if (connection) {
     [_pool removeObject:connection];
   } else {
-    connection = [[DatabasePoolConnection alloc] initWithDatabaseAtPath:_path];
+    connection = [[DatabasePoolConnection alloc] initWithDatabaseAtPath:_path readWrite:_readWrite];
     connection.pool = self;
   }
   [_lock unlock];
