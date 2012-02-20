@@ -475,7 +475,7 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
   }
   
   // Resume TaskQueue
-  if ([TaskQueue wasCreated]) {
+  if ([TaskQueue wasCreated] && [[TaskQueue sharedTaskQueue] isSuspended]) {
     [[TaskQueue sharedTaskQueue] resume];
   }
   
