@@ -44,7 +44,6 @@
 @property(nonatomic, readonly) NSMutableArray* pendingTasks;
 @property(nonatomic, readonly) NSMutableSet* executingTasks;
 @property(nonatomic, readonly) NSUInteger paused;
-- (id) initWithConcurrency:(NSUInteger)concurrency;
 - (void) _performSelector:(SEL)aSelector target:(id)target argument:(id)argument;
 - (void) _addDependencies:(id)dependencies toTask:(Task*)task;  // NSArray or NSSet
 @end
@@ -198,7 +197,7 @@ static Class _connectionClass = nil;
 
 + (TaskQueue*) sharedTaskQueue {
   if (_sharedQueue == nil) {
-    _sharedQueue = [[TaskQueue alloc] initWithConcurrency:_defaultConcurrency];
+    _sharedQueue = [[TaskQueue alloc] initWithPriority:kTaskQueuePriority_Normal concurrency:_defaultConcurrency];
   }
   return _sharedQueue;
 }
@@ -354,7 +353,23 @@ static void __QueueSourceCallBack(void* info) {
   // Set thread priority, add the queue runloop source to the runloop then signal -init that the queue thread is ready
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
   [_conditionLock lockWhenCondition:0];
-  [NSThread setThreadPriority:0.0];
+  double priority = 0.0;
+  switch (_priority) {
+    
+    case kTaskQueuePriority_Low:
+      priority = 0.0;
+      break;
+    
+    case kTaskQueuePriority_Normal:
+      priority = 0.5;
+      break;
+    
+    case kTaskQueuePriority_High:
+      priority = 1.0;
+      break;
+    
+  }
+  [NSThread setThreadPriority:priority];
   _queueRunLoops[[index integerValue]] = CFRunLoopGetCurrent();
   CFRunLoopAddSource(CFRunLoopGetCurrent(), _queueSources[[index integerValue]], kCFRunLoopCommonModes);
   [_conditionLock unlockWithCondition:1];
@@ -368,7 +383,7 @@ static void __QueueSourceCallBack(void* info) {
   }
 }
 
-- (id) initWithConcurrency:(NSUInteger)concurrency {
+- (id) initWithPriority:(TaskQueuePriority)priority concurrency:(NSUInteger)concurrency {
   if ((self = [super init])) {
     _executionLock = [[NSLock alloc] init];
     _suspendedTasks = [[NSMutableArray alloc] init];
@@ -376,6 +391,7 @@ static void __QueueSourceCallBack(void* info) {
     _executingTasks = [[NSMutableSet alloc] init];
     _messageLock = [[NSLock alloc] init];
     _messageQueue = [[NSMutableArray alloc] init];
+    _priority = priority;
     _maxConcurrency = concurrency;
     _idle = YES;
     
@@ -408,9 +424,24 @@ static void __QueueSourceCallBack(void* info) {
         [_conditionLock unlockWithCondition:0];
       }
     } else {
+      dispatch_queue_t queue = NULL;
+      switch (_priority) {
+        
+        case kTaskQueuePriority_Low:
+          queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0);
+          break;
+        
+        case kTaskQueuePriority_Normal:
+          queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+          break;
+        
+        case kTaskQueuePriority_High:
+          queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
+          break;
+        
+      }
       for (NSUInteger i = 0; i < _maxConcurrency; ++i) {
-        _queueSources[i] = dispatch_source_create(DISPATCH_SOURCE_TYPE_DATA_ADD, 0, 0,
-                                                  dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
+        _queueSources[i] = dispatch_source_create(DISPATCH_SOURCE_TYPE_DATA_ADD, 0, 0, queue);
         dispatch_source_set_event_handler(_queueSources[i], ^{
           NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
           [self _executeTasks];

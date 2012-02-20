@@ -15,6 +15,12 @@
 #import <Foundation/Foundation.h>
 
 typedef enum {
+  kTaskQueuePriority_Low = -1,
+  kTaskQueuePriority_Normal = 0,
+  kTaskQueuePriority_High = 1
+} TaskQueuePriority;
+
+typedef enum {
   kTaskStatus_Cancelled = -1,
   kTaskStatus_Inactive = 0,
   kTaskStatus_Scheduled = 1,
@@ -68,6 +74,7 @@ extern NSString* const TaskQueueDidBecomeIdleNotification;  // Posted on main th
   NSMutableArray* _messageQueue;
   void* _mainSource;
   CFRunLoopRef _mainRunLoop;
+  TaskQueuePriority _priority;
   NSUInteger _maxConcurrency;
   NSUInteger _currentConcurrency;
   void** _queueSources;
@@ -83,6 +90,7 @@ extern NSString* const TaskQueueDidBecomeIdleNotification;  // Posted on main th
 + (void) setDefaultConcurrency:(NSUInteger)concurrency;  // Initial value is 1 - Must be called before any call to +sharedTaskQueue
 + (BOOL) wasCreated;  // Returns YES if +sharedTaskQueue was ever called
 + (TaskQueue*) sharedTaskQueue;
+- (id) initWithPriority:(TaskQueuePriority)priority concurrency:(NSUInteger)concurrency;
 - (void) scheduleTaskForExecution:(Task*)task;  // Normal priority
 - (void) scheduleTaskForExecution:(Task*)task highPriority:(BOOL)highPriority;  // Task must be inactive
 - (void) scheduleTasksForExecution:(NSSet*)tasks;  // Normal priority
