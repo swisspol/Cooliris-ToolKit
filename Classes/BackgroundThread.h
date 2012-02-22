@@ -14,7 +14,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface WorkerThread : NSObject {
+@interface BackgroundThread : NSObject {
 @private
   id _target;
   SEL _startSelector;

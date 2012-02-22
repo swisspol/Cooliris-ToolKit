@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#import "WorkerThread.h"
+#import "BackgroundThread.h"
 #import "Logging.h"
 
-@implementation WorkerThread
+@implementation BackgroundThread
 
 @synthesize running=_running;
 
