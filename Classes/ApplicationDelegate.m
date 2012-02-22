@@ -574,7 +574,7 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
                       isHTML:NO];
   [_viewController presentModalViewController:controller animated:YES];
   [controller release];
-  return nil;
+  return YES;
 }
 
 - (BOOL) processCommandString:(NSString*)string {
