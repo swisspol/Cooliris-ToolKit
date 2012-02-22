@@ -79,6 +79,7 @@ typedef NSUInteger ApplicationMessageIdentifier;
 + (void) setOverlaysOpacity:(CGFloat)opacity;  // Default is 0.75
 + (BOOL) checkCompatibilityWithMinimumOSVersion:(NSString*)minOSVersion minimumApplicationVersion:(NSString*)minAppVersion;  // Pass nil to skip check
 - (void) showLogViewControllerWithTitle:(NSString*)title;  // Displayed modally on the view controller
+- (BOOL) sendErrorsToEmail:(NSString*)email withSubject:(NSString*)subject bodyPrefix:(NSString*)prefix;
 - (BOOL) processCommandString:(NSString*)string;
 - (void) saveState;  // Called when app terminates or is suspended - Default implementation does nothing
 - (BOOL) shouldRotateOverlayWindowToInterfaceOrientation:(UIInterfaceOrientation)orientation;  // Default implementation returns YES

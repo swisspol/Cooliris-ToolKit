@@ -543,6 +543,40 @@ static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp,
   [viewController release];
 }
 
+- (void) mailComposeController:(MFMailComposeViewController*)controller
+           didFinishWithResult:(MFMailComposeResult)result
+                         error:(NSError*)error {
+  [_viewController dismissModalViewControllerAnimated:YES];
+}
+
+static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
+  if (level >= kLogLevel_Warning) {
+    NSString* date = [[NSDate dateWithTimeIntervalSinceReferenceDate:timestamp] stringWithCachedFormat:@"yyyy-MM-dd HH:mm:ss.SSS"
+                                                                                       localIdentifier:@"en_US"];
+    [(NSMutableString*)context appendFormat:@"[r%i | %@ | %s] %@\n", appVersion, date, LoggingGetLevelName(level), message];
+  }
+}
+
+- (BOOL) sendErrorsToEmail:(NSString*)email withSubject:(NSString*)subject bodyPrefix:(NSString*)prefix {
+  DCHECK(_viewController);
+  if (![NSClassFromString(@"MFMailComposeViewController") canSendMail]) {
+    return NO;
+  }
+  
+  NSMutableString* log = [NSMutableString string];
+  LoggingReplayHistory(_HistoryErrorsCallback, log, NO);
+  
+  MFMailComposeViewController* controller = [[NSClassFromString(@"MFMailComposeViewController") alloc] init];
+  controller.mailComposeDelegate = (id<MFMailComposeViewControllerDelegate>)self;
+  [controller setSubject:subject];
+  [controller setToRecipients:[NSArray arrayWithObject:email]];
+  [controller setMessageBody:[NSString stringWithFormat:@"%@%@", prefix, log]
+                      isHTML:NO];
+  [_viewController presentModalViewController:controller animated:YES];
+  [controller release];
+  return nil;
+}
+
 - (BOOL) processCommandString:(NSString*)string {
   NSScanner* scanner = [NSScanner scannerWithString:string];
   [scanner setCharactersToBeSkipped:nil];
@@ -1167,42 +1201,15 @@ static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp,
   return nil;
 }
 
-- (void) mailComposeController:(MFMailComposeViewController*)controller
-           didFinishWithResult:(MFMailComposeResult)result
-                         error:(NSError*)error {
-  [_viewController dismissModalViewControllerAnimated:YES];
-}
-
-static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
-  if (level >= kLogLevel_Warning) {
-    NSString* date = [[NSDate dateWithTimeIntervalSinceReferenceDate:timestamp] stringWithCachedFormat:@"yyyy-MM-dd HH:mm:ss.SSS"
-                                                                                       localIdentifier:@"en_US"];
-    [(NSMutableString*)context appendFormat:@"[r%i | %@ | %s] %@\n", appVersion, date, LoggingGetLevelName(level), message];
-  }
-}
-
 - (NSString*) command_reportErrors:(id)argument {
-  DCHECK(_viewController);
-  if (![NSClassFromString(@"MFMailComposeViewController") canSendMail]) {
-    return @"Device is not configured to send email";
-  }
-  
-  NSMutableString* log = [NSMutableString string];
-  LoggingReplayHistory(_HistoryErrorsCallback, log, NO);
-  
-  MFMailComposeViewController* controller = [[NSClassFromString(@"MFMailComposeViewController") alloc] init];
-  controller.mailComposeDelegate = (id<MFMailComposeViewControllerDelegate>)self;
-  [controller setSubject:[NSString stringWithFormat:@"Error Log for %@ %@ (%@)",
-                                                    [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleName"],
-                                                    [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
-                                                    [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"]]];
   NSString* email = [ApplicationDelegate objectForConfigurationKey:kApplicationConfigurationKey_ReportEmail];
-  [controller setToRecipients:[NSArray arrayWithObject:email]];
-  [controller setMessageBody:[NSString stringWithFormat:@"%@\n\n%@", @"<Enter any relevant information here>", log]
-                      isHTML:NO];
-  [_viewController presentModalViewController:controller animated:YES];
-  [controller release];
-  return nil;
+  NSString* subject = [NSString stringWithFormat:@"Error Log for %@ %@ (%@)",
+                                                 [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleName"],
+                                                 [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
+                                                 [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"]];
+  NSString* prefix = @"<Enter any relevant information here>\n\n";
+  BOOL success = [self sendErrorsToEmail:email withSubject:subject bodyPrefix:prefix];
+  return success ? nil : @"Device is not configured to send email";
 }
 
 - (NSString*) command_enableOverlayLogging:(id)argument {
