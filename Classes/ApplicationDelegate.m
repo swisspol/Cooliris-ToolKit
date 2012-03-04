@@ -564,7 +564,7 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   }
   
   NSMutableString* log = [NSMutableString string];
-  LoggingReplayHistory(_HistoryErrorsCallback, log, NO);
+  LoggingReplayHistory(_HistoryErrorsCallback, log, YES);
   
   MFMailComposeViewController* controller = [[NSClassFromString(@"MFMailComposeViewController") alloc] init];
   controller.mailComposeDelegate = (id<MFMailComposeViewControllerDelegate>)self;
