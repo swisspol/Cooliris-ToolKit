@@ -103,6 +103,9 @@ static inline BOOL NSRangeContainsRange(NSRange range1, NSRange range2) {
 - (BOOL) removeItemAtPathIfExists:(NSString*)path;
 - (NSArray*) directoriesInDirectoryAtPath:(NSString*)path includeInvisible:(BOOL)invisible;
 - (NSArray*) filesInDirectoryAtPath:(NSString*)path includeInvisible:(BOOL)invisible includeSymlinks:(BOOL)symlinks;
+#if TARGET_OS_IPHONE
+- (void) setDoNotBackupAttributeAtPath:(NSString*)path;  // Has no effect prior to iOS 5.0.1
+#endif
 @end
 
 @interface NSProcessInfo (Extensions)

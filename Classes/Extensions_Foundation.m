@@ -15,6 +15,7 @@
 #import <TargetConditionals.h>
 #if TARGET_OS_IPHONE
 #import <MobileCoreServices/MobileCoreServices.h>
+#import <sys/xattr.h>
 #else
 #import <CoreServices/CoreServices.h>
 #endif
@@ -724,6 +725,19 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
 - (NSArray*) filesInDirectoryAtPath:(NSString*)path includeInvisible:(BOOL)invisible includeSymlinks:(BOOL)symlinks {
   return [self _itemsInDirectoryAtPath:path invisible:invisible type1:S_IFREG type2:(symlinks ? S_IFLNK : 0)];
 }
+
+#if TARGET_OS_IPHONE
+
+// https://developer.apple.com/library/ios/#qa/qa1719/_index.html
+- (void) setDoNotBackupAttributeAtPath:(NSString*)path {
+  u_int8_t value = 1;
+  int result = setxattr([path fileSystemRepresentation], "com.apple.MobileBackup", &value, sizeof(value), 0, 0);
+  if (result) {
+    LOG_ERROR(@"Failed setting do-not-backup attribute on \"%@\": %s (%i)", path, strerror(result), result);
+  }
+}
+
+#endif
 
 @end
 
