@@ -802,44 +802,36 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
 
 @implementation NSMutableURLRequest (Extensions)
 
-+ (NSData*) HTTPBodyWithMultipartBoundary:(NSString*)boundary
-                            formArguments:(NSDictionary*)arguments
-                                 fileData:(NSData*)fileData
-                                 fileType:(NSString*)fileType {
+// http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2 - TODO: Use "multipart/mixed" in case of multiple file attachments
++ (NSData*) HTTPBodyWithMultipartBoundary:(NSString*)boundary formArguments:(NSDictionary*)arguments {
   NSMutableData* body = [NSMutableData data];
   for (NSString* key in arguments) {
+    [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     id value = [arguments objectForKey:key];
-    if ([value isKindOfClass:[NSString class]]) {
-      value = [(NSString*)value dataUsingEncoding:NSUTF8StringEncoding];
-    } else if (![value isKindOfClass:[NSData class]]) {
-      DNOT_REACHED();
-      continue;
+    if ([value isKindOfClass:[NSDictionary class]]) {
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n",
+                                                         key, [value objectForKey:kMultipartFileKey_FileName]];  // TODO: Properly encode filename
+      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
+      NSString* type = [NSString stringWithFormat:@"Content-Type: %@\r\n\r\n", [value objectForKey:kMultipartFileKey_MimeType]];
+      [body appendData:[type dataUsingEncoding:NSUTF8StringEncoding]];
+      [body appendData:[value objectForKey:kMultipartFileKey_FileData]];
+    } else if ([value isKindOfClass:[NSString class]]) {
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];  // Content-Type defaults to "text/plain"
+      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
+      [body appendData:[(NSString*)value dataUsingEncoding:NSUTF8StringEncoding]];
+    } else {
+      NOT_REACHED();
     }
-    [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];
-    [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:value];
-    [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-  }
-  if (fileData && fileType) {
-    [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[@"Content-Disposition: form-data; name=\"file\"; filename=\"file\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[[NSString stringWithFormat:@"Content-Type: %@\r\n\r\n", fileType] dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:fileData];
     [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
   }
   [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
   return body;
 }
 
-- (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments {
-  [self setHTTPBodyWithMultipartFormArguments:arguments fileData:nil fileType:nil];
-}
-
-- (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments fileData:(NSData*)fileData fileType:(NSString*)fileType {
+- (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments; {
   NSString* boundary = @"0xKhTmLbOuNdArY";
   [self setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary] forHTTPHeaderField:@"Content-Type"];
-  [self setHTTPBody:[[self class] HTTPBodyWithMultipartBoundary:boundary formArguments:arguments fileData:fileData fileType:fileType]];
+  [self setHTTPBody:[[self class] HTTPBodyWithMultipartBoundary:boundary formArguments:arguments]];
 }
 
 @end

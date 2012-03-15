@@ -16,6 +16,10 @@
 
 // All extensions methods in this file are thread-safe
 
+#define kMultipartFileKey_MimeType @"mimeType" // NSString
+#define kMultipartFileKey_FileName @"fileName"  // NSString
+#define kMultipartFileKey_FileData @"fileData"  // NSData
+
 static inline BOOL NSRangeContainsIndex(NSRange range, NSUInteger index) {
   if ((range.location != NSNotFound) && range.length) {
     return (index >= range.location) && (index < range.location + range.length);
@@ -117,12 +121,8 @@ static inline BOOL NSRangeContainsRange(NSRange range1, NSRange range2) {
 @end
 
 @interface NSMutableURLRequest (Extensions)
-+ (NSData*) HTTPBodyWithMultipartBoundary:(NSString*)boundary
-                            formArguments:(NSDictionary*)arguments
-                                 fileData:(NSData*)fileData
-                                 fileType:(NSString*)fileType;
++ (NSData*) HTTPBodyWithMultipartBoundary:(NSString*)boundary formArguments:(NSDictionary*)arguments;  // Pass file attachments as dictionaries containing kMultipartFileKey_xxx keys
 - (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments;
-- (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments fileData:(NSData*)fileData fileType:(NSString*)fileType;
 @end
 
 @interface NSTimeZone (Extensions)
