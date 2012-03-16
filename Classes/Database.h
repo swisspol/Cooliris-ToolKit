@@ -66,6 +66,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 + (NSString*) sqlTableName;  // Default implementation returns class name - Return nil for an abstract DatabaseObject subclass
 + (NSString*) sqlColumnNameForProperty:(NSString*)property;  // Default implementation returns "property"
 + (DatabaseSQLColumnOptions) sqlColumnOptionsForProperty:(NSString*)property;  // Default is kDatabaseSQLColumnOptionsNone
++ (NSString*) sqlForeignKeyForProperty:(NSString*)property;  // Must be with the syntax "table_name(column_name) [ON UPDATE CASCADE] [ON DELETE action]"
 + (NSString*) sqlTableFetchOrder;  // Default is nil
 
 // To be called on subclasses only

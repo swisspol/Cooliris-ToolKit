@@ -52,6 +52,7 @@ struct DatabaseSQLColumnDefinition {
   DatabaseSQLColumnType columnType;
   NSString* columnName;
   DatabaseSQLColumnOptions columnOptions;
+  NSString* columnForeignKey;
   SEL getter;
   SEL setter;
   
@@ -306,6 +307,11 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
           [statement appendString:@" NOT NULL"];
         }
       }
+      for (unsigned int i = 0; i < table->columnCount; ++i) {
+        if (table->columnList[i].columnForeignKey) {
+          [statement appendFormat:@", FOREIGN KEY(%@) REFERENCES %@", table->columnList[i].columnName, table->columnList[i].columnForeignKey];
+        }
+      }
       [statement appendString:@")"];
       table->sql = _CopyAsCString(statement);
       [statement release];
@@ -319,6 +325,7 @@ static void _FinalizeSQLTable(DatabaseSQLTable table) {
   for (unsigned int i = 0; i < table->columnCount; ++i) {
     [table->columnList[i].name release];
     [table->columnList[i].columnName release];
+    [table->columnList[i].columnForeignKey release];
   }
   if (table->sql) {
     free(table->sql);
@@ -501,6 +508,7 @@ static DatabaseSQLTable _RegisterSQLTableFromDatabaseObjectSubclass(Class class)
       column->name = [name copy];
       column->columnName = [[class sqlColumnNameForProperty:name] copy];
       column->columnOptions = [class sqlColumnOptionsForProperty:name];
+      column->columnForeignKey = [[class sqlForeignKeyForProperty:name] copy];
       column->getter = sel_registerName([name UTF8String]);
       if (strcmp(&attributes[length - 6], ",R,D,N")) {
         column->setter = sel_registerName([[NSString stringWithFormat:@"set%@%@:", [[name substringToIndex:1] uppercaseString],
@@ -601,6 +609,10 @@ static DatabaseSQLTable _RegisterSQLTableFromDatabaseObjectSubclass(Class class)
 
 + (DatabaseSQLColumnOptions) sqlColumnOptionsForProperty:(NSString*)property {
   return kDatabaseSQLColumnOptionsNone;
+}
+
++ (NSString*) sqlForeignKeyForProperty:(NSString*)property {
+  return nil;
 }
 
 + (NSString*) sqlTableFetchOrder {
@@ -727,6 +739,9 @@ static int _OpenDatabase(NSString* path, int flags, sqlite3** database) {
   int result = sqlite3_open_v2([path fileSystemRepresentation], database, flags | SQLITE_OPEN_NOMUTEX, NULL);  // http://www.sqlite.org/threadsafe.html
   if (result == SQLITE_OK) {
     result = sqlite3_create_collation(*database, "utf8", SQLITE_UTF8, NULL, _CaseInsensitiveUTF8Compare);
+  }
+  if (result == SQLITE_OK) {
+    result = sqlite3_exec(*database, "PRAGMA foreign_keys = ON", NULL, NULL, NULL);
   }
   return result;
 }
