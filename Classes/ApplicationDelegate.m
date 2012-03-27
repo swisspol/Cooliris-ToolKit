@@ -182,7 +182,7 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
       shouldAnimate = NO;
     }
     if ((orientation != _lastDeviceOrientation) &&
-      [[ApplicationDelegate sharedInstance] shouldRotateOverlayWindowToInterfaceOrientation:orientation]) {
+      [[ApplicationDelegate sharedInstance] shouldRotateOverlayWindowToInterfaceOrientation:(UIInterfaceOrientation)orientation]) {  // TODO: Convert to interface orientation
       if (shouldAnimate) {
         [UIView beginAnimations:nil context:self];
         [UIView setAnimationBeginsFromCurrentState:YES];
