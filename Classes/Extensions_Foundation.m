@@ -819,6 +819,10 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
       NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];  // Content-Type defaults to "text/plain"
       [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
       [body appendData:[(NSString*)value dataUsingEncoding:NSUTF8StringEncoding]];
+    } else if ([value isKindOfClass:[NSData class]]) {
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];  // Content-Type defaults to "text/plain"
+      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
+      [body appendData:value];
     } else {
       NOT_REACHED();
     }
