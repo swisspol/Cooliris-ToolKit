@@ -25,7 +25,7 @@
 enum {
   kObjectStatement_CountAll = 0,
   kObjectStatement_SelectAll,
-  kObjectStatement_SelectRowIDWithRowID,
+  kObjectStatement_SelectExistsWithRowID,
   kObjectStatement_SelectWithRowID,
   kObjectStatement_Insert,
   kObjectStatement_Replace,
@@ -224,8 +224,8 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
       [statement release];
     }
     {
-      NSString* statement = [[NSString alloc] initWithFormat:@"SELECT %@ FROM %@ WHERE %@=?1", kRowID, table->tableName, kRowID];
-      table->statements[kObjectStatement_SelectRowIDWithRowID] = _CopyAsCString(statement);
+      NSString* statement = [[NSString alloc] initWithFormat:@"SELECT EXISTS (SELECT * FROM %@ WHERE %@=?1)", table->tableName, kRowID];
+      table->statements[kObjectStatement_SelectExistsWithRowID] = _CopyAsCString(statement);
       [statement release];
     }
     {
@@ -1435,6 +1435,19 @@ UNLOCK_CONNECTION();
   return [self fetchObjectInSQLTable:_SQLTableForClass(class) withSQLRowID:rowID];
 }
 
+- (BOOL) hasObjectOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValue:(id)value {
+  DatabaseSQLTable table = _SQLTableForClass(class);
+  DatabaseSQLColumn column = NULL;
+  for (unsigned int i = 0; i < table->columnCount; ++i) {
+    if ([property isEqualToString:table->columnList[i].name]) {
+      column = &table->columnList[i];
+      break;
+    }
+  }
+  CHECK(column && (column->columnOptions & kDatabaseSQLColumnOption_Unique));
+  return [self hasObjectInSQLTable:table withUniqueSQLColumn:column matchingValue:value];
+}
+
 - (id) fetchObjectOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValue:(id)value {
   DatabaseSQLTable table = _SQLTableForClass(class);
   DatabaseSQLColumn column = NULL;
@@ -1671,13 +1684,15 @@ LOCK_CONNECTION();
   CHECK(rowID > 0);
   BOOL exists = NO;
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_SelectRowIDWithRowID]);
+  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_SelectExistsWithRowID]);
   int result = sqlite3_bind_int(statement, 1, rowID);
   if (result == SQLITE_OK) {
     result = _ExecuteStatement(statement);
   }
   if (result == SQLITE_ROW) {
-    exists = YES;
+    if (sqlite3_column_int(statement, 0)) {
+      exists = YES;
+    }
   } else if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed fetching %@ object with rowID '%i' from %@: %@ (%i)", table->class, rowID, self,
               [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
@@ -1712,6 +1727,32 @@ LOCK_CONNECTION();
 
 UNLOCK_CONNECTION();
   return object;
+}
+
+- (BOOL) hasObjectInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value {
+LOCK_CONNECTION();
+  BOOL exists = NO;
+  CHECK(value);
+  
+  NSString* string = [NSString stringWithFormat:@"SELECT EXISTS (SELECT * FROM %@ WHERE %@=?1)", table->tableName, column->columnName];
+  sqlite3_stmt* statement = NULL;
+  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
+  int result = _BindStatementBoxedValue(statement, value, column, 1);
+  if (result == SQLITE_OK) {
+    result = _ExecuteStatement(statement);
+  }
+  if (result == SQLITE_ROW) {
+    if (sqlite3_column_int(statement, 0)) {
+      exists = YES;
+    }
+  } else if (result != SQLITE_DONE) {
+    LOG_ERROR(@"Failed fetching %@ object with unique property '%@' matching '%@' from %@: %@ (%i)", table->class,
+              column->name, value, self, [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+  }
+  sqlite3_finalize(statement);
+  
+UNLOCK_CONNECTION();
+  return exists;
 }
 
 - (id) fetchObjectInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value {

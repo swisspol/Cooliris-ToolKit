@@ -124,6 +124,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (NSArray*) fetchAllObjectsOfClass:(Class)class;  // Returns nil on error
 - (BOOL) hasObjectOfClass:(Class)class withSQLRowID:(DatabaseSQLRowID)rowID;  // Returns NO on error or if none - Faster than fetching the object
 - (id) fetchObjectOfClass:(Class)class withSQLRowID:(DatabaseSQLRowID)rowID;  // Returns nil on error or if none
+- (BOOL) hasObjectOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValue:(id)value;  // Returns NO on error or if none - Faster than fetching the object
 - (id) fetchObjectOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValue:(id)value;  // Returns nil on error or if none
 - (NSArray*) fetchObjectsOfClass:(Class)class withProperty:(NSString*)property matchingValue:(id)value;  // Returns nil on error
 - (NSArray*) fetchObjectsOfClass:(Class)class withSQLWhereClause:(NSString*)clause;  // Returns nil on error
@@ -175,6 +176,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (NSArray*) fetchAllObjectsInSQLTable:(DatabaseSQLTable)table;  // Returns nil on error
 - (BOOL) hasObjectInSQLTable:(DatabaseSQLTable)table withSQLRowID:(DatabaseSQLRowID)rowID;  // Returns NO on error or if none - Faster than fetching the object
 - (id) fetchObjectInSQLTable:(DatabaseSQLTable)table withSQLRowID:(DatabaseSQLRowID)rowID;  // Returns nil on error or if none
+- (BOOL) hasObjectInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value;  // Returns NO on error or if none - Faster than fetching the object
 - (id) fetchObjectInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value;  // Returns nil on error or if none
 - (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value;  // Returns nil on error
 - (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause;  // Returns nil on error
