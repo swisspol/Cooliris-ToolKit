@@ -66,7 +66,6 @@
 @end
 
 @interface LogViewController : UIViewController
-- (id) initWithText:(NSString*)text target:(id)target action:(SEL)action;
 @end
 
 @interface ConfigurationDownloader : Task {
@@ -147,23 +146,6 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
 @end
 
 @implementation LogViewController
-
-- (id) initWithText:(NSString*)text target:(id)target action:(SEL)action {
-  if ((self = [super init])) {
-    self.navigationItem.rightBarButtonItem = [[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone
-                                                                                            target:target
-                                                                                            action:action] autorelease];
-    UITextView* view = [[UITextView alloc] init];
-    view.text = text;
-    view.textColor = [UIColor darkGrayColor];
-    view.font = [UIFont fontWithName:kLoggingFontName size:kLoggingFontSize];
-    view.editable = NO;
-    view.dataDetectorTypes = UIDataDetectorTypeNone;
-    self.view = view;
-    [view release];
-  }
-  return self;
-}
 
 - (BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
   return YES;
@@ -284,6 +266,24 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
     return NO;
   }
   return YES;
+}
+
+static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
+  NSString* date = [[NSDate dateWithTimeIntervalSinceReferenceDate:timestamp] stringWithCachedFormat:@"yyyy-MM-dd HH:mm:ss.SSS"
+                                                                                     localIdentifier:@"en_US"];
+  [(NSMutableString*)context appendFormat:@"[r%i | %@ | %s] %@\n", appVersion, date, LoggingGetLevelName(level), message];
+}
+
++ (UITextView*) textViewWithContentsOfLog {
+  NSMutableString* log = [NSMutableString string];
+  LoggingReplayHistory(_HistoryLogCallback, log, YES);
+  UITextView* view = [[UITextView alloc] init];
+  view.text = log;
+  view.textColor = [UIColor darkGrayColor];
+  view.font = [UIFont fontWithName:kLoggingFontName size:kLoggingFontSize];
+  view.editable = NO;
+  view.dataDetectorTypes = UIDataDetectorTypeNone;
+  return [view autorelease];
 }
 
 - (void) __alertView:(UIAlertView*)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
@@ -522,21 +522,17 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
   [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
-static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
-  NSString* date = [[NSDate dateWithTimeIntervalSinceReferenceDate:timestamp] stringWithCachedFormat:@"yyyy-MM-dd HH:mm:ss.SSS"
-                                                                                     localIdentifier:@"en_US"];
-  [(NSMutableString*)context appendFormat:@"[r%i | %@ | %s] %@\n", appVersion, date, LoggingGetLevelName(level), message];
-}
-
 - (void) _logViewControllerDone:(id)sender {
   [_viewController dismissModalViewControllerAnimated:YES];
 }
 
 - (void) showLogViewControllerWithTitle:(NSString*)title {
-  NSMutableString* log = [NSMutableString string];
-  LoggingReplayHistory(_HistoryLogCallback, log, YES);
-  LogViewController* viewController = [[LogViewController alloc] initWithText:log target:self action:@selector(_logViewControllerDone:)];
+  LogViewController* viewController = [[LogViewController alloc] init];
+  viewController.view = [[self class] textViewWithContentsOfLog];
   viewController.navigationItem.title = title;
+  viewController.navigationItem.rightBarButtonItem = [[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone
+                                                                                                    target:self
+                                                                                                    action:@selector(_logViewControllerDone:)] autorelease];
   UINavigationController* navigationController = [[UINavigationController alloc] initWithRootViewController:viewController];
   [_viewController presentModalViewController:navigationController animated:YES];
   [navigationController release];
