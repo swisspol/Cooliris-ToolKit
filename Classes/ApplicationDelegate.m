@@ -268,24 +268,6 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
   return YES;
 }
 
-static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
-  NSString* date = [[NSDate dateWithTimeIntervalSinceReferenceDate:timestamp] stringWithCachedFormat:@"yyyy-MM-dd HH:mm:ss.SSS"
-                                                                                     localIdentifier:@"en_US"];
-  [(NSMutableString*)context appendFormat:@"[r%i | %@ | %s] %@\n", appVersion, date, LoggingGetLevelName(level), message];
-}
-
-+ (UITextView*) textViewWithContentsOfLog {
-  NSMutableString* log = [NSMutableString string];
-  LoggingReplayHistory(_HistoryLogCallback, log, YES);
-  UITextView* view = [[UITextView alloc] init];
-  view.text = log;
-  view.textColor = [UIColor darkGrayColor];
-  view.font = [UIFont fontWithName:kLoggingFontName size:kLoggingFontSize];
-  view.editable = NO;
-  view.dataDetectorTypes = UIDataDetectorTypeNone;
-  return [view autorelease];
-}
-
 - (void) __alertView:(UIAlertView*)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
   if (alertView == _alertView) {
     [self _dismissAlertWithButtonIndex:buttonIndex];
@@ -526,9 +508,25 @@ static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp,
   [_viewController dismissModalViewControllerAnimated:YES];
 }
 
+static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
+  NSString* date = [[NSDate dateWithTimeIntervalSinceReferenceDate:timestamp] stringWithCachedFormat:@"yyyy-MM-dd HH:mm:ss.SSS"
+                                                                                     localIdentifier:@"en_US"];
+  [(NSMutableString*)context appendFormat:@"[r%i | %@ | %s] %@\n", appVersion, date, LoggingGetLevelName(level), message];
+}
+
 - (void) showLogViewControllerWithTitle:(NSString*)title {
+  NSMutableString* log = [NSMutableString string];
+  LoggingReplayHistory(_HistoryLogCallback, log, YES);
+  
+  UITextView* view = [[UITextView alloc] init];
+  view.text = log;
+  view.textColor = [UIColor darkGrayColor];
+  view.font = [UIFont fontWithName:kLoggingFontName size:kLoggingFontSize];
+  view.editable = NO;
+  view.dataDetectorTypes = UIDataDetectorTypeNone;
+  
   LogViewController* viewController = [[LogViewController alloc] init];
-  viewController.view = [[self class] textViewWithContentsOfLog];
+  viewController.view = view;
   viewController.navigationItem.title = title;
   viewController.navigationItem.rightBarButtonItem = [[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone
                                                                                                     target:self
@@ -537,6 +535,8 @@ static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp,
   [_viewController presentModalViewController:navigationController animated:YES];
   [navigationController release];
   [viewController release];
+  
+  [view release];
 }
 
 - (void) mailComposeController:(MFMailComposeViewController*)controller
@@ -554,7 +554,6 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
 }
 
 - (BOOL) sendErrorsToEmail:(NSString*)email withSubject:(NSString*)subject bodyPrefix:(NSString*)prefix {
-  DCHECK(_viewController);
   if (![NSClassFromString(@"MFMailComposeViewController") canSendMail]) {
     return NO;
   }

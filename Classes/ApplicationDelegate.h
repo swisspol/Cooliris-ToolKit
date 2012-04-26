@@ -78,7 +78,6 @@ typedef NSUInteger ApplicationMessageIdentifier;
 + (id) sharedInstance;
 + (void) setOverlaysOpacity:(CGFloat)opacity;  // Default is 0.75
 + (BOOL) checkCompatibilityWithMinimumOSVersion:(NSString*)minOSVersion minimumApplicationVersion:(NSString*)minAppVersion;  // Pass nil to skip check
-+ (UITextView*) textViewWithContentsOfLog;
 - (void) showLogViewControllerWithTitle:(NSString*)title;  // Displayed modally on the view controller
 - (BOOL) sendErrorsToEmail:(NSString*)email withSubject:(NSString*)subject bodyPrefix:(NSString*)prefix;
 - (BOOL) processCommandString:(NSString*)string;
