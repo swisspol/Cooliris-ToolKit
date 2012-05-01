@@ -84,13 +84,13 @@
   }
   if (force || (image != _thumbView.highlightedImage)) {
     _thumbView.highlightedImage = image;
-
+    
     if (_thumbColor) {
       CGImageRef imageRef = CreateTintedImage([image CGImage], [_thumbColor CGColor], NULL);
-      image = [UIImage imageWithCGImage:imageRef];
+      image = [UIImage imageWithCGImage:imageRef scale:image.scale orientation:image.imageOrientation];
       CGImageRelease(imageRef);
     }
-
+    
     _thumbView.image = image;
     CGSize size = image.size;
     _thumbView.bounds = CGRectMake(0.0, 0.0, size.width, size.height);
@@ -118,7 +118,7 @@
         if (image != lastMarkerImage) {
           if (_markerColor) {
             CGImageRef imageRef = CreateTintedImage([image CGImage], [_markerColor CGColor], NULL);
-            cachedMarkerImage = [UIImage imageWithCGImage:imageRef];
+            cachedMarkerImage = [UIImage imageWithCGImage:imageRef scale:image.scale orientation:image.imageOrientation];
             CGImageRelease(imageRef);
           } else {
             cachedMarkerImage = image;
@@ -151,7 +151,7 @@
     
     if (_thumbMarkerColor) {
       CGImageRef imageRef = CreateTintedImage([image CGImage], [_thumbMarkerColor CGColor], NULL);
-      image = [UIImage imageWithCGImage:imageRef];
+      image = [UIImage imageWithCGImage:imageRef scale:image.scale orientation:image.imageOrientation];
       CGImageRelease(imageRef);
     }
     

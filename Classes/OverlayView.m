@@ -98,9 +98,11 @@
   if (_tintColor) {
     CGImageRef imageRef = CreateTintedImage([image CGImage], [_tintColor CGColor], NULL);
     view.layer.contents = (id)imageRef;
+    view.layer.contentsScale = image.scale;
     CGImageRelease(imageRef);
   } else {
     view.layer.contents = (id)[image CGImage];
+    view.layer.contentsScale = image.scale;
   }
   [image release];
 }
