@@ -109,6 +109,8 @@ typedef enum {
 - (void) connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
   if ([error.domain isEqualToString:NSURLErrorDomain] && (error.code == NSURLErrorNotConnectedToInternet)) {
     LOG_VERBOSE(@"PubNub request failed due to missing Internet connection");
+  } else if ([error.domain isEqualToString:NSURLErrorDomain] && (error.code == NSURLErrorTimedOut)) {
+    LOG_VERBOSE(@"PubNub request timed out");
   } else {
     LOG_ERROR(@"PubNub request failed with error: %@", error);
   }
