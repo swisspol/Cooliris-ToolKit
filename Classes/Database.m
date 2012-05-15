@@ -1619,6 +1619,7 @@ UNLOCK_CONNECTION();
         sqlColumn->columnType = iColumn->columnType;
         sqlColumn->columnName = [iColumn->columnName retain];
         sqlColumn->columnOptions = iColumn->columnOptions;
+        sqlColumn->columnForeignKey = [iColumn->columnForeignKey retain];
         sqlColumn->getter = iColumn->getter;
         sqlColumn->setter = iColumn->setter;
         
@@ -1636,6 +1637,7 @@ UNLOCK_CONNECTION();
       sqlColumn->columnType = column.type;
       sqlColumn->columnName = [column.name retain];
       sqlColumn->columnOptions = column.options;
+      sqlColumn->columnForeignKey = nil;
       sqlColumn->getter = sel_registerName([sqlColumn->name UTF8String]);
       sqlColumn->setter = sel_registerName([[NSString stringWithFormat:@"set%@%@:", [[sqlColumn->name substringToIndex:1] uppercaseString],
                                                                        [sqlColumn->name substringFromIndex:1]] UTF8String]);

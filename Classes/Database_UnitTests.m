@@ -373,7 +373,7 @@
   DatabaseObject* object = [[DatabaseObject alloc] initWithSQLTable:table.sqlTable];
   [object setValue:@"cooliris" forProperty:@"name"];
   DatabaseSQLColumn column = column2.sqlColumn;
-  AssertNotEqual(column, NULL);
+  AssertNotEqual(column, (DatabaseSQLColumn)NULL);
   [object setInt:30 forSQLColumn:column];
   AssertTrue(object.modified);
   AssertTrue([connection insertObject:object]);
