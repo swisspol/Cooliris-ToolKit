@@ -33,8 +33,11 @@
 #define kMessageMaxDimension 700.0
 
 #define kSpinnerBorderWidth 15.0
-#define kSpinnerSpacing 6.0
+#define kSpinnerSpacing 10.0
+#define kSpinnerFullscreenSpacing 18.0
 #define kSpinnerViewAnimationDuration 0.5
+#define kSpinnerFontSize 14.0
+#define kSpinnerFullscreenFontSize 17.0
 
 #define kTagFlag_New (1 << 0)
 #define kTagFlag_Transient (1 << 1)
@@ -1038,7 +1041,7 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
     label = [[UILabel alloc] init];
     label.backgroundColor = nil;
     label.opaque = NO;
-    label.font = [UIFont boldSystemFontOfSize:22.0];
+    label.font = [UIFont boldSystemFontOfSize:(fullScreen ? kSpinnerFullscreenFontSize : kSpinnerFontSize)];
     label.textColor = [UIColor whiteColor];
     label.textAlignment = UITextAlignmentCenter;
     label.numberOfLines = 0;
@@ -1047,10 +1050,10 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
     [label autorelease];
     CGRect rect = label.frame;
     rect.origin.x = kSpinnerBorderWidth;
-    rect.origin.y = frame.size.height - kSpinnerBorderWidth + kSpinnerSpacing;
+    rect.origin.y = frame.size.height - kSpinnerBorderWidth + (fullScreen ? kSpinnerFullscreenSpacing : kSpinnerSpacing);
     label.frame = rect;
     frame.size.width += rect.size.width - size.width;
-    frame.size.height += rect.size.height + kSpinnerSpacing;
+    frame.size.height += rect.size.height + (fullScreen ? kSpinnerFullscreenSpacing : kSpinnerSpacing);
     CGRect temp = indicator.frame;
     temp.origin.x = roundf(temp.origin.x - temp.size.width / 2.0 + rect.size.width / 2.0);
     indicator.frame = temp;
