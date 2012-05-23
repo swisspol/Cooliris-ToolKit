@@ -184,17 +184,17 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
         self.transform = CGAffineTransformMakeRotation(M_PI * 1.5);
       }
       
-      if ((UIDeviceOrientationIsPortrait(_lastDeviceOrientation) && UIDeviceOrientationIsLandscape(orientation))
-          || (UIDeviceOrientationIsLandscape(_lastDeviceOrientation) && UIDeviceOrientationIsPortrait(orientation))) {
-        CGRect bounds = self.bounds;
+      CGRect bounds = self.screen.bounds;
+      if (UIDeviceOrientationIsLandscape(orientation)) {
         bounds.size = CGSizeMake(bounds.size.height, bounds.size.width);
-        self.bounds = bounds;
-      } else if ((UIDeviceOrientationIsLandscape(_lastDeviceOrientation) && UIDeviceOrientationIsLandscape(orientation))
-                 || (UIDeviceOrientationIsPortrait(_lastDeviceOrientation) && UIDeviceOrientationIsPortrait(orientation))) {
-        [UIView setAnimationDuration:(2.0 * kDeviceRotationAnimationDuration)];
       }
+      self.bounds = bounds;
       
       if (shouldAnimate) {
+        if ((UIDeviceOrientationIsLandscape(_lastDeviceOrientation) && UIDeviceOrientationIsLandscape(orientation))
+            || (UIDeviceOrientationIsPortrait(_lastDeviceOrientation) && UIDeviceOrientationIsPortrait(orientation))) {
+          [UIView setAnimationDuration:(2.0 * kDeviceRotationAnimationDuration)];
+        }
         [UIView commitAnimations];
       }
     }
