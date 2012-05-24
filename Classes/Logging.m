@@ -46,6 +46,7 @@ static sqlite3* _database = NULL;
 static sqlite3_stmt* _statement = NULL;
 static CFSocketRef _socket = NULL;
 static CFWriteStreamRef _stream = NULL;
+static CFTimeInterval _startTime = 0.0;
 
 const char* LoggingGetLevelName(LogLevel level) {
   return _levelNames[level];
@@ -321,7 +322,7 @@ void LogRawMessage(LogLevel level, NSString* message) {
 #endif
   double timestamp = CFAbsoluteTimeGetCurrent();
   const char* cString = [message UTF8String];
-  printf("[%s] %s\n", _levelNames[level], cString);
+  printf("[%s | %.3f] %s\n", _levelNames[level], timestamp - _startTime, cString);
   if (_loggingCallback) {
     (*_loggingCallback)(timestamp, level, message, _loggingContext);
   }
@@ -361,6 +362,7 @@ void LogRawMessage(LogLevel level, NSString* message) {
   if (level) {
     LoggingSetMinimumLevel(atoi(level));
   }
+  _startTime = CFAbsoluteTimeGetCurrent();
 }
 
 @end
