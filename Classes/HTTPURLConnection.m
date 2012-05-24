@@ -113,7 +113,6 @@
                      headerFields:(NSDictionary**)headerFields {
   NSInteger statusCode = 0;
   if (![delegate isCancelled]) {
-    LOG_VERBOSE(@"%@ %@", [request HTTPMethod], [request URL]);
     [stream open];
     HTTPURLConnection* connection = [[HTTPURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
     connection.stream = stream;
@@ -121,9 +120,7 @@
     [connection start];
     CFTimeInterval lastTime = CFAbsoluteTimeGetCurrent();
     NSUInteger lastLength = -1;
-#ifndef NDEBUG
     CFTimeInterval duration = lastTime;
-#endif
     while (connection.status == 0) {
       CFRunLoopRunInMode(CFSTR(kTaskURLDownloadRunLoopMode), kTaskURLDownloadRunLoopInterval, true);
       if ([delegate isCancelled]) {
@@ -143,21 +140,11 @@
         lastTime = time;
       }
     }
-#ifndef NDEBUG
     duration = CFAbsoluteTimeGetCurrent() - duration;
-#endif
     NSHTTPURLResponse* response = connection.response;
     NSDictionary* headers = response.allHeaderFields;
     if (connection.status > 0) {
-#ifndef NDEBUG
-      NSInteger contentLength = [[headers objectForKey:@"Content-Length"] integerValue];
-      if (contentLength > 0) {
-        LOG_DEBUG(@"%i bytes downloaded from \"%@\" in %.3f seconds (%.0f%% compression)", contentLength, connection.response.URL,
-                  duration, (1.0 - [[headers objectForKey:@"Content-Length"] floatValue] / (float)connection.length) * 100.0);
-      } else {
-        LOG_DEBUG(@"%i bytes downloaded from \"%@\" in %.3f seconds", connection.length, connection.response.URL, duration);
-      }
-#endif
+      LOG_VERBOSE(@"%@ | %@ | %.3f seconds | %i bytes", [request HTTPMethod], [request URL], duration, connection.length);  // connection.response.URL
       if (headerFields) {
         *headerFields = [NSMutableDictionary dictionaryWithDictionary:headers];
         [(NSMutableDictionary*)*headerFields setObject:[NSString stringWithFormat:@"%i", response.statusCode]
