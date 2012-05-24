@@ -16,7 +16,7 @@
 #import "Logging.h"
 
 #define kHugeTimerInterval (365.0 * 24.0 * 3600.0)
-#define kCheckInitialDelay 2.0
+#define kCheckInitialDelay 0.5
 #define kCheckMaxDelay 3600.0
 
 static NSString* _stateNames[] = {
