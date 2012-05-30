@@ -64,6 +64,21 @@ NSString* HashToString(const unsigned char* hash, NSUInteger size) {
   return [NSString stringWithUTF8String:buffer];
 }
 
+NSData* DataFromString(NSString* string) {
+  if ((string != nil) && (string.length % 2 == 0)) {
+    NSMutableData* data = [NSMutableData dataWithLength:(string.length / 2)];
+    return HashFromString(string, data.mutableBytes, data.length) ? data : nil;
+  }
+  return nil;
+}
+
+NSString* DataToString(NSData* data) {
+  if (data) {
+    return HashToString(data.bytes, data.length);
+  }
+  return nil;
+}
+
 MD5 MD5WithString(NSString* string) {
   NSUInteger length = string.length;
   if (length) {

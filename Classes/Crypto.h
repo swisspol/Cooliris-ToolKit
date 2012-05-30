@@ -55,6 +55,9 @@ extern "C" {
 NSString* HashToString(const unsigned char* hash, NSUInteger size);  // Converts raw bytes to a lowercase hexadecimal string
 BOOL HashFromString(NSString* string, unsigned char* hash, NSUInteger size);  // Converts a lower or uppercase hexadecimal string to raw bytes
 
+NSData* DataFromString(NSString* string);
+NSString* DataToString(NSData* data);
+
 MD5 MD5WithString(NSString* string);
 MD5 MD5WithData(NSData* data);
 MD5 MD5WithBytes(const void* bytes, NSUInteger length);
