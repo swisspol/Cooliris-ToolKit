@@ -32,11 +32,7 @@
 @interface Logging : NSObject
 @end
 
-#ifdef NDEBUG
-LogLevel _minimumLogLevel = kLogLevel_Verbose;
-#else
-LogLevel _minimumLogLevel = kLogLevel_Debug;
-#endif
+LogLevel _minimumLogLevel = -1;
 
 static LoggingLiveCallback _loggingCallback = NULL;
 static void* _loggingContext = NULL;
@@ -47,6 +43,9 @@ static sqlite3_stmt* _statement = NULL;
 static CFSocketRef _socket = NULL;
 static CFWriteStreamRef _stream = NULL;
 static CFTimeInterval _startTime = 0.0;
+static LoggingRemoteConnectCallback _remoteConnectCallback = NULL;
+static LoggingRemoteDisconnectCallback _remoteDisconnectCallback = NULL;
+static void* _remoteContext = NULL;
 
 const char* LoggingGetLevelName(LogLevel level) {
   return _levelNames[level];
@@ -58,6 +57,19 @@ void LoggingSetMinimumLevel(LogLevel level) {
 
 LogLevel LoggingGetMinimumLevel() {
   return _minimumLogLevel;
+}
+
+void LoggingResetMinimumLevel() {
+  const char* level = getenv("logLevel");
+  if (level) {
+    LoggingSetMinimumLevel(atoi(level));
+  } else {
+#ifdef NDEBUG
+    _minimumLogLevel = kLogLevel_Verbose;
+#else
+    _minimumLogLevel = kLogLevel_Debug;
+#endif
+  }
 }
 
 void LoggingSetCallback(LoggingLiveCallback callback, void* context) {
@@ -228,17 +240,26 @@ static void _AcceptCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
         if (CFWriteStreamOpen(_stream)) {
           CFWriteStreamSetProperty(_stream, kCFStreamPropertyShouldCloseNativeSocket, kCFBooleanTrue);
           
-          NSBundle* bundle = [NSBundle mainBundle];
-          if (bundle) {
-            NSString* message = [[NSString alloc] initWithFormat:@"**************************************************\n"
-                                                                  "%@ %@ (%@)\n"
-                                                                  "**************************************************\n\n",
-                                                                 [bundle objectForInfoDictionaryKey:@"CFBundleName"],
-                                                                 [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
-                                                                 [bundle objectForInfoDictionaryKey:@"CFBundleVersion"]];
-            _AppendStream(message);
-            [message release];
+          NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
+          NSString* message = nil;
+          if (_remoteConnectCallback) {
+            message = (*_remoteConnectCallback)(_remoteContext);
           }
+          if (message == nil) {
+            NSBundle* bundle = [NSBundle mainBundle];
+            if (bundle) {
+               message = [NSString stringWithFormat:@"**************************************************\n"
+                                                     "%@ %@ (%@)\n"
+                                                     "**************************************************\n\n",
+                                                    [bundle objectForInfoDictionaryKey:@"CFBundleName"],
+                                                    [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
+                                                    [bundle objectForInfoDictionaryKey:@"CFBundleVersion"]];
+            }
+          }
+          if (message) {
+            _AppendStream(message);
+          }
+          [localPool release];
         } else {
           CFRelease(_stream);
           close(handle);
@@ -253,7 +274,7 @@ static void _AcceptCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
   }
 }
 
-BOOL LoggingEnableRemoteAccess(NSUInteger port) {
+BOOL LoggingEnableRemoteAccess(NSUInteger port, LoggingRemoteConnectCallback connectCallback, LoggingRemoteDisconnectCallback disconnectCallback, void* context) {
   OSSpinLockLock(&_spinLock);
   if (_socket == NULL) {
     _socket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketAcceptCallBack, _AcceptCallBack, NULL);
@@ -271,6 +292,10 @@ BOOL LoggingEnableRemoteAccess(NSUInteger port) {
         CFRunLoopSourceRef source = CFSocketCreateRunLoopSource(kCFAllocatorDefault, _socket, 0);
         CFRunLoopAddSource(CFRunLoopGetMain(), source, kCFRunLoopCommonModes);
         CFRelease(source);
+        
+        _remoteConnectCallback = connectCallback;
+        _remoteDisconnectCallback = disconnectCallback;
+        _remoteContext = context;
       } else {
         CFRelease(_socket);
         _socket = NULL;
@@ -287,6 +312,11 @@ void LoggingDisableRemoteAccess(BOOL keepConnectionAlive) {
     CFWriteStreamClose(_stream);
     CFRelease(_stream);
     _stream = NULL;
+    if (_remoteDisconnectCallback) {
+      NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
+      (*_remoteDisconnectCallback)(_remoteContext);
+      [localPool release];
+    }
   }
   if (_socket) {
     CFSocketInvalidate(_socket);
@@ -320,9 +350,10 @@ void LogRawMessage(LogLevel level, NSString* message) {
     }
   }
 #endif
-  double timestamp = CFAbsoluteTimeGetCurrent();
+  CFTimeInterval timestamp = CFAbsoluteTimeGetCurrent();
+  CFTimeInterval relativeTime = timestamp - _startTime;
   const char* cString = [message UTF8String];
-  printf("[%s | %.3f] %s\n", _levelNames[level], timestamp - _startTime, cString);
+  printf("[%s | %.3f] %s\n", _levelNames[level], relativeTime, cString);
   if (_loggingCallback) {
     (*_loggingCallback)(timestamp, level, message, _loggingContext);
   }
@@ -334,7 +365,7 @@ void LogRawMessage(LogLevel level, NSString* message) {
     OSSpinLockUnlock(&_spinLock);
   }
   if (_stream) {
-    NSString* content = [[NSString alloc] initWithFormat:@"[%s] %@\n", _levelNames[level], message];
+    NSString* content = [[NSString alloc] initWithFormat:@"[%s | %.3f] %@\n", _levelNames[level], relativeTime, message];
     OSSpinLockLock(&_spinLock);
     if (_stream) {
       if (CFWriteStreamGetStatus(_stream) == kCFStreamStatusOpen) {
@@ -343,6 +374,11 @@ void LogRawMessage(LogLevel level, NSString* message) {
         CFWriteStreamClose(_stream);
         CFRelease(_stream);
         _stream = NULL;
+        if (_remoteDisconnectCallback) {
+          NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
+          (*_remoteDisconnectCallback)(_remoteContext);
+          [localPool release];
+        }
       }
     }
     OSSpinLockUnlock(&_spinLock);
@@ -358,10 +394,7 @@ void LogRawMessage(LogLevel level, NSString* message) {
 @implementation Logging
 
 + (void) load {
-  const char* level = getenv("logLevel");
-  if (level) {
-    LoggingSetMinimumLevel(atoi(level));
-  }
+  LoggingResetMinimumLevel();
   _startTime = CFAbsoluteTimeGetCurrent();
 }
 

@@ -93,11 +93,37 @@ static NSMutableDictionary* _configurationDictionary = nil;
 static Task* _configurationTask = nil;
 static CGFloat _overlaysOpacity = 0.75;
 
-static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reason, NSDictionary* userInfo) {
+static id _ExceptionInitializer(id self, SEL cmd, NSString* name, NSString* reason, NSDictionary* userInfo) {
   if ((self = _exceptionInitializerIMP(self, cmd, name, reason, userInfo))) {
     LOG_EXCEPTION(self);
   }
   return self;
+}
+
+static void _ResetDefaultLoggingLevel() {
+#ifdef NDEBUG
+  if ([[NSProcessInfo processInfo] isDebuggerAttached]) {
+    LoggingSetMinimumLevel(kLogLevel_Verbose);
+    LOG_WARNING(@"Debugger is attached");
+  } else {
+    LoggingSetMinimumLevel(kLogLevel_Warning);
+  }
+#else
+  LoggingResetMinimumLevel();
+#endif
+}
+
+static void _SetVerboseLoggingLevel() {
+  LoggingSetMinimumLevel(kLogLevel_Verbose);
+}
+
+static NSString* _LoggingRemoteConnectCallback(void* context) {
+  _SetVerboseLoggingLevel();
+  return nil;
+}
+
+static void _LoggingRemoteDisconnectCallback(void* context) {
+  _ResetDefaultLoggingLevel();
 }
 
 @implementation ConfigurationDownloader
@@ -287,45 +313,52 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
 
 - (void) _startServices {
   // Setup logging remote access
-  if ([[NSUserDefaults standardUserDefaults] boolForKey:kApplicationUserDefaultKey_LoggingServerEnabled]) {
+  NSInteger loggingServerEnabled = [[NSUserDefaults standardUserDefaults] integerForKey:kApplicationUserDefaultKey_LoggingServerEnabled];
+  if (loggingServerEnabled != 0) {
     NSString* ipAddress = [[UIDevice currentDevice] currentWiFiAddress];
     if (ipAddress) {
       _loggingServer = YES;
     }
-    if (_loggingServer && LoggingEnableRemoteAccess(kApplicationRemoteLoggingPort)) {
-      LoggingSetMinimumLevel(kLogLevel_Verbose);
-      NSString* string = [NSString stringWithFormat:@"Remote Logging @ %@:%i", ipAddress, kApplicationRemoteLoggingPort];
-      [self showMessageWithString:string
-                            delay:kRemoteLoggingMessageDelay
-                         duration:kRemoteLoggingMessageDuration
-                         animated:YES];
+    if (_loggingServer && LoggingEnableRemoteAccess(kApplicationRemoteLoggingPort, _LoggingRemoteConnectCallback, _LoggingRemoteDisconnectCallback, NULL)) {
+      if (loggingServerEnabled > 0) {
+        [self showMessageWithString:[NSString stringWithFormat:@"Remote Logging @ %@:%i", ipAddress, kApplicationRemoteLoggingPort]
+                              delay:kRemoteLoggingMessageDelay
+                           duration:kRemoteLoggingMessageDuration
+                           animated:YES];
+      }
     } else {
-      [self showMessageWithString:@"Remote Logging Not Available"
-                            delay:kRemoteLoggingMessageDelay
-                         duration:kRemoteLoggingMessageDuration
-                         animated:YES];
+      if (loggingServerEnabled > 0) {
+        [self showMessageWithString:@"Remote Logging Not Available"
+                              delay:kRemoteLoggingMessageDelay
+                           duration:kRemoteLoggingMessageDuration
+                           animated:YES];
+      }
     }
   }
   
 #if __DAVSERVER_SUPPORT__
   // Start WebDAV server if necessary
-  if ([[NSUserDefaults standardUserDefaults] boolForKey:kApplicationUserDefaultKey_WebDAVServerEnabled]) {
+  NSInteger webdavServerEnabled = [[NSUserDefaults standardUserDefaults] integerForKey:kApplicationUserDefaultKey_WebDAVServerEnabled];
+  if (webdavServerEnabled != 0) {
     NSString* ipAddress = [[UIDevice currentDevice] currentWiFiAddress];
     if (ipAddress) {
       NSString* documentsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
       _webdavServer = [[DAVServer alloc] initWithRootDirectory:[documentsPath stringByDeletingLastPathComponent]];
     }
     if ([_webdavServer start]) {
-      NSString* string = [NSString stringWithFormat:@"WebDAV Server @ %@:%i", ipAddress, _webdavServer.port];
-      [self showMessageWithString:string
-                            delay:kWebDAVServerMessageDelay
-                         duration:kWebDAVServerMessageDuration
-                         animated:YES];
+      if (webdavServerEnabled > 0) {
+        [self showMessageWithString:[NSString stringWithFormat:@"WebDAV Server @ %@:%i", ipAddress, _webdavServer.port]
+                              delay:kWebDAVServerMessageDelay
+                           duration:kWebDAVServerMessageDuration
+                           animated:YES];
+      }
     } else {
-      [self showMessageWithString:@"WebDAV Server Not Available"
-                            delay:kWebDAVServerMessageDelay
-                         duration:kWebDAVServerMessageDuration
-                         animated:YES];
+      if (webdavServerEnabled > 0) {
+        [self showMessageWithString:@"WebDAV Server Not Available"
+                              delay:kWebDAVServerMessageDelay
+                           duration:kWebDAVServerMessageDuration
+                           animated:YES];
+      }
     }
   }
 #endif
@@ -338,15 +371,8 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
   }
 #endif
   
-#ifdef NDEBUG
   // Setup minimum logging level
-  if ([[NSProcessInfo processInfo] isDebuggerAttached]) {
-    LoggingSetMinimumLevel(kLogLevel_Verbose);
-    LOG_WARNING(@"Debugger is attached: verbose logging active");
-  } else {
-    LoggingSetMinimumLevel(kLogLevel_Warning);
-  }
-#endif
+  _ResetDefaultLoggingLevel();
   
   // Setup logging history
   NSString* cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
@@ -356,7 +382,7 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
   // We cannot patch @throw but we can patch the designated initializer of NSException
   _exceptionInitializerIMP = method_setImplementation(class_getInstanceMethod([NSException class],
                                                                               @selector(initWithName:reason:userInfo:)),
-                                                      (IMP)&_exceptionInitializer);
+                                                      (IMP)&_ExceptionInitializer);
   
   // Initialize overlay window
   _overlayWindow = [[ApplicationWindow alloc] initWithScreen:[UIScreen mainScreen]];
@@ -466,7 +492,7 @@ static id _exceptionInitializer(id self, SEL cmd, NSString* name, NSString* reas
   
   // Restart logging remote access
   if (_loggingServer) {
-    LoggingEnableRemoteAccess(kApplicationRemoteLoggingPort);
+    LoggingEnableRemoteAccess(kApplicationRemoteLoggingPort, _LoggingRemoteConnectCallback, _LoggingRemoteDisconnectCallback, NULL);
   }
   
 #if __DAVSERVER_SUPPORT__
@@ -1221,12 +1247,12 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
 }
 
 - (NSString*) command_enableVerboseLogging:(id)argument {
-  LoggingSetMinimumLevel(kLogLevel_Verbose);
+  _SetVerboseLoggingLevel();
   return @"Verbose logging is enabled";
 }
 
 - (NSString*) command_disableVerboseLogging:(id)argument {
-  LoggingSetMinimumLevel(kLogLevel_Warning);
+  _ResetDefaultLoggingLevel();
   return @"Verbose logging is disabled";
 }
 

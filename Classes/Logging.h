@@ -82,6 +82,8 @@ do { \
 
 typedef void (*LoggingLiveCallback)(NSTimeInterval timestamp, LogLevel level, NSString* message, void* context);
 typedef void (*LoggingReplayCallback)(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context);
+typedef NSString* (*LoggingRemoteConnectCallback)(void* context);  // Return initial message for client or nil to use default one
+typedef void (*LoggingRemoteDisconnectCallback)(void* context);
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,8 +92,9 @@ void LogMessage(LogLevel level, NSString* format, ...);
 void LogRawMessage(LogLevel level, NSString* message);
 
 const char* LoggingGetLevelName(LogLevel level);
-void LoggingSetMinimumLevel(LogLevel level);  // Default is kLogLevel_Debug unless overridden by "logLevel" environment variable
+void LoggingSetMinimumLevel(LogLevel level);
 LogLevel LoggingGetMinimumLevel();
+void LoggingResetMinimumLevel();  // Default is kLogLevel_Debug or kLogLevel_Verbose unless overridden by "logLevel" environment variable
 
 void LoggingSetCallback(LoggingLiveCallback callback, void* context);  // Callback must be thread-safe - Parameter "timestamp" is undefined
 LoggingLiveCallback LoggingGetCallback();
@@ -107,7 +110,7 @@ void LoggingEnumerateHistory(BOOL backward,
 void LoggingDisableHistory();
 
 BOOL LoggingIsRemoteAccessEnabled();
-BOOL LoggingEnableRemoteAccess(NSUInteger port);
+BOOL LoggingEnableRemoteAccess(NSUInteger port, LoggingRemoteConnectCallback connectCallback, LoggingRemoteDisconnectCallback disconnectCallback, void* context);
 void LoggingDisableRemoteAccess(BOOL keepConnectionAlive);
 
 // For internal use only, do NOT use directly
