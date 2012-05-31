@@ -357,7 +357,7 @@ void LogRawMessage(LogLevel level, NSString* message) {
   if (_loggingCallback) {
     (*_loggingCallback)(timestamp, level, message, _loggingContext);
   }
-  if (_database && (level > kLogLevel_Debug)) {
+  if (_database && (level >= kLogLevel_Info)) {  // Don't record debug or verbose levels
     OSSpinLockLock(&_spinLock);
     if (_database) {
       _AppendHistory(timestamp, level, cString);
