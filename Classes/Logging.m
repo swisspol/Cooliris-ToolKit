@@ -23,11 +23,14 @@
 #import <sqlite3.h>
 #import <assert.h>
 #import <unistd.h>
+#import <pthread.h>
 #if !TARGET_OS_IPHONE
 #import <execinfo.h>
 #endif
 
 #import "Logging.h"
+
+#define kCaptureBufferSize 1024
 
 @interface Logging : NSObject
 @end
@@ -46,6 +49,9 @@ static CFTimeInterval _startTime = 0.0;
 static LoggingRemoteConnectCallback _remoteConnectCallback = NULL;
 static LoggingRemoteDisconnectCallback _remoteDisconnectCallback = NULL;
 static void* _remoteContext = NULL;
+static FILE* _outputFile = NULL;
+static void* _stdoutCapture = NULL;
+static void* _stderrCapture = NULL;
 
 const char* LoggingGetLevelName(LogLevel level) {
   return _levelNames[level];
@@ -79,6 +85,104 @@ void LoggingSetCallback(LoggingLiveCallback callback, void* context) {
 
 LoggingLiveCallback LoggingGetCallback() {
   return _loggingCallback;
+}
+
+static inline void _LogCapturedOutput(char* buffer, ssize_t size, LogLevel level) {
+  if (buffer[size - 1] == '\n') {
+    size -= 1;  // Strip ending newline if any
+  }
+  if (size > 0) {
+    NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
+    NSString* message;
+    @try {
+      message = [[NSString alloc] initWithBytesNoCopy:buffer length:size encoding:NSUTF8StringEncoding freeWhenDone:NO];
+    }
+    @catch (NSException* exception) {
+      message = nil;
+    }
+    if (message) {
+      LogRawMessage(level, message);
+    }
+    [message release];
+    [localPool release];
+  }
+}
+
+static void* _CaptureThread(void* arg) {
+  void** params = (void**)arg;
+  int fd = (int)params[0];
+  LogLevel level = (LogLevel)params[1];
+  
+  char* buffer = malloc(kCaptureBufferSize);
+  assert(buffer);
+  
+  while (1) {
+    ssize_t size = read(fd, buffer, kCaptureBufferSize);
+    if (size > 0) {
+      _LogCapturedOutput(buffer, size, level);
+    }
+  }
+  
+  return NULL;
+}
+
+static void* _CaptureWriteFileDescriptor(int fd, LogLevel level) {
+  int fildes[2];
+  pipe(fildes);
+  dup2(fildes[1], fd);
+  close(fildes[1]);
+  fd = fildes[0];
+  assert(fd);
+  
+#if TARGET_OS_IPHONE
+  if (kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_4_0)
+#else
+  if (kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber10_6)
+#endif
+  {
+    pthread_t pthread = NULL;
+    void** params = malloc(2 * sizeof(void*));
+    params[0] = (void*)fd;
+    params[1] = (void*)level;
+    pthread_create(&pthread, NULL, _CaptureThread, params);
+    return pthread;  
+  } else {
+    char* buffer = malloc(kCaptureBufferSize);
+    assert(buffer);
+    fcntl(fd, F_SETFL, O_NONBLOCK);
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
+    dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, fd, 0, queue);
+    dispatch_source_set_event_handler(source, ^{
+      ssize_t size = read(fd, buffer, kCaptureBufferSize);
+      if (size > 0) {
+        _LogCapturedOutput(buffer, size, level);
+      }
+    });
+    dispatch_resume(source);
+    return source;
+  }
+}
+
+void LoggingCaptureStdout() {
+  if (_stdoutCapture == NULL) {
+    _stdoutCapture = _CaptureWriteFileDescriptor(STDOUT_FILENO, kLogLevel_Info);
+    assert(_stdoutCapture);
+  }
+}
+
+BOOL LoggingIsStdoutCaptured() {
+  return _stdoutCapture ? YES : NO;
+}
+
+void LoggingCaptureStderr() {
+  if (_stderrCapture == NULL) {
+    _stderrCapture = _CaptureWriteFileDescriptor(STDERR_FILENO, kLogLevel_Error);
+    assert(_stderrCapture);
+  }
+}
+
+BOOL LoggingIsStderrCaptured() {
+  return _stderrCapture ? YES : NO;
 }
 
 BOOL LoggingIsHistoryEnabled() {
@@ -353,7 +457,7 @@ void LogRawMessage(LogLevel level, NSString* message) {
   CFTimeInterval timestamp = CFAbsoluteTimeGetCurrent();
   CFTimeInterval relativeTime = timestamp - _startTime;
   const char* cString = [message UTF8String];
-  printf("[%s | %.3f] %s\n", _levelNames[level], relativeTime, cString);
+  fprintf(_outputFile, "[%s | %.3f] %s\n", _levelNames[level], relativeTime, cString);
   if (_loggingCallback) {
     (*_loggingCallback)(timestamp, level, message, _loggingContext);
   }
@@ -395,7 +499,11 @@ void LogRawMessage(LogLevel level, NSString* message) {
 
 + (void) load {
   LoggingResetMinimumLevel();
+  
   _startTime = CFAbsoluteTimeGetCurrent();
+  
+  _outputFile = fdopen(dup(STDOUT_FILENO), "w");
+  assert(_outputFile);
 }
 
 @end

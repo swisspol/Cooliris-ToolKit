@@ -99,6 +99,11 @@ void LoggingResetMinimumLevel();  // Default is kLogLevel_Debug or kLogLevel_Ver
 void LoggingSetCallback(LoggingLiveCallback callback, void* context);  // Callback must be thread-safe - Parameter "timestamp" is undefined
 LoggingLiveCallback LoggingGetCallback();
 
+void LoggingCaptureStdout();  // Captured as kLogLevel_Info
+BOOL LoggingIsStdoutCaptured();
+void LoggingCaptureStderr();  // Captured as kLogLevel_Error
+BOOL LoggingIsStderrCaptured();
+
 BOOL LoggingIsHistoryEnabled();
 BOOL LoggingEnableHistory(NSString* path, NSUInteger appVersion);  // Create if non-existing - Pass nil to close
 void LoggingPurgeHistory(NSTimeInterval maxAge);  // Pass 0.0 to clear entirely
