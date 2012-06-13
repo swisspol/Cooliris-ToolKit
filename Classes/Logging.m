@@ -19,6 +19,7 @@
 #import <ApplicationServices/ApplicationServices.h>
 #endif
 #import <libkern/OSAtomic.h>
+#import <sys/fcntl.h>
 #import <netinet/in.h>
 #import <sqlite3.h>
 #import <assert.h>
