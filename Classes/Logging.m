@@ -111,7 +111,7 @@ static inline void _LogCapturedOutput(char* buffer, ssize_t size, LogLevel level
 
 static void* _CaptureThread(void* arg) {
   void** params = (void**)arg;
-  int fd = (int)params[0];
+  int fd = (long)params[0];
   LogLevel level = (LogLevel)params[1];
   
   char* buffer = malloc(kCaptureBufferSize);
@@ -143,7 +143,7 @@ static void* _CaptureWriteFileDescriptor(int fd, LogLevel level) {
   {
     pthread_t pthread = NULL;
     void** params = malloc(2 * sizeof(void*));
-    params[0] = (void*)fd;
+    params[0] = (void*)(long)fd;
     params[1] = (void*)level;
     pthread_create(&pthread, NULL, _CaptureThread, params);
     return pthread;  
