@@ -50,7 +50,7 @@ static CFTimeInterval _startTime = 0.0;
 static LoggingRemoteConnectCallback _remoteConnectCallback = NULL;
 static LoggingRemoteDisconnectCallback _remoteDisconnectCallback = NULL;
 static void* _remoteContext = NULL;
-static FILE* _outputFile = NULL;
+static int _outputFD = 0;
 static void* _stdoutCapture = NULL;
 static void* _stderrCapture = NULL;
 
@@ -418,9 +418,7 @@ void LoggingDisableRemoteAccess(BOOL keepConnectionAlive) {
     CFRelease(_stream);
     _stream = NULL;
     if (_remoteDisconnectCallback) {
-      NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
       (*_remoteDisconnectCallback)(_remoteContext);
-      [localPool release];
     }
   }
   if (_socket) {
@@ -457,20 +455,20 @@ void LogRawMessage(LogLevel level, NSString* message) {
 #endif
   CFTimeInterval timestamp = CFAbsoluteTimeGetCurrent();
   CFTimeInterval relativeTime = timestamp - _startTime;
-  const char* cString = [message UTF8String];
-  fprintf(_outputFile, "[%s | %.3f] %s\n", _levelNames[level], relativeTime, cString);
+  NSString* content = [[NSString alloc] initWithFormat:@"[%s | %.3f] %@\n", _levelNames[level], relativeTime, message];
+  NSData* data = [content dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:YES];
+  write(_outputFD, data.bytes, data.length);
   if (_loggingCallback) {
     (*_loggingCallback)(timestamp, level, message, _loggingContext);
   }
   if (_database && (level >= kLogLevel_Info)) {  // Don't record debug or verbose levels
     OSSpinLockLock(&_spinLock);
     if (_database) {
-      _AppendHistory(timestamp, level, cString);
+      _AppendHistory(timestamp, level, [message UTF8String]);
     }
     OSSpinLockUnlock(&_spinLock);
   }
   if (_stream) {
-    NSString* content = [[NSString alloc] initWithFormat:@"[%s | %.3f] %@\n", _levelNames[level], relativeTime, message];
     OSSpinLockLock(&_spinLock);
     if (_stream) {
       if (CFWriteStreamGetStatus(_stream) == kCFStreamStatusOpen) {
@@ -480,15 +478,13 @@ void LogRawMessage(LogLevel level, NSString* message) {
         CFRelease(_stream);
         _stream = NULL;
         if (_remoteDisconnectCallback) {
-          NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
           (*_remoteDisconnectCallback)(_remoteContext);
-          [localPool release];
         }
       }
     }
     OSSpinLockUnlock(&_spinLock);
-    [content release];
   }
+  [content release];
   
   if (level >= kLogLevel_Abort) {
     LoggingDisableHistory();  // Ensure database is in a clean state
@@ -503,8 +499,8 @@ void LogRawMessage(LogLevel level, NSString* message) {
   
   _startTime = CFAbsoluteTimeGetCurrent();
   
-  _outputFile = fdopen(dup(STDOUT_FILENO), "w");
-  assert(_outputFile);
+  _outputFD = dup(STDOUT_FILENO);
+  assert(_outputFD > 0);
 }
 
 @end
