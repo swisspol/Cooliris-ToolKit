@@ -1268,7 +1268,8 @@ LOCK_CONNECTION();
   sqlite3_stmt* statement = NULL;
   int result = sqlite3_prepare_v2(_database, [sql UTF8String], -1, &statement, NULL);
   if (result == SQLITE_OK) {
-    if (key) {
+    const char* utf8Key = [key UTF8String];
+    if (utf8Key) {
       results = [NSMutableDictionary dictionary];
     } else {
       results = [NSMutableArray array];
@@ -1313,15 +1314,18 @@ LOCK_CONNECTION();
           }
           
         }
-        NSString* field = [NSString stringWithUTF8String:sqlite3_column_name(statement, i)];
-        if ([key isEqualToString:field]) {
+        const char* columnName = sqlite3_column_name(statement, i);
+        if (utf8Key && !strcmp(utf8Key, columnName)) {
           primary = [object retain];
+        } else if (class) {
+          [row setValue:object forKey:[NSString stringWithUTF8String:sqlite3_column_name(statement, i)]];
         } else {
-          [row setValue:object forKey:field];
+          [row release];
+          row = [object retain];
         }
         [object release];
       }
-      if (key) {
+      if (utf8Key) {
         if (primary) {
           [results setObject:row forKey:primary];
           [primary release];
