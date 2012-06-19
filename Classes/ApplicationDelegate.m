@@ -444,6 +444,8 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
 
 #endif
 
+#endif
+
 - (void) applicationDidEnterBackground:(UIApplication*)application {
   // Dismiss alert views
   [self dismissAuthentication:NO];
@@ -462,6 +464,7 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   // Purge history
   LoggingPurgeHistory(kApplicationLoggingHistoryAge);
   
+#if __TASK_SUPPORT__
   // Start TaskQueue background task if necessary - TODO: There can be race conditions if tasks aren't scheduled from main thread
   if ([TaskQueue wasCreated]) {
     if ([[TaskQueue sharedTaskQueue] isIdle] && ![[TaskQueue sharedTaskQueue] numberOfQueuedTasks]) {
@@ -482,7 +485,9 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
     }
   }
   // Otherwise, save state immediately
-  else {
+  else
+#endif
+  {
     [self saveState];
   }
   
@@ -498,6 +503,7 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   // Make sure user defaults are synchronized
   [[NSUserDefaults standardUserDefaults] synchronize];
   
+#if __TASK_SUPPORT__
   // Finish TaskQueue background task
   if (_queueTask != UIBackgroundTaskInvalid) {
     [[TaskQueue sharedTaskQueue] suspend];
@@ -508,6 +514,7 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   if ([TaskQueue wasCreated] && [[TaskQueue sharedTaskQueue] isSuspended]) {
     [[TaskQueue sharedTaskQueue] resume];
   }
+#endif
   
   // Restart logging remote access
   if (_loggingServer) {
@@ -519,8 +526,6 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   [_webdavServer start];
 #endif
 }
-
-#endif
 
 - (void) applicationWillTerminate:(UIApplication*)application {
   // Dismiss alert views
