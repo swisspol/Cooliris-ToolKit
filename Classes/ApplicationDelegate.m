@@ -16,7 +16,9 @@
 #import <objc/runtime.h>
 
 #import "ApplicationDelegate.h"
+#if __TASK_SUPPORT__
 #import "Task.h"
+#endif
 #import "HTTPURLConnection.h"
 #import "Logging.h"
 #import "Extensions_Foundation.h"
@@ -71,6 +73,8 @@
 @interface LogViewController : UIViewController
 @end
 
+#if __TASK_SUPPORT__
+
 @interface ConfigurationDownloader : Task {
 @private
   NSArray* _urls;
@@ -82,16 +86,21 @@
 - (id) initWithURLs:(NSArray*)urls;
 @end
 
+#endif
+
 @interface ApplicationDelegate (Internal)
 - (void) _dismissAlertWithButtonIndex:(NSInteger)index;
 - (void) _dismissAuthenticationWithButtonIndex:(NSInteger)index;
+- (void) _loggedMessage:(NSString*)message;
 @end
 
 static ApplicationDelegate* _sharedInstance = nil;
 static IMP _exceptionInitializerIMP = NULL;
 static NSMutableDictionary* _configurationDictionary = nil;
-static Task* _configurationTask = nil;
 static CGFloat _overlaysOpacity = 0.75;
+#if __TASK_SUPPORT__
+static Task* _configurationTask = nil;
+#endif
 
 static id _ExceptionInitializer(id self, SEL cmd, NSString* name, NSString* reason, NSDictionary* userInfo) {
   if ((self = _exceptionInitializerIMP(self, cmd, name, reason, userInfo))) {
@@ -125,6 +134,8 @@ static NSString* _LoggingRemoteConnectCallback(void* context) {
 static void _LoggingRemoteDisconnectCallback(void* context) {
   _ResetDefaultLoggingLevel();
 }
+
+#if __TASK_SUPPORT__
 
 @implementation ConfigurationDownloader
 
@@ -173,6 +184,8 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
 }
 
 @end
+
+#endif
 
 @implementation LogViewController
 
@@ -365,10 +378,12 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
 }
 
 - (BOOL) application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions {
+#if __TASK_SUPPORT__
 #ifdef NSFoundationVersionNumber_iOS_4_0
   if (&UIBackgroundTaskInvalid != NULL) {
     _queueTask = UIBackgroundTaskInvalid;
   }
+#endif
 #endif
   
   // Setup minimum logging level
@@ -392,6 +407,8 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   
   return NO;
 }
+
+#if __TASK_SUPPORT__
 
 - (void) _shutdownTaskQueue {
   LOG_VERBOSE(@"Waiting for TaskQueue to shutdown...");
@@ -424,6 +441,8 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
     [self _endTaskQueueBackgroundTask];
   }
 }
+
+#endif
 
 - (void) applicationDidEnterBackground:(UIApplication*)application {
   // Dismiss alert views
@@ -508,10 +527,12 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   [self dismissAuthentication:NO];
   [self dismissAlert:NO];
   
+#if __TASK_SUPPORT__
   // Shutdown TaskQueue
   if ([TaskQueue wasCreated]) {
     [self _shutdownTaskQueue];
   }
+#endif
   
   // Save state
   [self saveState];
@@ -632,6 +653,8 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
 
 @end
 
+#if __TASK_SUPPORT__
+
 @implementation ApplicationDelegate (Configuration)
 
 + (void) initialize {
@@ -710,6 +733,8 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
 }
 
 @end
+
+#endif
 
 @implementation ApplicationDelegate (Alerts)
 
@@ -1225,6 +1250,8 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   return nil;
 }
 
+#if __TASK_SUPPORT__
+
 - (NSString*) command_reportErrors:(id)argument {
   NSString* email = [ApplicationDelegate objectForConfigurationKey:kApplicationConfigurationKey_ReportEmail];
   NSString* subject = [NSString stringWithFormat:@"Error Log for %@ %@ (%@)",
@@ -1235,6 +1262,8 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   BOOL success = [self sendErrorsToEmail:email withSubject:subject bodyPrefix:prefix];
   return success ? nil : @"Device is not configured to send email";
 }
+
+#endif
 
 - (NSString*) command_enableOverlayLogging:(id)argument {
   [self setLoggingOverlayEnabled:YES];
@@ -1263,9 +1292,15 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
 // Called from arbitrary threads
 static void _LoggingCallback(NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
   message = [NSString stringWithFormat:@"[%s] %@\n", LoggingGetLevelName(level), message];
+#if __TASK_SUPPORT__
   [[TaskQueue sharedTaskQueue] performSelectorOnMainThread:@selector(_loggedMessage:)
                                               withArgument:message
                                                usingTarget:[ApplicationDelegate sharedInstance]];
+#else
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [[ApplicationDelegate sharedInstance] _loggedMessage:message];
+  });
+#endif
 }
 
 - (void) _showLoggingOverlay {
@@ -1309,7 +1344,9 @@ static void _LoggingCallback(NSTimeInterval timestamp, LogLevel level, NSString*
 
 - (void) setLoggingOverlayEnabled:(BOOL)flag {
   if (flag && !_loggingOverlayView) {
+#if __TASK_SUPPORT__
     [TaskQueue sharedTaskQueue]; // Make sure TaskQueue exists
+#endif
     
     _loggingOverlayView = [[UITextView alloc] init];
     _loggingOverlayView.layer.cornerRadius = 6.0;

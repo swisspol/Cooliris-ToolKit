@@ -66,8 +66,10 @@ typedef NSUInteger ApplicationMessageIdentifier;
   DAVServer* _webdavServer;
 #endif
   BOOL _loggingServer;
+#if __TASK_SUPPORT__
 #ifdef NSFoundationVersionNumber_iOS_4_0
   UIBackgroundTaskIdentifier _queueTask;
+#endif
 #endif
   
   UITextView* _loggingOverlayView;
@@ -85,12 +87,16 @@ typedef NSUInteger ApplicationMessageIdentifier;
 - (BOOL) shouldRotateOverlayWindowToInterfaceOrientation:(UIInterfaceOrientation)orientation;  // Default implementation returns YES
 @end
 
+#if __TASK_SUPPORT__
+
 @interface ApplicationDelegate (Configuration)
 + (NSURL*) configurationSourceURL;  // Returns nil if configuration is default
 + (id) objectForConfigurationKey:(NSString*)key;  // Returned object is guaranteed not to be nil
 + (void) updateConfigurationInBackgroundWithDelegate:(id)delegate;  // -configurationDidUpdate:(NSURL*)sourceURL
 + (BOOL) isUpdatingConfiguration;
 @end
+
+#endif
 
 // If alert is dismissed, cancel selector is called on delegate
 // Any existing alert or authentication is automatically dismissed when new one is shown
