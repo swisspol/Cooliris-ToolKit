@@ -1465,19 +1465,6 @@ UNLOCK_CONNECTION();
   return [self fetchObjectInSQLTable:table withUniqueSQLColumn:column matchingValue:value];
 }
 
-- (id) fetchObjectsOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValues:(NSArray*)values {
-  DatabaseSQLTable table = _SQLTableForClass(class);
-  DatabaseSQLColumn column = NULL;
-  for (unsigned int i = 0; i < table->columnCount; ++i) {
-    if ([property isEqualToString:table->columnList[i].name]) {
-      column = &table->columnList[i];
-      break;
-    }
-  }
-  CHECK(column && (column->columnOptions & kDatabaseSQLColumnOption_Unique));
-  return [self fetchObjectsInSQLTable:table withUniqueSQLColumn:column matchingValues:values];
-}
-
 - (NSArray*) fetchObjectsOfClass:(Class)class withProperty:(NSString*)property matchingValue:(id)value {
   DatabaseSQLTable table = _SQLTableForClass(class);
   DatabaseSQLColumn column = NULL;
@@ -1489,6 +1476,19 @@ UNLOCK_CONNECTION();
   }
   CHECK(column);
   return [self fetchObjectsInSQLTable:table withSQLColumn:column matchingValue:value];
+}
+
+- (id) fetchObjectsOfClass:(Class)class withProperty:(NSString*)property matchingValues:(NSArray*)values extraSQLWhereClause:(NSString*)clause limit:(NSUInteger)limit {
+  DatabaseSQLTable table = _SQLTableForClass(class);
+  DatabaseSQLColumn column = NULL;
+  for (unsigned int i = 0; i < table->columnCount; ++i) {
+    if ([property isEqualToString:table->columnList[i].name]) {
+      column = &table->columnList[i];
+      break;
+    }
+  }
+  CHECK(column);
+  return [self fetchObjectsInSQLTable:table withSQLColumn:column matchingValues:values extraSQLWhereClause:clause limit:limit];
 }
 
 - (NSArray*) fetchObjectsOfClass:(Class)class withSQLWhereClause:(NSString*)clause {
@@ -1800,7 +1800,7 @@ UNLOCK_CONNECTION();
   return object;
 }
 
-- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValues:(NSArray*)values {
+- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLColumn:(DatabaseSQLColumn)column matchingValues:(NSArray*)values extraSQLWhereClause:(NSString*)clause limit:(NSUInteger)limit {
 LOCK_CONNECTION();
   NSUInteger count = values.count;
   NSMutableArray* results = [NSMutableArray array];
@@ -1815,8 +1815,14 @@ LOCK_CONNECTION();
   }
   NSMutableString* string = [NSMutableString stringWithFormat:@"SELECT * FROM %@ WHERE %@ IN (%@)", table->tableName, column->columnName, list];
   [list release];
+  if (clause) {
+    [string appendFormat:@" AND %@", clause];
+  }
   if (table->fetchOrder) {
     [string appendFormat:@" ORDER BY %@", table->fetchOrder];
+  }
+  if (limit > 0) {
+    [string appendFormat:@" LIMIT %i", limit];
   }
   sqlite3_stmt* statement = NULL;
   CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
