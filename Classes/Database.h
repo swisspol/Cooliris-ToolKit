@@ -102,10 +102,10 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (BOOL) beginTransaction;  // Nestable
 - (BOOL) commitTransaction;  // Nestable
 - (BOOL) rollbackTransaction;  // Rolls back current transaction
-- (BOOL) refetchObject:(DatabaseObject*)object;  // Return NO on error or if object is not in database
-- (BOOL) insertObject:(DatabaseObject*)object;
+- (BOOL) refetchObject:(DatabaseObject*)object;  // Returns NO on error or if object is not in database
+- (BOOL) insertObject:(DatabaseObject*)object;  // Fails on UNIQUE constraint violations
 - (BOOL) updateObject:(DatabaseObject*)object;
-- (BOOL) replaceObject:(DatabaseObject*)object;
+- (BOOL) replaceObject:(DatabaseObject*)object;  // Replaces on UNIQUE constraint violation
 - (BOOL) deleteObject:(DatabaseObject*)object;
 - (BOOL) vacuum;
 - (NSArray*) executeRawSQLStatement:(NSString*)sql;  // Returns nil on error or an NSArray of NSDictionaries
@@ -126,6 +126,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (id) fetchObjectOfClass:(Class)class withSQLRowID:(DatabaseSQLRowID)rowID;  // Returns nil on error or if none
 - (BOOL) hasObjectOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValue:(id)value;  // Returns NO on error or if none - Faster than fetching the object
 - (id) fetchObjectOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValue:(id)value;  // Returns nil on error or if none
+- (id) fetchObjectsOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValues:(NSArray*)values;  // Returns nil on error
 - (NSArray*) fetchObjectsOfClass:(Class)class withProperty:(NSString*)property matchingValue:(id)value;  // Returns nil on error
 - (NSArray*) fetchObjectsOfClass:(Class)class withSQLWhereClause:(NSString*)clause;  // Returns nil on error
 - (BOOL) deleteAllObjectsOfClass:(Class)class;
@@ -178,6 +179,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (id) fetchObjectInSQLTable:(DatabaseSQLTable)table withSQLRowID:(DatabaseSQLRowID)rowID;  // Returns nil on error or if none
 - (BOOL) hasObjectInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value;  // Returns NO on error or if none - Faster than fetching the object
 - (id) fetchObjectInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value;  // Returns nil on error or if none
+- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValues:(NSArray*)values;  // Returns nil on error
 - (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value;  // Returns nil on error
 - (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause;  // Returns nil on error
 - (BOOL) deleteAllObjectsInSQLTable:(DatabaseSQLTable)table;

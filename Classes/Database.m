@@ -1465,6 +1465,19 @@ UNLOCK_CONNECTION();
   return [self fetchObjectInSQLTable:table withUniqueSQLColumn:column matchingValue:value];
 }
 
+- (id) fetchObjectsOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValues:(NSArray*)values {
+  DatabaseSQLTable table = _SQLTableForClass(class);
+  DatabaseSQLColumn column = NULL;
+  for (unsigned int i = 0; i < table->columnCount; ++i) {
+    if ([property isEqualToString:table->columnList[i].name]) {
+      column = &table->columnList[i];
+      break;
+    }
+  }
+  CHECK(column && (column->columnOptions & kDatabaseSQLColumnOption_Unique));
+  return [self fetchObjectsInSQLTable:table withUniqueSQLColumn:column matchingValues:values];
+}
+
 - (NSArray*) fetchObjectsOfClass:(Class)class withProperty:(NSString*)property matchingValue:(id)value {
   DatabaseSQLTable table = _SQLTableForClass(class);
   DatabaseSQLColumn column = NULL;
@@ -1785,6 +1798,44 @@ LOCK_CONNECTION();
   
 UNLOCK_CONNECTION();
   return object;
+}
+
+- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValues:(NSArray*)values {
+LOCK_CONNECTION();
+  NSUInteger count = values.count;
+  NSMutableArray* results = [NSMutableArray array];
+  
+  NSMutableString* list = [[NSMutableString alloc] init];
+  for (NSUInteger i = 0 ; i < count; ++i) {
+    if (i == 0) {
+      [list appendString:@"?1"];
+    } else {
+      [list appendFormat:@", ?%i", i + 1];
+    }
+  }
+  NSMutableString* string = [NSMutableString stringWithFormat:@"SELECT * FROM %@ WHERE %@ IN (%@)", table->tableName, column->columnName, list];
+  [list release];
+  if (table->fetchOrder) {
+    [string appendFormat:@" ORDER BY %@", table->fetchOrder];
+  }
+  sqlite3_stmt* statement = NULL;
+  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
+  int result = SQLITE_OK;
+  for (NSUInteger i = 0 ; i < count; ++i) {
+    _BindStatementBoxedValue(statement, [values objectAtIndex:i], column, i + 1);
+  }
+  if (result == SQLITE_OK) {
+    result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  }
+  if (result != SQLITE_DONE) {
+    LOG_ERROR(@"Failed fetching %@ objects with property '%@' matching %@ from %@: %@ (%i)", table->class, column->name,
+              values, self, [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    results = nil;
+  }
+  sqlite3_finalize(statement);
+  
+UNLOCK_CONNECTION();
+  return results;
 }
 
 - (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value {
