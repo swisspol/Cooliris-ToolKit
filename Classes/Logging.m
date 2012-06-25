@@ -36,7 +36,7 @@
 @interface Logging : NSObject
 @end
 
-LogLevel _minimumLogLevel = -1;
+LogLevel LoggingMinimumLogLevel = -1;
 
 static LoggingLiveCallback _loggingCallback = NULL;
 static void* _loggingContext = NULL;
@@ -59,11 +59,11 @@ const char* LoggingGetLevelName(LogLevel level) {
 }
 
 void LoggingSetMinimumLevel(LogLevel level) {
-  _minimumLogLevel = level;
+  LoggingMinimumLogLevel = level;
 }
 
 LogLevel LoggingGetMinimumLevel() {
-  return _minimumLogLevel;
+  return LoggingMinimumLogLevel;
 }
 
 void LoggingResetMinimumLevel() {
@@ -72,9 +72,9 @@ void LoggingResetMinimumLevel() {
     LoggingSetMinimumLevel(atoi(level));
   } else {
 #ifdef NDEBUG
-    _minimumLogLevel = kLogLevel_Verbose;
+    LoggingMinimumLogLevel = kLogLevel_Verbose;
 #else
-    _minimumLogLevel = kLogLevel_Debug;
+    LoggingMinimumLogLevel = kLogLevel_Debug;
 #endif
   }
 }
