@@ -157,7 +157,7 @@
               } else if ([object isKindOfClass:[NSString class]]) {
                 description = [object stringByReplacingOccurrencesOfString:@"\n" withString:@"\n  "];
               } else if ([object isKindOfClass:[NSData class]]) {
-                description = [NSString stringWithFormat:@"<DATA | %i BYTES>", [object length]];
+                description = [NSString stringWithFormat:@"<DATA | %i BYTES>", (int)[object length]];
               } else if ([object isKindOfClass:[NSDate class]] || [object isKindOfClass:[NSValue class]] ||
                 [object isKindOfClass:[NSURL class]]) {
                 description = [object description];
@@ -167,7 +167,7 @@
                 NSUInteger index = 0;
                 for (id value in object) {
                   value = [[value smartDescription] stringByReplacingOccurrencesOfString:@"\n" withString:@"\n    "];
-                  [(NSMutableString*)description appendFormat:@"\n    [%i] ", index++];
+                  [(NSMutableString*)description appendFormat:@"\n    [%i] ", (int)index++];
                   [(NSMutableString*)description appendString:value];
                 }
                 [(NSMutableString*)description appendString:@"\n  )"];

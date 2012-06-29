@@ -1810,7 +1810,7 @@ LOCK_CONNECTION();
     if (i == 0) {
       [list appendString:@"?1"];
     } else {
-      [list appendFormat:@", ?%i", i + 1];
+      [list appendFormat:@", ?%i", (int)(i + 1)];
     }
   }
   NSMutableString* string = [NSMutableString stringWithFormat:@"SELECT * FROM %@ WHERE %@ IN (%@)", table->tableName, column->columnName, list];
@@ -1822,7 +1822,7 @@ LOCK_CONNECTION();
     [string appendFormat:@" ORDER BY %@", table->fetchOrder];
   }
   if (limit > 0) {
-    [string appendFormat:@" LIMIT %i", limit];
+    [string appendFormat:@" LIMIT %i", (int)limit];
   }
   sqlite3_stmt* statement = NULL;
   CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);

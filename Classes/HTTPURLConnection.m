@@ -147,9 +147,9 @@
       LOG_VERBOSE(@"%@ | %@ | %.3f seconds | %i bytes", [request HTTPMethod], [request URL], duration, connection.length);  // connection.response.URL
       if (headerFields) {
         *headerFields = [NSMutableDictionary dictionaryWithDictionary:headers];
-        [(NSMutableDictionary*)*headerFields setObject:[NSString stringWithFormat:@"%i", response.statusCode]
+        [(NSMutableDictionary*)*headerFields setObject:[NSString stringWithFormat:@"%i", (int)response.statusCode]
                                                 forKey:kHTTPURLConnection_HeaderField_HTTPStatus];
-        [(NSMutableDictionary*)*headerFields setObject:[NSString stringWithFormat:@"%i", connection.length]
+        [(NSMutableDictionary*)*headerFields setObject:[NSString stringWithFormat:@"%i", (int)connection.length]
                                                 forKey:kHTTPURLConnection_HeaderField_DataLength];
         [(NSMutableDictionary*)*headerFields setValue:connection.redirectedURL forKey:kHTTPURLConnection_HeaderField_RedirectedURL];
         [(NSMutableDictionary*)*headerFields setValue:response.MIMEType forKey:kHTTPURLConnection_HeaderField_MIMEType];
@@ -236,7 +236,7 @@
   if (resume) {
     NSUInteger length = [[[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL] fileSize];
     if (length > 0) {
-      [request setValue:[NSString stringWithFormat:@"bytes=%i-", length] forHTTPHeaderField:@"Range"];
+      [request setValue:[NSString stringWithFormat:@"bytes=%i-", (int)length] forHTTPHeaderField:@"Range"];
       append = YES;
     }
   }

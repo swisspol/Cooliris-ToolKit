@@ -224,7 +224,7 @@ BOOL LoggingEnableHistory(NSString* path, NSUInteger appVersion) {
     }
     if (result == SQLITE_OK) {
       NSString* statement = [NSString stringWithFormat:@"INSERT INTO history (version, timestamp, level, message) VALUES (%i, ?1, ?2, ?3)",
-                                                       appVersion];
+                                                       (int)appVersion];
       result = sqlite3_prepare_v2(_database, [statement UTF8String], -1, &_statement, NULL);
       assert(result == SQLITE_OK);
     }

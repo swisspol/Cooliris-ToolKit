@@ -239,7 +239,7 @@ typedef enum {
   if (limit > kMaxHistorySize) {
     LOG_ABORT(@"PubNub history too large: %i", limit);
   }
-  NSString* url = [NSString stringWithFormat:@"%@/history/%@/%@/0/%i", _host, _subscribeKey, [channel urlEscapedString], limit];
+  NSString* url = [NSString stringWithFormat:@"%@/history/%@/%@/0/%i", _host, _subscribeKey, [channel urlEscapedString], (int)limit];
   PubNubConnection* connection = [[PubNubConnection alloc] initWithPubNub:self
                                                                       url:[NSURL URLWithString:url]
                                                                   command:kCommand_FetchHistory
