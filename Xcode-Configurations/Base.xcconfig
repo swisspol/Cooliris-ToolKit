@@ -28,3 +28,4 @@ CODE_SIGN_IDENTITY[sdk=iphoneos*] = iPhone Developer
 ARCHS[sdk=macosx10.5] = i386 ppc
 ARCHS[sdk=macosx10.6] = i386 x86_64
 ARCHS[sdk=macosx10.7] = i386 x86_64
+ARCHS[sdk=macosx10.8] = i386 x86_64
