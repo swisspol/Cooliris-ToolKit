@@ -35,6 +35,9 @@ static inline BOOL NSRangeContainsRange(NSRange range1, NSRange range2) {
   return NO;
 }
 
+NSURL* MakeHTTPURLWithArguments(NSString* baseURL, NSDictionary* arguments, BOOL escape);
+extern NSData* MakeHTTPBodyForMultipartForm(NSString* boundary, NSDictionary* arguments);  // Pass file attachments as dictionaries containing kMultipartFileKey_xxx keys
+
 @interface NSString (Extensions)
 - (BOOL) hasCaseInsensitivePrefix:(NSString*)prefix;
 - (NSString*) urlEscapedString;  // Uses UTF-8 encoding and also escapes characters that can confuse the parameter string part of the URL
@@ -121,7 +124,6 @@ static inline BOOL NSRangeContainsRange(NSRange range1, NSRange range2) {
 @end
 
 @interface NSMutableURLRequest (Extensions)
-+ (NSData*) HTTPBodyWithMultipartBoundary:(NSString*)boundary formArguments:(NSDictionary*)arguments;  // Pass file attachments as dictionaries containing kMultipartFileKey_xxx keys
 - (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments;
 @end
 

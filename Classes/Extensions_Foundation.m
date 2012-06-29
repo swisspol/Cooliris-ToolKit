@@ -45,6 +45,50 @@ typedef enum {
   kNumCharacterSets
 } CharacterSet;
 
+NSURL* MakeHTTPURLWithArguments(NSString* baseURL, NSDictionary* arguments, BOOL escape) {
+  NSUInteger index = 0;
+  for (NSString* key in arguments) {
+    NSString* value = [arguments objectForKey:key];
+    DCHECK([value isKindOfClass:[NSString class]]);
+    if (escape) {
+      key = [key urlEscapedString];
+      value = [value urlEscapedString];
+    }
+    baseURL = [baseURL stringByAppendingFormat:@"%c%@=%@", index++ == 0 ? '?' : '&', key, value];
+  }
+  return [NSURL URLWithString:baseURL];
+}
+
+// http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2 - TODO: Use "multipart/mixed" in case of multiple file attachments
+NSData* MakeHTTPBodyForMultipartForm(NSString* boundary, NSDictionary* arguments) {
+  NSMutableData* body = [NSMutableData data];
+  for (NSString* key in arguments) {
+    [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    id value = [arguments objectForKey:key];
+    if ([value isKindOfClass:[NSDictionary class]]) {
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n",
+                               key, [value objectForKey:kMultipartFileKey_FileName]];  // TODO: Properly encode filename
+      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
+      NSString* type = [NSString stringWithFormat:@"Content-Type: %@\r\n\r\n", [value objectForKey:kMultipartFileKey_MimeType]];
+      [body appendData:[type dataUsingEncoding:NSUTF8StringEncoding]];
+      [body appendData:[value objectForKey:kMultipartFileKey_FileData]];
+    } else if ([value isKindOfClass:[NSString class]]) {
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];  // Content-Type defaults to "text/plain"
+      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
+      [body appendData:[(NSString*)value dataUsingEncoding:NSUTF8StringEncoding]];
+    } else if ([value isKindOfClass:[NSData class]]) {
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];  // Content-Type defaults to "text/plain"
+      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
+      [body appendData:value];
+    } else {
+      NOT_REACHED();
+    }
+    [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+  }
+  [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+  return body;
+}
+
 static NSCharacterSet* _GetCachedCharacterSet(CharacterSet set) {
   static NSCharacterSet* cache[kNumCharacterSets] = {0};
   if (cache[set] == nil) {
@@ -802,40 +846,10 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
 
 @implementation NSMutableURLRequest (Extensions)
 
-// http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2 - TODO: Use "multipart/mixed" in case of multiple file attachments
-+ (NSData*) HTTPBodyWithMultipartBoundary:(NSString*)boundary formArguments:(NSDictionary*)arguments {
-  NSMutableData* body = [NSMutableData data];
-  for (NSString* key in arguments) {
-    [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    id value = [arguments objectForKey:key];
-    if ([value isKindOfClass:[NSDictionary class]]) {
-      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n",
-                                                         key, [value objectForKey:kMultipartFileKey_FileName]];  // TODO: Properly encode filename
-      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
-      NSString* type = [NSString stringWithFormat:@"Content-Type: %@\r\n\r\n", [value objectForKey:kMultipartFileKey_MimeType]];
-      [body appendData:[type dataUsingEncoding:NSUTF8StringEncoding]];
-      [body appendData:[value objectForKey:kMultipartFileKey_FileData]];
-    } else if ([value isKindOfClass:[NSString class]]) {
-      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];  // Content-Type defaults to "text/plain"
-      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
-      [body appendData:[(NSString*)value dataUsingEncoding:NSUTF8StringEncoding]];
-    } else if ([value isKindOfClass:[NSData class]]) {
-      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];  // Content-Type defaults to "text/plain"
-      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
-      [body appendData:value];
-    } else {
-      NOT_REACHED();
-    }
-    [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-  }
-  [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-  return body;
-}
-
 - (void) setHTTPBodyWithMultipartFormArguments:(NSDictionary*)arguments; {
   NSString* boundary = @"0xKhTmLbOuNdArY";
   [self setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary] forHTTPHeaderField:@"Content-Type"];
-  [self setHTTPBody:[[self class] HTTPBodyWithMultipartBoundary:boundary formArguments:arguments]];
+  [self setHTTPBody:MakeHTTPBodyForMultipartForm(boundary, arguments)];
 }
 
 @end
