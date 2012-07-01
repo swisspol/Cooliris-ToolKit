@@ -29,9 +29,9 @@
 #import "Extensions_Foundation.h"
 #import "Logging.h"
 
-static OSSpinLock _calendarSpinLock = 0;
-static OSSpinLock _formattersSpinLock = 0;
-static OSSpinLock _staticSpinLock = 0;
+static OSSpinLock _calendarSpinLock = OS_SPINLOCK_INIT;
+static OSSpinLock _formattersSpinLock = OS_SPINLOCK_INIT;
+static OSSpinLock _staticSpinLock = OS_SPINLOCK_INIT;
 
 typedef enum {
   kCharacterSet_Newline = 0,

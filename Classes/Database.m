@@ -824,6 +824,9 @@ static void __ReleaseStatementCallBack(CFAllocatorRef allocator, const void* val
     }
     CFDictionaryValueCallBacks callbacks = {0, NULL, __ReleaseStatementCallBack, NULL, NULL};
     _statements = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, NULL, &callbacks);
+#ifndef NDEBUG
+    _lock = OS_SPINLOCK_INIT;
+#endif
   }
   return self;
 }
