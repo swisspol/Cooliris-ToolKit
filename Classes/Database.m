@@ -411,6 +411,10 @@ static inline void _SetField_Object(DatabaseObject* self, DatabaseSQLColumn colu
   [super dealloc];
 }
 
+- (NSUInteger)hash {
+  return __rowID;
+}
+
 - (BOOL) isEqual:(id)object {
   return ([object class] == [self class]) && ([(DatabaseObject*)object sqlRowID] == __rowID);
 }
