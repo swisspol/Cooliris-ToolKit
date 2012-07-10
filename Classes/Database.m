@@ -224,7 +224,7 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
       [statement release];
     }
     {
-      NSString* statement = [[NSString alloc] initWithFormat:@"SELECT EXISTS (SELECT * FROM %@ WHERE %@=?1)", table->tableName, kRowID];
+      NSString* statement = [[NSString alloc] initWithFormat:@"SELECT 1 FROM %@ WHERE %@=?1", table->tableName, kRowID];
       table->statements[kObjectStatement_SelectExistsWithRowID] = _CopyAsCString(statement);
       [statement release];
     }
