@@ -56,7 +56,7 @@ struct DatabaseSQLColumnDefinition {
   SEL getter;
   SEL setter;
   
-  // Set by _InitializeTableDefinition()
+  // Set by _InitializeSQLTable()
   size_t size;
   ptrdiff_t offset;
   Class valueClass;
@@ -66,11 +66,12 @@ typedef struct DatabaseSQLColumnDefinition DatabaseSQLColumnDefinition;
 struct DatabaseSQLTableDefinition {
   Class class;
   NSString* tableName;
+  NSSet* indices;
   NSString* fetchOrder;
   unsigned int columnCount;
   DatabaseSQLColumnDefinition* columnList;
   
-  // Set by _InitializeTableDefinition()
+  // Set by _InitializeSQLTable()
   size_t storageSize;
   char* sql;
   char* statements[kObjectStatementCount];
@@ -321,12 +322,14 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
 
 static void _FinalizeSQLTable(DatabaseSQLTable table) {
   [table->tableName release];
+  [table->indices release];
   [table->fetchOrder release];
   for (unsigned int i = 0; i < table->columnCount; ++i) {
     [table->columnList[i].name release];
     [table->columnList[i].columnName release];
     [table->columnList[i].columnForeignKey release];
   }
+  free(table->columnList);
   if (table->sql) {
     free(table->sql);
   }
@@ -479,6 +482,7 @@ static DatabaseSQLTable _RegisterSQLTableFromDatabaseObjectSubclass(Class class)
   DatabaseSQLTable table = calloc(1, sizeof(DatabaseSQLTableDefinition));
   table->class = class;
   table->tableName = [[class sqlTableName] copy];
+  table->indices = [[class sqlPropertyIndices] copy];
   table->fetchOrder = [[class sqlTableFetchOrder] copy];
   
   table->columnCount = 0;
@@ -616,6 +620,10 @@ static DatabaseSQLTable _RegisterSQLTableFromDatabaseObjectSubclass(Class class)
 }
 
 + (NSString*) sqlForeignKeyForProperty:(NSString*)property {
+  return nil;
+}
+
++ (NSSet*) sqlPropertyIndices {
   return nil;
 }
 
@@ -758,6 +766,14 @@ static int _ExecTableCallback(void* context, int count, char** row, char** colum
   return SQLITE_OK;
 }
 
+static int _ExecIndexCallback(void* context, int count, char** row, char** columns) {
+  DCHECK(count == 2);
+  if (row[0] && row[1]) {
+    [(NSMutableDictionary*)context setObject:[NSString stringWithUTF8String:row[1]] forKey:[NSString stringWithUTF8String:row[0]]];
+  }
+  return SQLITE_OK;
+}
+
 + (BOOL) initializeDatabaseAtPath:(NSString*)path
                    usingSQLTables:(DatabaseSQLTable*)tables
                             count:(NSUInteger)count
@@ -765,22 +781,48 @@ static int _ExecTableCallback(void* context, int count, char** row, char** colum
   sqlite3* database = NULL;
   int result = _OpenDatabase(path, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, &database);
   if (result == SQLITE_OK) {
-    NSMutableDictionary* dictionary = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary* tableDictionary = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary* indexDictionary = [[NSMutableDictionary alloc] init];
     result = sqlite3_exec(database, "BEGIN IMMEDIATE TRANSACTION", NULL, NULL, NULL);
     if (result == SQLITE_OK) {
-      result = sqlite3_exec(database, "SELECT name,sql FROM sqlite_master WHERE type='table'", _ExecTableCallback, dictionary, NULL);
+      result = sqlite3_exec(database, "SELECT name,sql FROM sqlite_master WHERE type='table'", _ExecTableCallback, tableDictionary, NULL);
+    }
+    if (result == SQLITE_OK) {
+      result = sqlite3_exec(database, "SELECT name,sql FROM sqlite_master WHERE type='index' AND sql IS NOT NULL", _ExecIndexCallback, indexDictionary, NULL);
     }
     if (result == SQLITE_OK) {
       for (NSUInteger i = 0; i < count; ++i) {
-        NSString* string = [dictionary objectForKey:tables[i]->tableName];
+        const DatabaseSQLTableDefinition* table = tables[i];
+        NSString* string = [tableDictionary objectForKey:table->tableName];
         if (string) {
-          if (![string isEqualToString:[NSString stringWithUTF8String:tables[i]->sql]]) {
+          if (![string isEqualToString:[NSString stringWithUTF8String:table->sql]]) {
             LOG_ERROR(@"Database is already initialized with incompatible table:\n%@\n%@", string,
-                      [NSString stringWithUTF8String:tables[i]->sql]);
+                      [NSString stringWithUTF8String:table->sql]);
             result = SQLITE_ERROR;
           }
         } else {
-          result = sqlite3_exec(database, tables[i]->sql, NULL, NULL, NULL);
+          result = sqlite3_exec(database, table->sql, NULL, NULL, NULL);
+        }
+        if (result == SQLITE_OK) {
+          for (NSArray* properties in table->indices) {
+            NSString* name = [[NSString alloc] initWithFormat:@"%@_%@", table->tableName, [properties componentsJoinedByString:@"_"]];
+            NSString* string = [indexDictionary objectForKey:name];
+            NSString* statement = [[NSString alloc] initWithFormat:@"CREATE INDEX %@ ON %@ (%@)", name, table->tableName,
+                                   [properties componentsJoinedByString:@","]];
+            if (string) {
+              if (![string isEqualToString:statement]) {
+                LOG_ERROR(@"Database is already initialized with incompatible index:\n%@\n%@", string, statement);
+                result = SQLITE_ERROR;
+              }
+            } else {
+              result = sqlite3_exec(database, [statement UTF8String], NULL, NULL, NULL);
+            }
+            [statement release];
+            [name release];
+            if (result != SQLITE_OK) {
+              break;
+            }
+          }
         }
         if (result != SQLITE_OK) {
           break;
@@ -793,11 +835,11 @@ static int _ExecTableCallback(void* context, int count, char** row, char** colum
         result = sqlite3_exec(database, "COMMIT TRANSACTION", NULL, NULL, NULL);
       }
     }
-    [dictionary release];
+    [indexDictionary release];
+    [tableDictionary release];
   }
   if (result != SQLITE_OK) {
-    LOG_ERROR(@"Failed initializing database at \"%@\": %@ (%i)", path,
-              [NSString stringWithUTF8String:sqlite3_errmsg(database)], result);
+    LOG_ERROR(@"Failed initializing database at \"%@\": %s (%i)", path, sqlite3_errmsg(database), result);
   }
   if (database) {
     sqlite3_close(database);
@@ -821,8 +863,7 @@ static void __ReleaseStatementCallBack(CFAllocatorRef allocator, const void* val
   if ((self = [super init])) {
     int result = _OpenDatabase(path, readWrite ? SQLITE_OPEN_READWRITE : SQLITE_OPEN_READONLY, (sqlite3**)&_database);
     if (result != SQLITE_OK) {
-       LOG_ERROR(@"Failed opening database at \"%@\": %@ (%i)", path,
-                 [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+       LOG_ERROR(@"Failed opening database at \"%@\": %s (%i)", path, sqlite3_errmsg(_database), result);
       [self release];
       return nil;
     }
@@ -878,8 +919,7 @@ LOCK_CONNECTION();
   sqlite3_stmt* statement = _GetCachedStatement(self, "SAVEPOINT mark");
   int result = _ExecuteStatement(statement);
   if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed adding savepoint in %@: %@ (%i)", self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed adding savepoint in %@: %s (%i)", self, sqlite3_errmsg(_database), result);
   }
   sqlite3_reset(statement);
 
@@ -899,8 +939,7 @@ LOCK_CONNECTION();
     sqlite3_stmt* statement = _GetCachedStatement(self, "ROLLBACK TO mark");
     result = _ExecuteStatement(statement);
     if (result != SQLITE_DONE) {
-      LOG_ERROR(@"Failed rolling back savepoint in %@: %@ (%i)", self,
-                [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+      LOG_ERROR(@"Failed rolling back savepoint in %@: %s (%i)", self, sqlite3_errmsg(_database), result);
     }
     sqlite3_reset(statement);
   } else {
@@ -911,8 +950,7 @@ LOCK_CONNECTION();
     sqlite3_stmt* statement = _GetCachedStatement(self, "RELEASE mark");
     result = _ExecuteStatement(statement);
     if (result != SQLITE_DONE) {
-      LOG_ERROR(@"Failed releasing savepoint in %@: %@ (%i)", self,
-                [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+      LOG_ERROR(@"Failed releasing savepoint in %@: %s (%i)", self, sqlite3_errmsg(_database), result);
     }
     sqlite3_reset(statement);
   }
@@ -1146,8 +1184,7 @@ LOCK_CONNECTION();
   } else if (result == SQLITE_DONE) {
     object.sqlRowID = 0;
   } else {
-    LOG_ERROR(@"Failed refetching %@ from %@: %@ (%i)", [object miniDescription], self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed refetching %@ from %@: %s (%i)", [object miniDescription], self, sqlite3_errmsg(_database), result);
   }
   sqlite3_reset(statement);
   sqlite3_clear_bindings(statement);
@@ -1170,8 +1207,7 @@ LOCK_CONNECTION();
     object.sqlRowID = sqlite3_last_insert_rowid(_database);
     object.modified = NO;
   } else {
-    LOG_ERROR(@"Failed inserting %@ into %@: %@ (%i)", [object miniDescription], self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed inserting %@ into %@: %s (%i)", [object miniDescription], self, sqlite3_errmsg(_database), result);
   }
   sqlite3_reset(statement);
   sqlite3_clear_bindings(statement);
@@ -1194,8 +1230,7 @@ LOCK_CONNECTION();
     object.sqlRowID = sqlite3_last_insert_rowid(_database);
     object.modified = NO;
   } else {
-    LOG_ERROR(@"Failed replacing %@ into %@: %@ (%i)", [object miniDescription], self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed replacing %@ into %@: %s (%i)", [object miniDescription], self, sqlite3_errmsg(_database), result);
   }
   sqlite3_reset(statement);
   sqlite3_clear_bindings(statement);
@@ -1220,8 +1255,7 @@ LOCK_CONNECTION();
   if (result == SQLITE_DONE) {
     object.modified = NO;
   } else {
-    LOG_ERROR(@"Failed updating %@ into %@: %@ (%i)", [object miniDescription], self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed updating %@ into %@: %s (%i)", [object miniDescription], self, sqlite3_errmsg(_database), result);
   }
   sqlite3_reset(statement);
   sqlite3_clear_bindings(statement);
@@ -1240,8 +1274,7 @@ LOCK_CONNECTION();
     result = _ExecuteStatement(statement);
   }
   if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed deleting %@ object with SQL row ID (%i) from %@: %@ (%i)", table->class, rowID, self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed deleting %@ object with SQL row ID (%i) from %@: %s (%i)", table->class, rowID, self, sqlite3_errmsg(_database), result);
   }
   sqlite3_reset(statement);
   sqlite3_clear_bindings(statement);
@@ -1343,13 +1376,11 @@ LOCK_CONNECTION();
       [row release];
     }
     if (result != SQLITE_DONE) {
-      LOG_ERROR(@"Failed executing raw SQL statement \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
-                result);
+      LOG_ERROR(@"Failed executing raw SQL statement \"%@\": %s (%i)", sql, sqlite3_errmsg(_database), result);
     }
     sqlite3_finalize(statement);
   } else {
-    LOG_ERROR(@"Failed preparing raw SQL statement \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
-              result);
+    LOG_ERROR(@"Failed preparing raw SQL statement \"%@\": %s (%i)", sql, sqlite3_errmsg(_database), result);
   }
   
 UNLOCK_CONNECTION();
@@ -1372,14 +1403,12 @@ LOCK_CONNECTION();
       } while (result == SQLITE_ROW);
       sqlite3_finalize(statement);
       if (result != SQLITE_DONE) {
-        LOG_ERROR(@"Failed executing raw SQL statements \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
-                  result);
+        LOG_ERROR(@"Failed executing raw SQL statements \"%@\": %s (%i)", sql, sqlite3_errmsg(_database), result);
         break;
       }
       zSql = tail;
     } else {
-      LOG_ERROR(@"Failed preparing raw SQL statements \"%@\": %@ (%i)", sql, [NSString stringWithUTF8String:sqlite3_errmsg(_database)],
-                result);
+      LOG_ERROR(@"Failed preparing raw SQL statements \"%@\": %s (%i)", sql, sqlite3_errmsg(_database), result);
       break;
     }
   }
@@ -1446,7 +1475,7 @@ UNLOCK_CONNECTION();
   return [self fetchObjectInSQLTable:_SQLTableForClass(class) withSQLRowID:rowID];
 }
 
-- (BOOL) hasObjectOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValue:(id)value {
+- (DatabaseSQLRowID) hasObjectOfClass:(Class)class withUniqueProperty:(NSString*)property matchingValue:(id)value {
   DatabaseSQLTable table = _SQLTableForClass(class);
   DatabaseSQLColumn column = NULL;
   for (unsigned int i = 0; i < table->columnCount; ++i) {
@@ -1485,7 +1514,11 @@ UNLOCK_CONNECTION();
   return [self fetchObjectsInSQLTable:table withSQLColumn:column matchingValue:value];
 }
 
-- (id) fetchObjectsOfClass:(Class)class withProperty:(NSString*)property matchingValues:(NSArray*)values extraSQLWhereClause:(NSString*)clause limit:(NSUInteger)limit {
+- (id) fetchObjectsOfClass:(Class)class
+              withProperty:(NSString*)property
+            matchingValues:(NSArray*)values
+       extraSQLWhereClause:(NSString*)clause
+                     limit:(NSUInteger)limit {
   DatabaseSQLTable table = _SQLTableForClass(class);
   DatabaseSQLColumn column = NULL;
   for (unsigned int i = 0; i < table->columnCount; ++i) {
@@ -1500,6 +1533,25 @@ UNLOCK_CONNECTION();
 
 - (NSArray*) fetchObjectsOfClass:(Class)class withSQLWhereClause:(NSString*)clause {
   return [self fetchObjectsInSQLTable:_SQLTableForClass(class) withSQLWhereClause:clause];
+}
+
+- (NSArray*) fetchObjectsOfClass:(Class)class
+           joiningObjectsOfClass:(Class)joinClass
+                      onProperty:(NSString*)joinProperty
+              withSQLWhereClause:(NSString*)clause
+                           limit:(NSUInteger)limit {
+  DatabaseSQLTable table = _SQLTableForClass(class);
+  CHECK(table);
+  DatabaseSQLTable joinTable = _SQLTableForClass(joinClass);
+  DatabaseSQLColumn joinColumn = NULL;
+  for (unsigned int i = 0; i < joinTable->columnCount; ++i) {
+    if ([joinProperty isEqualToString:joinTable->columnList[i].name]) {
+      joinColumn = &joinTable->columnList[i];
+      break;
+    }
+  }
+  CHECK(joinColumn);
+  return [self fetchObjectsInSQLTable:table joiningSQLTable:joinTable onSQLColumn:joinColumn withSQLWhereClause:clause limit:limit];
 }
 
 - (NSUInteger) countObjectsOfClass:(Class)class {
@@ -1720,8 +1772,7 @@ LOCK_CONNECTION();
       exists = YES;
     }
   } else if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed fetching %@ object with rowID '%i' from %@: %@ (%i)", table->class, rowID, self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed fetching %@ object with rowID '%i' from %@: %s (%i)", table->class, rowID, self, sqlite3_errmsg(_database), result);
   }
   sqlite3_reset(statement);
   sqlite3_clear_bindings(statement);
@@ -1745,8 +1796,7 @@ LOCK_CONNECTION();
     object.sqlRowID = sqlite3_column_int(statement, 0);  // rowID
     _CopyRowValues(statement, object._storage, table, 1);
   } else if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed fetching %@ object with rowID '%i' from %@: %@ (%i)", table->class, rowID, self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed fetching %@ object with rowID '%i' from %@: %s (%i)", table->class, rowID, self, sqlite3_errmsg(_database), result);
   }
   sqlite3_reset(statement);
   sqlite3_clear_bindings(statement);
@@ -1755,12 +1805,12 @@ UNLOCK_CONNECTION();
   return object;
 }
 
-- (BOOL) hasObjectInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value {
+- (DatabaseSQLRowID) hasObjectInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value {
 LOCK_CONNECTION();
-  BOOL exists = NO;
+  DatabaseSQLRowID rowID = 0;
   CHECK(value);
   
-  NSString* string = [NSString stringWithFormat:@"SELECT EXISTS (SELECT * FROM %@ WHERE %@=?1)", table->tableName, column->columnName];
+  NSString* string = [NSString stringWithFormat:@"SELECT %@ FROM %@ WHERE %@=?1", kRowID, table->tableName, column->columnName];
   sqlite3_stmt* statement = NULL;
   CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
   int result = _BindStatementBoxedValue(statement, value, column, 1);
@@ -1768,17 +1818,15 @@ LOCK_CONNECTION();
     result = _ExecuteStatement(statement);
   }
   if (result == SQLITE_ROW) {
-    if (sqlite3_column_int(statement, 0)) {
-      exists = YES;
-    }
+    rowID = sqlite3_column_int(statement, 0);
   } else if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed fetching %@ object with unique property '%@' matching '%@' from %@: %@ (%i)", table->class,
-              column->name, value, self, [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed fetching %@ object with unique property '%@' matching '%@' from %@: %s (%i)", table->class, column->name,
+              value, self, sqlite3_errmsg(_database), result);
   }
   sqlite3_finalize(statement);
   
 UNLOCK_CONNECTION();
-  return exists;
+  return rowID;
 }
 
 - (id) fetchObjectInSQLTable:(DatabaseSQLTable)table withUniqueSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value {
@@ -1798,8 +1846,8 @@ LOCK_CONNECTION();
     object.sqlRowID = sqlite3_column_int(statement, 0);  // rowID
     _CopyRowValues(statement, object._storage, table, 1);
   } else if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed fetching %@ object with unique property '%@' matching '%@' from %@: %@ (%i)", table->class,
-              column->name, value, self, [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed fetching %@ object with unique property '%@' matching '%@' from %@: %s (%i)", table->class, column->name,
+              value, self, sqlite3_errmsg(_database), result);
   }
   sqlite3_finalize(statement);
   
@@ -1807,7 +1855,11 @@ UNLOCK_CONNECTION();
   return object;
 }
 
-- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLColumn:(DatabaseSQLColumn)column matchingValues:(NSArray*)values extraSQLWhereClause:(NSString*)clause limit:(NSUInteger)limit {
+- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table
+                      withSQLColumn:(DatabaseSQLColumn)column
+                     matchingValues:(NSArray*)values
+                extraSQLWhereClause:(NSString*)clause
+                              limit:(NSUInteger)limit {
 LOCK_CONNECTION();
   NSUInteger count = values.count;
   NSMutableArray* results = [NSMutableArray array];
@@ -1841,8 +1893,8 @@ LOCK_CONNECTION();
     result = [self _executeSelectStatement:statement withSQLTable:table results:results];
   }
   if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed fetching %@ objects with property '%@' matching %@ from %@: %@ (%i)", table->class, column->name,
-              values, self, [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed fetching %@ objects with property '%@' matching %@ from %@: %s (%i)", table->class, column->name,
+              values, self, sqlite3_errmsg(_database), result);
     results = nil;
   }
   sqlite3_finalize(statement);
@@ -1869,8 +1921,8 @@ LOCK_CONNECTION();
     result = [self _executeSelectStatement:statement withSQLTable:table results:results];
   }
   if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed fetching %@ objects with property '%@' matching '%@' from %@: %@ (%i)", table->class, column->name,
-              value, self, [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed fetching %@ objects with property '%@' matching '%@' from %@: %s (%i)", table->class, column->name,
+              value, self, sqlite3_errmsg(_database), result);
     results = nil;
   }
   sqlite3_finalize(statement);
@@ -1892,8 +1944,41 @@ LOCK_CONNECTION();
   CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
   int result = [self _executeSelectStatement:statement withSQLTable:table results:results];
   if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed fetching %@ objects with SQL where clause \"%@\" from %@: %@ (%i)", table->class, clause, self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed fetching %@ objects with SQL where clause \"%@\" from %@: %s (%i)", table->class, clause, self,
+              sqlite3_errmsg(_database), result);
+    results = nil;
+  }
+  sqlite3_finalize(statement);
+  
+UNLOCK_CONNECTION();
+  return results;
+}
+
+- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table
+                    joiningSQLTable:(DatabaseSQLTable)joinTable
+                        onSQLColumn:(DatabaseSQLColumn)joinColumn
+                 withSQLWhereClause:(NSString*)clause
+                              limit:(NSUInteger)limit {
+LOCK_CONNECTION();
+  NSMutableArray* results = [NSMutableArray array];
+  
+  NSMutableString* string = [NSMutableString stringWithFormat:@"SELECT * FROM %@ JOIN %@ ON %@.%@=%@.%@", table->tableName, joinTable->tableName,
+                             joinTable->tableName, joinColumn->columnName, table->tableName, kRowID];
+  if (clause) {
+    [string appendFormat:@" WHERE %@", clause];
+  }
+  if (table->fetchOrder) {
+    [string appendFormat:@" ORDER BY %@", table->fetchOrder];
+  }
+  if (limit > 0) {
+    [string appendFormat:@" LIMIT %i", (int)limit];
+  }
+  sqlite3_stmt* statement = NULL;
+  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
+  int result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  if (result != SQLITE_DONE) {
+    LOG_ERROR(@"Failed fetching %@ objects joined with %@ objects on property '%@' from %@: %s (%i)", table->class,
+              joinTable->class, joinColumn->name, self, sqlite3_errmsg(_database), result);
     results = nil;
   }
   sqlite3_finalize(statement);
@@ -1911,8 +1996,7 @@ LOCK_CONNECTION();
   if (result == SQLITE_ROW) {
     count = sqlite3_column_int(statement, 0);
   } else {
-    LOG_ERROR(@"Failed counting all %@ objects in %@: %@ (%i)", table->class, self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed counting all %@ objects in %@: %s (%i)", table->class, self, sqlite3_errmsg(_database), result);
   }
   sqlite3_reset(statement);
   sqlite3_clear_bindings(statement);
@@ -1938,8 +2022,8 @@ LOCK_CONNECTION();
   if (result == SQLITE_ROW) {
     count = sqlite3_column_int(statement, 0);
   } else {
-    LOG_ERROR(@"Failed counting %@ objects with property '%@' matching '%@' from %@: %@ (%i)", table->class, column->name,
-              value, self, [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed counting %@ objects with property '%@' matching '%@' from %@: %s (%i)", table->class, column->name,
+              value, self, sqlite3_errmsg(_database), result);
   }
   sqlite3_finalize(statement);
   
@@ -1954,8 +2038,7 @@ LOCK_CONNECTION();
   sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_SelectAll]);
   int result = [self _executeSelectStatement:statement withSQLTable:table results:results];
   if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed fetching all %@ objects from %@: %@ (%i)", table->class, self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed fetching all %@ objects from %@: %s (%i)", table->class, self, sqlite3_errmsg(_database), result);
     results = nil;
   }
   sqlite3_reset(statement);
@@ -1971,8 +2054,7 @@ LOCK_CONNECTION();
   sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_DeleteAll]);
   int result = _ExecuteStatement(statement);
   if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed deleting all %@ objects from %@: %@ (%i)", table->class, self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed deleting all %@ objects from %@: %s (%i)", table->class, self, sqlite3_errmsg(_database), result);
   }
   sqlite3_reset(statement);
   sqlite3_clear_bindings(statement);
@@ -2000,8 +2082,8 @@ LOCK_CONNECTION();
     result = _ExecuteStatement(statement);
   }
   if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed deleting %@ objects with property '%@' matching '%@' from %@: %@ (%i)", table->class, column->name,
-              value, self, [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed deleting %@ objects with property '%@' matching '%@' from %@: %s (%i)", table->class, column->name,
+              value, self, sqlite3_errmsg(_database), result);
   }
   sqlite3_finalize(statement);
   
@@ -2010,7 +2092,6 @@ UNLOCK_CONNECTION();
 }
 
 - (BOOL) deleteObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause {
-
 LOCK_CONNECTION();
   CHECK(clause);
   
@@ -2019,8 +2100,8 @@ LOCK_CONNECTION();
   CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
   int result = _ExecuteStatement(statement);
   if (result != SQLITE_DONE) {
-    LOG_ERROR(@"Failed deleting %@ objects with SQL where clause \"%@\" from %@: %@ (%i)", table->class, clause, self,
-              [NSString stringWithUTF8String:sqlite3_errmsg(_database)], result);
+    LOG_ERROR(@"Failed deleting %@ objects with SQL where clause \"%@\" from %@: %s (%i)", table->class, clause, self,
+              sqlite3_errmsg(_database), result);
   }
   sqlite3_finalize(statement);
   
