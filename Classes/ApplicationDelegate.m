@@ -131,11 +131,22 @@ static NSString* _LoggingRemoteConnectCallback(void* context) {
   return nil;
 }
 
+static SEL _ParseCommandString(NSString* string, NSString** command, NSString** argument) {
+  NSScanner* scanner = [NSScanner scannerWithString:string];
+  [scanner setCharactersToBeSkipped:nil];
+  [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:command];
+  [scanner scanCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:NULL];
+  [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:argument];
+  return NSSelectorFromString([NSString stringWithFormat:@"command_%@:", *command]);
+}
+
 static NSString* _LoggingRemoteMessageCallback(NSString* message, void* context) {
   ApplicationDelegate* self = (ApplicationDelegate*)context;
-  SEL selector = NSSelectorFromString([NSString stringWithFormat:@"command_%@:", message]);
+  NSString* command = nil;
+  NSString* argument = nil;
+  SEL selector = _ParseCommandString(message, &command, &argument);
   if ([self respondsToSelector:selector]) {
-    return [self performSelector:selector withObject:nil];
+    return [self performSelector:selector withObject:argument];
   }
   return [NSString stringWithFormat:@"INVALID COMMAND: '%@'", message];
 }
@@ -648,14 +659,9 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
 }
 
 - (BOOL) processCommandString:(NSString*)string {
-  NSScanner* scanner = [NSScanner scannerWithString:string];
-  [scanner setCharactersToBeSkipped:nil];
   NSString* command = nil;
-  [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:&command];
-  [scanner scanCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:NULL];
   NSString* argument = nil;
-  [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:&argument];
-  SEL selector = NSSelectorFromString([NSString stringWithFormat:@"command_%@:", command]);
+  SEL selector = _ParseCommandString(string, &command, &argument);
   if ([self respondsToSelector:selector]) {
     NSString* string = [self performSelector:selector withObject:argument];
     if (string) {
