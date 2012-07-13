@@ -1315,6 +1315,10 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   return @"Verbose logging is disabled";
 }
 
+- (NSString*) command_showUserDefaults:(id)argument {
+  return [[[NSUserDefaults standardUserDefaults] dictionaryRepresentation] description];
+}
+
 @end
 
 @implementation ApplicationDelegate (LoggingOverlay)
