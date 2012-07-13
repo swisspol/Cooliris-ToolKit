@@ -399,6 +399,9 @@ static void _ReadStreamClientCallBack(CFReadStreamRef stream, CFStreamEventType 
       OSSpinLockUnlock(&_spinLock);
       break;
     
+    default:
+      break;
+    
   }
 }
 
