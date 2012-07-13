@@ -32,6 +32,7 @@
 #import "Logging.h"
 
 #define kCaptureBufferSize 1024
+#define kReadBufferSize 1024
 
 @interface Logging : NSObject
 @end
@@ -45,9 +46,11 @@ static OSSpinLock _spinLock = OS_SPINLOCK_INIT;
 static sqlite3* _database = NULL;
 static sqlite3_stmt* _statement = NULL;
 static CFSocketRef _socket = NULL;
-static CFWriteStreamRef _stream = NULL;
+static CFReadStreamRef _readStream = NULL;
+static CFWriteStreamRef _writeStream = NULL;
 static CFTimeInterval _startTime = 0.0;
 static LoggingRemoteConnectCallback _remoteConnectCallback = NULL;
+static LoggingRemoteMessageCallback _remoteMessageCallback = NULL;
 static LoggingRemoteDisconnectCallback _remoteDisconnectCallback = NULL;
 static void* _remoteContext = NULL;
 static int _outputFD = 0;
@@ -320,13 +323,30 @@ BOOL LoggingIsRemoteAccessEnabled() {
 }
 
 // Assumes spinlock is already taken
-static void _AppendStream(NSString* message) {
+static void _CloseStreams() {
+  if (_readStream) {
+    CFReadStreamClose(_readStream);
+    CFRelease(_readStream);
+    _readStream = NULL;
+  }
+  if (_writeStream) {
+    CFWriteStreamClose(_writeStream);
+    CFRelease(_writeStream);
+    _writeStream = NULL;
+  }
+  if (_remoteDisconnectCallback) {
+    (*_remoteDisconnectCallback)(_remoteContext);
+  }
+}
+
+// Assumes spinlock is already taken
+static void _WriteStream(NSString* message) {
   const char* cString = [message UTF8String];
   if (cString) {
     size_t length = strlen(cString);
     CFIndex count = length;
     while (count > 0) {
-      CFIndex result = CFWriteStreamWrite(_stream, (UInt8*)cString + length - count, count);
+      CFIndex result = CFWriteStreamWrite(_writeStream, (UInt8*)cString + length - count, count);
       if (result <= 0) {
         break;
       }
@@ -335,43 +355,110 @@ static void _AppendStream(NSString* message) {
   }
 }
 
+// Assume is called on main thread
+static void _ReadStream() {
+  DCHECK([NSThread isMainThread]);
+  unsigned char buffer[kReadBufferSize];
+  CFIndex count = CFReadStreamRead(_readStream, buffer, kReadBufferSize);
+  if (_remoteMessageCallback && (count > 2)) {
+    if (buffer[count - 1] == '\n') {
+      count -= 1;
+    }
+    if (buffer[count - 1] == '\r') {
+      count -= 1;
+    }
+    NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
+    NSString* message = [[NSString alloc] initWithBytes:buffer length:count encoding:NSUTF8StringEncoding];
+    if (message) {
+      NSString* response = _remoteMessageCallback(message, _remoteContext);
+      if (response) {
+        OSSpinLockLock(&_spinLock);
+        _WriteStream([response stringByAppendingString:@"\n"]);
+        OSSpinLockUnlock(&_spinLock);
+      }
+      [message release];
+    } else {
+      OSSpinLockLock(&_spinLock);
+      _WriteStream(@"<SYNTAX ERROR>\n");
+      OSSpinLockUnlock(&_spinLock);
+    }
+    [localPool release];
+  }
+}
+
+static void _ReadStreamClientCallBack(CFReadStreamRef stream, CFStreamEventType type, void* clientCallBackInfo) {
+  switch (type) {
+    
+    case kCFStreamEventHasBytesAvailable:
+      _ReadStream();
+      break;
+    
+    case kCFStreamEventEndEncountered:
+      OSSpinLockLock(&_spinLock);
+      _CloseStreams();
+      OSSpinLockUnlock(&_spinLock);
+      break;
+    
+  }
+}
+
+static void _OpenStreams(CFSocketNativeHandle handle) {
+  CFStreamCreatePairWithSocket(kCFAllocatorDefault, handle, &_readStream, &_writeStream);
+  if (_writeStream) {
+    CFWriteStreamSetProperty(_writeStream, kCFStreamPropertyShouldCloseNativeSocket, kCFBooleanTrue);
+    if (CFWriteStreamOpen(_writeStream)) {
+      NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
+      
+      NSString* message = nil;
+      if (_remoteConnectCallback) {
+        message = (*_remoteConnectCallback)(_remoteContext);
+      }
+      if (message == nil) {
+        NSBundle* bundle = [NSBundle mainBundle];
+        if (bundle) {
+          message = [NSString stringWithFormat:@"**************************************************\n"
+                     "%@ %@ (%@)\n"
+                     "**************************************************\n\n",
+                     [bundle objectForInfoDictionaryKey:@"CFBundleName"],
+                     [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
+                     [bundle objectForInfoDictionaryKey:@"CFBundleVersion"]];
+        }
+      }
+      if (message) {
+        _WriteStream(message);
+      }
+      
+      [localPool release];
+    } else {
+      CFRelease(_writeStream);
+      _writeStream = NULL;
+      DNOT_REACHED();
+    }
+  } else {
+    DNOT_REACHED();
+  }
+  if (_readStream) {
+    CFReadStreamSetProperty(_readStream, kCFStreamPropertyShouldCloseNativeSocket, kCFBooleanTrue);
+    if (CFReadStreamOpen(_readStream)) {
+      CFStreamClientContext context = {0};
+      CFReadStreamSetClient(_readStream, kCFStreamEventHasBytesAvailable | kCFStreamEventErrorOccurred | kCFStreamEventEndEncountered, _ReadStreamClientCallBack, &context);
+      CFReadStreamScheduleWithRunLoop(_readStream, CFRunLoopGetMain(), kCFRunLoopCommonModes);
+    } else {
+      CFRelease(_readStream);
+      _readStream = NULL;
+      DNOT_REACHED();
+    }
+  } else {
+    DNOT_REACHED();
+  }
+}
+
 static void _AcceptCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDataRef address, const void* data, void* info) {
   if (type == kCFSocketAcceptCallBack) {
     CFSocketNativeHandle handle = *(CFSocketNativeHandle*)data;
     OSSpinLockLock(&_spinLock);
-    if (_stream == NULL) {
-      CFStreamCreatePairWithSocket(kCFAllocatorDefault, handle, NULL, &_stream);
-      if (_stream) {
-        if (CFWriteStreamOpen(_stream)) {
-          CFWriteStreamSetProperty(_stream, kCFStreamPropertyShouldCloseNativeSocket, kCFBooleanTrue);
-          
-          NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
-          NSString* message = nil;
-          if (_remoteConnectCallback) {
-            message = (*_remoteConnectCallback)(_remoteContext);
-          }
-          if (message == nil) {
-            NSBundle* bundle = [NSBundle mainBundle];
-            if (bundle) {
-               message = [NSString stringWithFormat:@"**************************************************\n"
-                                                     "%@ %@ (%@)\n"
-                                                     "**************************************************\n\n",
-                                                    [bundle objectForInfoDictionaryKey:@"CFBundleName"],
-                                                    [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
-                                                    [bundle objectForInfoDictionaryKey:@"CFBundleVersion"]];
-            }
-          }
-          if (message) {
-            _AppendStream(message);
-          }
-          [localPool release];
-        } else {
-          CFRelease(_stream);
-          close(handle);
-        }
-      } else {
-        close(handle);
-      }
+    if (!_readStream && !_writeStream) {
+      _OpenStreams(handle);
     } else {
       close(handle);
     }
@@ -379,7 +466,7 @@ static void _AcceptCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
   }
 }
 
-BOOL LoggingEnableRemoteAccess(NSUInteger port, LoggingRemoteConnectCallback connectCallback, LoggingRemoteDisconnectCallback disconnectCallback, void* context) {
+BOOL LoggingEnableRemoteAccess(NSUInteger port, LoggingRemoteConnectCallback connectCallback, LoggingRemoteMessageCallback messageCallback, LoggingRemoteDisconnectCallback disconnectCallback, void* context) {
   OSSpinLockLock(&_spinLock);
   if (_socket == NULL) {
     _socket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketAcceptCallBack, _AcceptCallBack, NULL);
@@ -399,6 +486,7 @@ BOOL LoggingEnableRemoteAccess(NSUInteger port, LoggingRemoteConnectCallback con
         CFRelease(source);
         
         _remoteConnectCallback = connectCallback;
+        _remoteMessageCallback = messageCallback;
         _remoteDisconnectCallback = disconnectCallback;
         _remoteContext = context;
       } else {
@@ -413,13 +501,8 @@ BOOL LoggingEnableRemoteAccess(NSUInteger port, LoggingRemoteConnectCallback con
 
 void LoggingDisableRemoteAccess(BOOL keepConnectionAlive) {
   OSSpinLockLock(&_spinLock);
-  if (!keepConnectionAlive && _stream) {
-    CFWriteStreamClose(_stream);
-    CFRelease(_stream);
-    _stream = NULL;
-    if (_remoteDisconnectCallback) {
-      (*_remoteDisconnectCallback)(_remoteContext);
-    }
+  if (!keepConnectionAlive && (_readStream || _writeStream)) {
+    _CloseStreams();
   }
   if (_socket) {
     CFSocketInvalidate(_socket);
@@ -468,18 +551,13 @@ void LogRawMessage(LogLevel level, NSString* message) {
     }
     OSSpinLockUnlock(&_spinLock);
   }
-  if (_stream) {
+  if (_writeStream) {
     OSSpinLockLock(&_spinLock);
-    if (_stream) {
-      if (CFWriteStreamGetStatus(_stream) == kCFStreamStatusOpen) {
-        _AppendStream(content);
+    if (_writeStream) {
+      if (CFWriteStreamGetStatus(_writeStream) == kCFStreamStatusOpen) {
+        _WriteStream(content);
       } else {
-        CFWriteStreamClose(_stream);
-        CFRelease(_stream);
-        _stream = NULL;
-        if (_remoteDisconnectCallback) {
-          (*_remoteDisconnectCallback)(_remoteContext);
-        }
+        _CloseStreams();
       }
     }
     OSSpinLockUnlock(&_spinLock);

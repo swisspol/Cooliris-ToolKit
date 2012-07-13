@@ -83,6 +83,7 @@ do { \
 typedef void (*LoggingLiveCallback)(NSTimeInterval timestamp, LogLevel level, NSString* message, void* context);
 typedef void (*LoggingReplayCallback)(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context);
 typedef NSString* (*LoggingRemoteConnectCallback)(void* context);  // Return initial message for client or nil to use default one
+typedef NSString* (*LoggingRemoteMessageCallback)(NSString* message, void* context);  // Return response message or nil (called from main thread)
 typedef void (*LoggingRemoteDisconnectCallback)(void* context);
 
 #ifdef __cplusplus
@@ -115,7 +116,7 @@ void LoggingEnumerateHistory(BOOL backward,
 void LoggingDisableHistory();
 
 BOOL LoggingIsRemoteAccessEnabled();
-BOOL LoggingEnableRemoteAccess(NSUInteger port, LoggingRemoteConnectCallback connectCallback, LoggingRemoteDisconnectCallback disconnectCallback, void* context);
+BOOL LoggingEnableRemoteAccess(NSUInteger port, LoggingRemoteConnectCallback connectCallback, LoggingRemoteMessageCallback messageCallback, LoggingRemoteDisconnectCallback disconnectCallback, void* context);
 void LoggingDisableRemoteAccess(BOOL keepConnectionAlive);
 #ifdef __cplusplus
 }

@@ -131,6 +131,15 @@ static NSString* _LoggingRemoteConnectCallback(void* context) {
   return nil;
 }
 
+static NSString* _LoggingRemoteMessageCallback(NSString* message, void* context) {
+  ApplicationDelegate* self = (ApplicationDelegate*)context;
+  SEL selector = NSSelectorFromString([NSString stringWithFormat:@"command_%@:", message]);
+  if ([self respondsToSelector:selector]) {
+    return [self performSelector:selector withObject:nil];
+  }
+  return [NSString stringWithFormat:@"INVALID COMMAND: '%@'", message];
+}
+
 static void _LoggingRemoteDisconnectCallback(void* context) {
   _ResetDefaultLoggingLevel();
 }
@@ -332,7 +341,7 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
     if (ipAddress) {
       _loggingServer = YES;
     }
-    if (_loggingServer && LoggingEnableRemoteAccess(kApplicationRemoteLoggingPort, _LoggingRemoteConnectCallback, _LoggingRemoteDisconnectCallback, NULL)) {
+    if (_loggingServer && LoggingEnableRemoteAccess(kApplicationRemoteLoggingPort, _LoggingRemoteConnectCallback, _LoggingRemoteMessageCallback, _LoggingRemoteDisconnectCallback, self)) {
       if (loggingServerEnabled > 0) {
         [self showMessageWithString:[NSString stringWithFormat:@"Remote Logging @ %@:%i", ipAddress, kApplicationRemoteLoggingPort]
                               delay:kRemoteLoggingMessageDelay
@@ -518,7 +527,7 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   
   // Restart logging remote access
   if (_loggingServer) {
-    LoggingEnableRemoteAccess(kApplicationRemoteLoggingPort, _LoggingRemoteConnectCallback, _LoggingRemoteDisconnectCallback, NULL);
+    LoggingEnableRemoteAccess(kApplicationRemoteLoggingPort, _LoggingRemoteConnectCallback, _LoggingRemoteMessageCallback, _LoggingRemoteDisconnectCallback, self);
   }
   
 #if __DAVSERVER_SUPPORT__
@@ -559,8 +568,19 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
+- (UIViewController*) _findTopViewController:(BOOL)skipLastModal {
+  UIViewController* controller = _window.rootViewController;
+  if (controller == nil) {
+    controller = _viewController;
+  }
+  while (controller.modalViewController && (!skipLastModal || controller.modalViewController.modalViewController)) {
+    controller = controller.modalViewController;
+  }
+  return controller;
+}
+
 - (void) _logViewControllerDone:(id)sender {
-  [_viewController dismissModalViewControllerAnimated:YES];
+  [[self _findTopViewController:YES] dismissModalViewControllerAnimated:YES];
 }
 
 static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
@@ -587,7 +607,7 @@ static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp,
                                                                                                     target:self
                                                                                                     action:@selector(_logViewControllerDone:)] autorelease];
   UINavigationController* navigationController = [[UINavigationController alloc] initWithRootViewController:viewController];
-  [_viewController presentModalViewController:navigationController animated:YES];
+  [[self _findTopViewController:NO] presentModalViewController:navigationController animated:YES];
   [navigationController release];
   [viewController release];
   
@@ -597,7 +617,7 @@ static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp,
 - (void) mailComposeController:(MFMailComposeViewController*)controller
            didFinishWithResult:(MFMailComposeResult)result
                          error:(NSError*)error {
-  [_viewController dismissModalViewControllerAnimated:YES];
+  [[self _findTopViewController:YES] dismissModalViewControllerAnimated:YES];
 }
 
 static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
@@ -622,7 +642,7 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   [controller setToRecipients:[NSArray arrayWithObject:email]];
   [controller setMessageBody:[NSString stringWithFormat:@"%@%@", prefix, log]
                       isHTML:NO];
-  [_viewController presentModalViewController:controller animated:YES];
+  [[self _findTopViewController:NO] presentModalViewController:controller animated:YES];
   [controller release];
   return YES;
 }
@@ -1250,7 +1270,6 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
 }
 
 - (NSString*) command_showLog:(id)argument {
-  DCHECK(_viewController);
   [self showLogViewControllerWithTitle:@"Log Contents"];
   return nil;
 }
