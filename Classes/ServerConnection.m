@@ -41,9 +41,6 @@ static NSString* _stateNames[] = {
 @implementation ServerConnection
 
 @synthesize delegate=_delegate, currentState=_currentState;
-#if TARGET_OS_IPHONE
-@synthesize wifiOnly=_wifiOnly;
-#endif
 
 + (ServerConnection*) sharedServerConnection {
   static ServerConnection* _connection = nil;
@@ -89,16 +86,13 @@ static NSString* _stateNames[] = {
 #endif
 }
 
-#if TARGET_OS_IPHONE
-
-- (void) setWifiOnly:(BOOL)flag {
-  if (flag != _wifiOnly) {
-    _netReachability.reachabilityMode = flag ? kNetReachabilityMode_WiFiOnly : kNetReachabilityMode_Default;
-    _wifiOnly = flag;
-  }
+- (NetReachabilityMode)reachabilityMode {
+  return _netReachability.reachabilityMode;
 }
 
-#endif
+- (void)setReachabilityMode:(NetReachabilityMode)mode {
+  _netReachability.reachabilityMode = mode;
+}
 
 - (void) _setState:(ServerConnectionState)state {
   if (state != _currentState) {
@@ -300,12 +294,11 @@ static NSString* _stateNames[] = {
 }
 
 - (void) resetReachability {
+  NetReachabilityMode mode = _netReachability.reachabilityMode;
   _netReachability.delegate = nil;
   [_netReachability release];
   _netReachability = [[NetReachability alloc] initWithHostName:@"example.com"];
-#if TARGET_OS_IPHONE
-  _netReachability.reachabilityMode = _wifiOnly ? kNetReachabilityMode_WiFiOnly : kNetReachabilityMode_Default;
-#endif
+  _netReachability.reachabilityMode = mode;
   _netReachability.delegate = self;
 }
 
