@@ -169,6 +169,8 @@ static void* _CaptureWriteFileDescriptor(int fd, LogLevel level) {
 
 void LoggingCaptureStdout() {
   if (_stdoutCapture == NULL) {
+    _outputFD = dup(STDOUT_FILENO);
+    assert(_outputFD > 0);
     _stdoutCapture = _CaptureWriteFileDescriptor(STDOUT_FILENO, kLogLevel_Info);
     assert(_stdoutCapture);
   }
@@ -580,8 +582,7 @@ void LogRawMessage(LogLevel level, NSString* message) {
   
   _startTime = CFAbsoluteTimeGetCurrent();
   
-  _outputFD = dup(STDOUT_FILENO);
-  assert(_outputFD > 0);
+  _outputFD = STDOUT_FILENO;
 }
 
 @end
