@@ -45,17 +45,6 @@
 - (void) cleanUp {
 }
 
-- (void) logMessage:(NSString*)message, ... {
-  va_list list;
-  va_start(list, message);
-  NSString* string = [[NSString alloc] initWithFormat:message arguments:list];
-  printf("\t");
-  printf("%s", [[string stringByReplacingOccurrencesOfString:@"\n" withString:@"\n\t"] UTF8String]);
-  printf("\n");
-  [string release];
-  va_end(list);
-}
-
 - (void) reportResult:(BOOL)success {
   if(success) {
     _successes += 1;
@@ -149,7 +138,7 @@ static NSComparisonResult _SelectorSortFunction(NSValue* value1, NSValue* value2
     [array sortUsingFunction:_SelectorSortFunction context:NULL];
     for (NSValue* value in array) {
       SEL method = [value pointerValue];
-      printf("\n-[%s %s]\n", class_getName(self), sel_getName(method));
+      LOG_INFO(@"Running unit test -[%s %s]", class_getName(self), sel_getName(method));
       @try {
         NSAutoreleasePool* pool = [NSAutoreleasePool new];
         UnitTest* test = [[self alloc] initWithAbortOnFailure:abortOnFailure];
@@ -161,7 +150,7 @@ static NSComparisonResult _SelectorSortFunction(NSValue* value1, NSValue* value2
           failures += test.numberOfFailures;
         }
         @catch (NSException* exception) {
-          printf("  <IGNORED EXCEPTION> %s\n", [[exception description] UTF8String]);
+          LOG_EXCEPTION(exception);
           failures += 1;
         }
         @finally {
@@ -171,7 +160,7 @@ static NSComparisonResult _SelectorSortFunction(NSValue* value1, NSValue* value2
         [pool drain];
       }
       @catch (NSException* exception) {
-        printf("<IGNORED EXCEPTION> %s\n", [[exception description] UTF8String]);
+        LOG_EXCEPTION(exception);
         failures += 1;
       }
     }

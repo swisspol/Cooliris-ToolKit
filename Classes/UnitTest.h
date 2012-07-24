@@ -15,7 +15,9 @@
 #import <Foundation/Foundation.h>
 #import <libgen.h>
 
-#define LOG_FAILURE(__MESSAGE__) [self logMessage:@"[FAILURE @ %s:%i] %@", basename(__FILE__), __LINE__, __MESSAGE__]; \
+#import "Logging.h"
+
+#define LOG_FAILURE(__MESSAGE__) LOG_ERROR(@"<%s:%i> %@", basename(__FILE__), __LINE__, __MESSAGE__);
 
 #define AssertNotReached() \
 do { \
@@ -168,9 +170,7 @@ do { \
 - (void) setUp;
 - (void) cleanUp;
 
-// Do not call these methods directly
-- (void) logMessage:(NSString*)message, ...;
-- (void) reportResult:(BOOL)success;
+- (void) reportResult:(BOOL)success;  // DO NOT CALL
 @end
 
 // Supported environment variables by the executable:
