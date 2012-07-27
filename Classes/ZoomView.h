@@ -15,7 +15,7 @@
 #import <UIKit/UIKit.h>
 
 typedef enum {
-  kZoomViewFillModeNone,
+  kZoomViewFillModeNone = 0,
   kZoomViewFillModeZoomToFit,
   kZoomViewFillModeZoomToFill,
 } ZoomViewFillMode;
@@ -26,12 +26,14 @@ typedef enum {
   ZoomViewFillMode _fillMode;
   CGFloat _maximumScale;
   CGFloat _zoomToFillScale;
-
+  UITapGestureRecognizer* _doubleTapRecognizer;
+  
   // Used in layoutSubviews to see if the dimensions have changed
   CGSize _oldSize;
   CGPoint _oldCenterPoint;
 }
 @property(nonatomic, retain) IBOutlet UIView* displayView;
+@property(nonatomic, readonly) UITapGestureRecognizer* doubleTapRecognizer;
 + (NSTimeInterval) defaultAnimationDuration;
 - (void) setDisplayView:(UIView*)view animated:(BOOL)animated;
 // When enabled, smaller views will be automatically scaled up to fit the view.

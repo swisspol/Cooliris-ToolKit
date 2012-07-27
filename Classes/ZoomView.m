@@ -21,7 +21,8 @@
 
 @implementation ZoomView
 
-@synthesize displayView=_displayView, fillMode=_fillMode, maximumScale=_maximumScale, zoomToFillScale=_zoomToFillScale;
+@synthesize displayView=_displayView, fillMode=_fillMode, maximumScale=_maximumScale, zoomToFillScale=_zoomToFillScale,
+            doubleTapRecognizer=_doubleTapRecognizer;
 
 + (NSTimeInterval) defaultAnimationDuration {
   return (1.0 / 3.0);
@@ -43,10 +44,9 @@
     _fillMode = kZoomViewFillModeZoomToFit;
     _maximumScale = 2.0;
         
-    UITapGestureRecognizer* recognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(_handleDoubleTap:)];
-    [recognizer setNumberOfTapsRequired:2];
-    [self addGestureRecognizer:recognizer];
-    [recognizer release];
+    _doubleTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(_handleDoubleTap:)];
+    [_doubleTapRecognizer setNumberOfTapsRequired:2];
+    [self addGestureRecognizer:_doubleTapRecognizer];
   }
   return self;
 }
@@ -194,6 +194,7 @@
 
 - (void) dealloc {
   [_displayView release];
+  [_doubleTapRecognizer release];
   
   [super dealloc];
 }
