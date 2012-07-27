@@ -167,6 +167,7 @@
     if ([_delegate respondsToSelector:@selector(documentViewDidChangePage:)]) {
       [_delegate documentViewDidChangePage:self];
     }
+    [self didDisplayCurrentPage:NO];
   }
 }
 
@@ -224,6 +225,8 @@
   _overlayView.hidden = YES;
   
   [[UIApplication sharedApplication] endIgnoringInteractionEvents];
+  
+  [self didDisplayCurrentPage:YES];
 }
 
 - (void) _didFadeIn:(NSString*)animationID finished:(NSNumber*)finished context:(void*)number {
@@ -264,6 +267,7 @@
       _contentView.layer.position = CGPointMake(-(CGFloat)_pageIndex * _pageSize.width, 0.0);
       
       [self didChangePageIndex];
+      [self didDisplayCurrentPage:NO];
     }
   }
 }
@@ -278,6 +282,7 @@
 - (void) animationDidStop:(CAAnimation*)animation finished:(BOOL)finished {
   if (finished) {
     [self _updatePageViewsVisibility];
+    [self didDisplayCurrentPage:YES];
   }
 }
 
@@ -365,6 +370,11 @@
   }
 }
 
+- (void) _didSetPageIndex {
+  [self _updatePageViewsVisibility];
+  [self didDisplayCurrentPage:NO];
+}
+
 - (void) _setPageIndex:(NSUInteger)index animate:(BOOL)animate {
   [self willChangePageIndex];
   _pageIndex = index;
@@ -378,7 +388,7 @@
   _contentView.layer.position = CGPointMake((CGFloat)_pageIndex * -_pageSize.width, 0.0);
   [self didChangePageIndex];
   if (!animate) {
-    [self performSelector:@selector(_updatePageViewsVisibility) withObject:nil afterDelay:0.0];
+    [self performSelector:@selector(_didSetPageIndex) withObject:nil afterDelay:0.0];
   }
 }
 
@@ -431,6 +441,12 @@
 - (void) didChangePageIndex {
   if ([_delegate respondsToSelector:@selector(documentViewDidChangePage:)]) {
     [_delegate documentViewDidChangePage:self];
+  }
+}
+
+- (void) didDisplayCurrentPage:(BOOL)animated {
+  if ([_delegate respondsToSelector:@selector(documentViewDidDisplayCurrentPage:animated:)]) {
+    [_delegate documentViewDidDisplayCurrentPage:self animated:animated];
   }
 }
 

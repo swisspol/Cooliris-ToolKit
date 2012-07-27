@@ -18,14 +18,15 @@
 
 @protocol DocumentViewDelegate <NSObject>
 @optional
-- (void) documentViewWillBeginSwiping:(DocumentView*)infiniteView;
-- (void) documentViewDidEndSwiping:(DocumentView*)infiniteView;
+- (void) documentViewWillBeginSwiping:(DocumentView*)documentView;
+- (void) documentViewDidEndSwiping:(DocumentView*)documentView;
 - (void) documentViewWillChangePage:(DocumentView*)documentView;
 - (void) documentViewDidChangePage:(DocumentView*)documentView;
 - (void) documentView:(DocumentView*)documentView willShowPageView:(UIView*)view;
 - (void) documentView:(DocumentView*)documentView didHidePageView:(UIView*)view;
 - (void) documentViewDidReachFirstPage:(DocumentView*)documentView;  // Called when the user tries to go before first page
 - (void) documentViewDidReachLastPage:(DocumentView*)documentView;  // Called when the user tries to go past last page
+- (void) documentViewDidDisplayCurrentPage:(DocumentView*)documentView animated:(BOOL)animated;  // Called potentially after -documentViewDidChangePage in case of animations
 @end
 
 @interface DocumentView : UIView <UIGestureRecognizerDelegate> {
@@ -69,4 +70,5 @@
 - (void) setPageView:(UIView*)view visible:(BOOL)visible;
 - (void) willChangePageIndex;
 - (void) didChangePageIndex;
+- (void) didDisplayCurrentPage:(BOOL)animated;
 @end
