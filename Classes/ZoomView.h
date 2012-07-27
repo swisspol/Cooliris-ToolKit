@@ -32,6 +32,7 @@ typedef enum {
   CGPoint _oldCenterPoint;
 }
 @property(nonatomic, retain) IBOutlet UIView* displayView;
+- (void) setDisplayView:(UIView*)view animated:(BOOL)animated;
 // When enabled, smaller views will be automatically scaled up to fit the view.
 // Also, when the view is rotated while at the minimum zoom level, the zoom level will be translated to the
 // minimum level of the new orientation

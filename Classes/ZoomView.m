@@ -14,6 +14,8 @@
 
 #import "ZoomView.h"
 
+#define kAnimationDuration (1.0 / 3.0)
+
 @interface ZoomView ()
 - (void) _calculateMinimumZoomScale;
 - (void) _restoreCenterPoint:(CGPoint)oldCenter scale:(CGFloat)oldScale;
@@ -48,29 +50,37 @@
 }
 
 - (void) setDisplayView:(UIView*)view {
+  [self setDisplayView:view animated:NO];
+}
+
+- (void) setDisplayView:(UIView*)view animated:(BOOL)animated {
   if (view != _displayView) {
-    [_displayView removeFromSuperview];
-    [_displayView release];
+    UIView* oldDisplayView = [_displayView autorelease];
     _displayView = [view retain];
-    
     if (_displayView) {
-      [self addSubview:_displayView];
-      
       self.contentSize = _displayView.bounds.size;
       [self _calculateMinimumZoomScale];
       [self setZoomScale:self.minimumZoomScale];
+      
+      if (animated) {
+        [UIView transitionWithView:self duration:kAnimationDuration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+          [oldDisplayView removeFromSuperview];
+          [self addSubview:_displayView];
+        } completion:NULL];
+      } else {
+        [oldDisplayView removeFromSuperview];
+        [self addSubview:_displayView];
+      }
+    } else {
+      [oldDisplayView removeFromSuperview];
     }
   }
 }
 
-#pragma mark -
-#pragma mark Tap zooming
-// Zooms in
 - (void) _handleDoubleTap:(UIGestureRecognizer*)gestureRecognizer {
   if (self.minimumZoomScale == self.maximumZoomScale) {
     // Do nothing
-  } else if (self.zoomScale == self.minimumZoomScale
-             || (_fillMode == kZoomViewFillModeZoomToFill && self.zoomScale <= _zoomToFillScale + FLT_EPSILON)) {
+  } else if ((self.zoomScale == self.minimumZoomScale) || ((_fillMode == kZoomViewFillModeZoomToFill) && (self.zoomScale <= _zoomToFillScale + FLT_EPSILON))) {
     CGPoint point = [gestureRecognizer locationInView:_displayView];
     CGRect zoomRect = CGRectMake(point.x - 1.0, point.y - 1.0, 2.0, 2.0);
     [self zoomToRect:zoomRect animated:YES];
@@ -78,16 +88,14 @@
     [self setZoomScale:_zoomToFillScale animated:YES];
     CGSize contentSize = self.contentSize;
     CGSize frameSize = self.frame.size;
-    CGPoint contentOffset = CGPointMake(-floorf((frameSize.width - contentSize.width) / 2.0f),
-                                        -floorf((frameSize.height - contentSize.height) / 2.0f));
+    CGPoint contentOffset = CGPointMake(-floorf((frameSize.width - contentSize.width) / 2.0),
+                                        -floorf((frameSize.height - contentSize.height) / 2.0));
     [self setContentOffset:contentOffset animated:YES];
   } else {
     [self setZoomScale:self.minimumZoomScale animated:YES];
   }
 }
 
-#pragma mark -
-#pragma mark Positioning/Zooming
 - (void) layoutSubviews {
   [super layoutSubviews];
   
@@ -147,7 +155,7 @@
   CGSize boundsSize = self.bounds.size;
   CGSize contentSize = self.contentSize;
   if (_fillMode == kZoomViewFillModeZoomToFill && self.zoomScale <= _zoomToFillScale) {  // Center display view below zoomToFillScale
-    offset = CGPointMake(floorf((contentSize.width - boundsSize.width) / 2.0f), floorf((contentSize.height - boundsSize.height) / 2.0f));
+    offset = CGPointMake(floorf((contentSize.width - boundsSize.width) / 2.0), floorf((contentSize.height - boundsSize.height) / 2.0));
   } else {
     CGPoint maxOffset = CGPointMake(contentSize.width - boundsSize.width, contentSize.height - boundsSize.height);
     CGPoint minOffset = CGPointZero;
@@ -178,16 +186,14 @@
   }
 }
 
-#pragma mark -
-#pragma mark Scroll view delegate
 - (UIView*) viewForZoomingInScrollView:(UIScrollView*)scrollView {
   return _displayView;
 }
 
-#pragma mark -
 - (void) dealloc {
   [_displayView release];
   
   [super dealloc];
 }
+
 @end
