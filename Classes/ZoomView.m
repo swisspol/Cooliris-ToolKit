@@ -14,8 +14,6 @@
 
 #import "ZoomView.h"
 
-#define kAnimationDuration (1.0 / 3.0)
-
 @interface ZoomView ()
 - (void) _calculateMinimumZoomScale;
 - (void) _restoreCenterPoint:(CGPoint)oldCenter scale:(CGFloat)oldScale;
@@ -24,6 +22,10 @@
 @implementation ZoomView
 
 @synthesize displayView=_displayView, fillMode=_fillMode, maximumScale=_maximumScale, zoomToFillScale=_zoomToFillScale;
+
++ (NSTimeInterval) defaultAnimationDuration {
+  return (1.0 / 3.0);
+}
 
 - (id) initWithFrame:(CGRect)frame {
   if ((self = [super initWithFrame:frame])) {
@@ -63,7 +65,7 @@
       [self setZoomScale:self.minimumZoomScale];
       
       if (animated) {
-        [UIView transitionWithView:self duration:kAnimationDuration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+        [UIView transitionWithView:self duration:[[self class] defaultAnimationDuration] options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
           [oldDisplayView removeFromSuperview];
           [self addSubview:_displayView];
         } completion:NULL];
