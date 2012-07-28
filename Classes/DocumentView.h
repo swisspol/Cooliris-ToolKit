@@ -37,6 +37,7 @@
   BOOL _swipingEnabled;
   NSTimeInterval _animationDuration;
   BOOL _showSelectedOnly;
+  CGFloat _pageMargin;
   
   UIView* _contentView;
   UIView* _leftShadowView;
@@ -55,6 +56,7 @@
 @property(nonatomic, getter=isSwipingEnabled) BOOL swipingEnabled;  // Default is YES
 @property(nonatomic) NSTimeInterval animationDuration;  // Default is 0.5
 @property(nonatomic) BOOL showsOnlySelectedPage;  // Default is NO
+@property(nonatomic) CGFloat pageMargin;  // Default is 0.0
 - (void) setPageViews:(NSArray*)views initialPageIndex:(NSUInteger)index;
 - (void) setSelectedPageIndex:(NSUInteger)index animate:(BOOL)animate;
 - (void) setSelectedPageView:(UIView*)view animate:(BOOL)animate;
