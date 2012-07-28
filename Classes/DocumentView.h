@@ -45,6 +45,7 @@
   NSUInteger _pageIndex;
   CGSize _pageSize;
   BOOL _swiping;
+  CGPoint _startPosition;
 }
 @property(nonatomic, assign) id<DocumentViewDelegate> delegate;
 @property(nonatomic) BOOL hideInvisiblePageViews;  // Use "hidden" view property instead of adding / removing views dynamically - Default is YES

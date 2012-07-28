@@ -308,10 +308,11 @@
           [self _updatePageViewsVisibility];
           [_contentView.layer removeAnimationForKey:@"position"];
         }
+        _startPosition = [(CALayer*)_contentView.layer.presentationLayer position];
       }
       
       // Translate PKPageViews
-      _contentView.layer.position = CGPointMake((CGFloat)_pageIndex * -_pageSize.width + offset.x, 0.0);
+      _contentView.layer.position = CGPointMake(_startPosition.x + offset.x, 0.0);  // (CGFloat)_pageIndex * -_pageSize.width
       break;
     }
     
@@ -352,6 +353,7 @@
       animation.delegate = self;
       animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionDefault];
       animation.duration = _animationDuration;
+      animation.fromValue = [NSValue valueWithCGPoint:_contentView.layer.position];
       [_contentView.layer addAnimation:animation forKey:@"position"];
       _contentView.layer.position = CGPointMake((CGFloat)_pageIndex * -_pageSize.width, 0.0);
       if (notify) {
@@ -383,6 +385,7 @@
     animation.delegate = self;
     animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionDefault];
     animation.duration = _animationDuration;
+    animation.fromValue = [NSValue valueWithCGPoint:_contentView.layer.position];
     [_contentView.layer addAnimation:animation forKey:@"position"];
   }
   _contentView.layer.position = CGPointMake((CGFloat)_pageIndex * -_pageSize.width, 0.0);
