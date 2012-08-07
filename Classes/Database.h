@@ -106,6 +106,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (BOOL) refetchObject:(DatabaseObject*)object;  // Returns NO on error or if object is not in database
 - (BOOL) insertObject:(DatabaseObject*)object;  // Fails on UNIQUE constraint violations
 - (BOOL) updateObject:(DatabaseObject*)object;
+- (BOOL) updateObject:(DatabaseObject*)object usingSQLRowID:(DatabaseSQLRowID)rowID;
 - (BOOL) replaceObject:(DatabaseObject*)object;  // Replaces on UNIQUE constraint violation
 - (BOOL) deleteObject:(DatabaseObject*)object;
 - (BOOL) vacuum;

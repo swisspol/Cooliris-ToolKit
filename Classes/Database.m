@@ -1264,6 +1264,17 @@ UNLOCK_CONNECTION();
   return (result == SQLITE_DONE);
 }
 
+- (BOOL) updateObject:(DatabaseObject*)object usingSQLRowID:(DatabaseSQLRowID)rowID {
+  CHECK(object && !object.sqlRowID);
+  CHECK(rowID);
+  object.sqlRowID = rowID;
+  BOOL success = [self updateObject:object];
+  if (success == NO) {
+    object.sqlRowID = 0;
+  }
+  return success;
+}
+
 - (BOOL) _deleteObjectWithSQLTable:(DatabaseSQLTable)table rowID:(DatabaseSQLRowID)rowID {
 LOCK_CONNECTION();
   CHECK(rowID);
