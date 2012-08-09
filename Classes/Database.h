@@ -100,6 +100,8 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 @property(nonatomic, readonly) void* rawHandle;  // Raw sqlite3* connection handle - Use carefully!
 - (id) initWithDatabaseAtPath:(NSString*)path;  // Requests read-write by default
 - (id) initWithDatabaseAtPath:(NSString*)path readWrite:(BOOL)readWrite;  // Requires database to have been initialized
+- (BOOL) setValue:(id)value forPragma:(NSString*)pragma;
+- (id) valueForPragma:(NSString*)pragma;
 - (BOOL) beginTransaction;  // Nestable
 - (BOOL) commitTransaction;  // Nestable
 - (BOOL) rollbackTransaction;  // Rolls back current transaction

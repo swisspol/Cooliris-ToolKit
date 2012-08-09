@@ -913,6 +913,15 @@ static inline int _ExecuteStatement(sqlite3_stmt* statement) {
   return result;
 }
 
+- (BOOL) setValue:(id)value forPragma:(NSString*)pragma {
+  return [self executeRawSQLStatements:[NSString stringWithFormat:@"PRAGMA %@ = %@", pragma, value]];
+}
+
+- (id) valueForPragma:(NSString*)pragma {
+  NSArray* result = [self executeRawSQLStatement:[NSString stringWithFormat:@"PRAGMA %@", pragma]];
+  return result.count == 1 ? [[result objectAtIndex:0] objectForKey:pragma] : nil;
+}
+
 - (BOOL) _addSavepoint {
 LOCK_CONNECTION();
   
