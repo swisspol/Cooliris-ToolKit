@@ -97,7 +97,6 @@
 static ApplicationDelegate* _sharedInstance = nil;
 static IMP _exceptionInitializerIMP = NULL;
 static NSMutableDictionary* _configurationDictionary = nil;
-static CGFloat _overlaysOpacity = 0.75;
 #if __TASK_SUPPORT__
 static Task* _configurationTask = nil;
 #endif
@@ -266,7 +265,6 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
     _lastDeviceOrientation = UIDeviceOrientationUnknown;
     
     self.userInteractionEnabled = NO;
-    self.windowLevel = 100.0;  // UIWindowLevelNormal = 0.0 & UIWindowLevelStatusBar = 1000.0
     self.screen = screen;
     
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -315,8 +313,12 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   return _sharedInstance;
 }
 
-+ (void) setOverlaysOpacity:(CGFloat)opacity {
-  _overlaysOpacity = opacity;
++ (UIWindowLevel) overlaysWindowLevel {
+  return 100.0;
+}
+
++ (CGFloat) overlaysOpacity {
+  return 0.75;
 }
 
 + (BOOL) checkCompatibilityWithMinimumOSVersion:(NSString*)minOSVersion minimumApplicationVersion:(NSString*)minAppVersion {
@@ -421,6 +423,7 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   
   // Initialize overlay window
   _overlayWindow = [[ApplicationWindow alloc] initWithScreen:[UIScreen mainScreen]];
+  _overlayWindow.windowLevel = [[self class] overlaysWindowLevel];
   
   // Defer services start
   [self performSelector:@selector(_startServices) withObject:nil afterDelay:0.0];
@@ -1024,7 +1027,7 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   UIView* messageView = [[UIView alloc] initWithFrame:CGRectInset(view.bounds, -kMessageBorderWidth, -kMessageBorderWidth)];
   messageView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin |
                                  UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
-  messageView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:_overlaysOpacity];
+  messageView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:[[self class] overlaysOpacity]];
   messageView.layer.cornerRadius = 10.0;
   messageView.tag = kTagFlag_New;
   if (animated) {
@@ -1160,7 +1163,7 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
     _spinnerView = spinnerView;
     _spinnerView.layer.cornerRadius = 10.0;
   }
-  _spinnerView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:_overlaysOpacity];
+  _spinnerView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:[[self class] overlaysOpacity]];
   [_overlayWindow presentView:_spinnerView];
   if (animated) {
     _spinnerView.alpha = 0.0;
@@ -1385,7 +1388,7 @@ static void _LoggingCallback(NSTimeInterval timestamp, LogLevel level, NSString*
     _loggingOverlayView = [[UITextView alloc] init];
     _loggingOverlayView.layer.cornerRadius = 6.0;
     _loggingOverlayView.opaque = NO;
-    _loggingOverlayView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:_overlaysOpacity];
+    _loggingOverlayView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:[[self class] overlaysOpacity]];
     _loggingOverlayView.textColor = [UIColor whiteColor];
     _loggingOverlayView.font = [UIFont fontWithName:kLoggingFontName size:kLoggingFontSize];
     _loggingOverlayView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;

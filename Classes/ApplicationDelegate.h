@@ -78,7 +78,8 @@ typedef NSUInteger ApplicationMessageIdentifier;
 @property(nonatomic, retain) IBOutlet UIWindow* window;
 @property(nonatomic, retain) IBOutlet UIViewController* viewController;
 + (id) sharedInstance;
-+ (void) setOverlaysOpacity:(CGFloat)opacity;  // Default is 0.75
++ (UIWindowLevel) overlaysWindowLevel;  // Default is 100.0
++ (CGFloat) overlaysOpacity;  // Default is 0.75
 + (BOOL) checkCompatibilityWithMinimumOSVersion:(NSString*)minOSVersion minimumApplicationVersion:(NSString*)minAppVersion;  // Pass nil to skip check
 - (void) showLogViewControllerWithTitle:(NSString*)title;  // Displayed modally on the view controller
 - (BOOL) sendErrorsToEmail:(NSString*)email withSubject:(NSString*)subject bodyPrefix:(NSString*)prefix;
