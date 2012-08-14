@@ -45,13 +45,12 @@ typedef enum {
   kNumCharacterSets
 } CharacterSet;
 
-NSURL* MakeHTTPURLWithArguments(NSString* baseURL, NSDictionary* arguments, BOOL escape) {
+NSURL* MakeHTTPURLWithArguments(NSString* baseURL, NSDictionary* arguments, BOOL escapeValues) {
   NSUInteger index = 0;
   for (NSString* key in arguments) {
     NSString* value = [arguments objectForKey:key];
     DCHECK([value isKindOfClass:[NSString class]]);
-    if (escape) {
-      key = [key urlEscapedString];
+    if (escapeValues) {
       value = [value urlEscapedString];
     }
     baseURL = [baseURL stringByAppendingFormat:@"%c%@=%@", index++ == 0 ? '?' : '&', key, value];

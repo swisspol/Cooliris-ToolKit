@@ -35,7 +35,7 @@ static inline BOOL NSRangeContainsRange(NSRange range1, NSRange range2) {
   return NO;
 }
 
-NSURL* MakeHTTPURLWithArguments(NSString* baseURL, NSDictionary* arguments, BOOL escape);
+NSURL* MakeHTTPURLWithArguments(NSString* baseURL, NSDictionary* arguments, BOOL escapeValues);
 extern NSData* MakeHTTPBodyForMultipartForm(NSString* boundary, NSDictionary* arguments);  // Pass file attachments as dictionaries containing kMultipartFileKey_xxx keys
 
 @interface NSString (Extensions)
