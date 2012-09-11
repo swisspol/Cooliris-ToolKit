@@ -116,18 +116,10 @@ static NSString* _stateNames[] = {
         [_delegate serverConnectionDidConnect:self];
       }
     } else {
-      DNOT_REACHED();
-      [self forceDisconnect];
+      NOT_REACHED();  // Unexpected state: the delegate was able to connect to the server but NetReachability reports being offline
     }
   } else {
-    if (state) {
-      _checkDelay = kCheckInitialDelay;
-      [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
-      [self _setState:kServerConnectionState_Online];
-    } else {
-      [_checkTimer setFireDate:[NSDate distantFuture]];  // Likely not necessary, but let's be extra-safe
-      [self _setState:kServerConnectionState_Offline];
-    }
+    [self _didDisconnect:state];
   }
 }
 
