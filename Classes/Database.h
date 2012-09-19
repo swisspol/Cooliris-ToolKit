@@ -64,10 +64,12 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 // Note that object properties are automatically released on -dealloc
 @interface DatabaseObject (ObjCBridge)
 + (NSString*) sqlTableName;  // Default implementation returns class name - Return nil for an abstract DatabaseObject subclass
++ (NSArray*) sqlMappedProperties:(NSArray*)properties;  // Default implementation returns same array but sorted alphabetically
 + (NSString*) sqlColumnNameForProperty:(NSString*)property;  // Default implementation returns "property"
 + (DatabaseSQLColumnOptions) sqlColumnOptionsForProperty:(NSString*)property;  // Default is kDatabaseSQLColumnOptionsNone
 + (NSString*) sqlForeignKeyForProperty:(NSString*)property;  // Must be with the syntax "table_name(column_name) [ON UPDATE action] [ON DELETE action]"
 + (NSSet*) sqlPropertyIndices;  // NSSet of NSArrays listing properties
++ (NSString*) sqlFetchStatement;  // Default is "SELECT {TABLE_NAME}.* FROM {TABLE_NAME}"
 + (NSString*) sqlTableFetchOrder;  // Default is nil
 
 // To be called on subclasses only
@@ -136,7 +138,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
             matchingValues:(NSArray*)values
        extraSQLWhereClause:(NSString*)clause
                      limit:(NSUInteger)limit;  // Returns nil on error
-- (NSArray*) fetchObjectsOfClass:(Class)class withSQLWhereClause:(NSString*)clause;  // Returns nil on error
+- (NSArray*) fetchObjectsOfClass:(Class)class withSQLWhereClause:(NSString*)clause limit:(NSUInteger)limit;  // Returns nil on error
 - (NSArray*) fetchObjectsOfClass:(Class)class
            joiningObjectsOfClass:(Class)joinClass
                       onProperty:(NSString*)joinProperty
@@ -198,7 +200,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
                      matchingValues:(NSArray*)values
                 extraSQLWhereClause:(NSString*)clause
                               limit:(NSUInteger)limit;  // Returns nil on error - Pass 0 for no limit
-- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause;  // Returns nil on error
+- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause limit:(NSUInteger)limit;  // Returns nil on error
 - (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table
                     joiningSQLTable:(DatabaseSQLTable)joinTable
                         onSQLColumn:(DatabaseSQLColumn)joinColumn

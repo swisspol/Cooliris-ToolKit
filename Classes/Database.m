@@ -67,6 +67,7 @@ struct DatabaseSQLTableDefinition {
   Class class;
   NSString* tableName;
   NSSet* indices;
+  NSString* fetchStatement;
   NSString* fetchOrder;
   unsigned int columnCount;
   DatabaseSQLColumnDefinition* columnList;
@@ -212,7 +213,7 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
       [statement release];
     }
     {
-      NSMutableString* statement = [[NSMutableString alloc] initWithFormat:@"SELECT * FROM %@", table->tableName];
+      NSMutableString* statement = [[NSMutableString alloc] initWithString:table->fetchStatement];
       if (table->fetchOrder) {
         [statement appendFormat:@" ORDER BY %@", table->fetchOrder];
       }
@@ -220,7 +221,7 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
       [statement release];
     }
     {
-      NSString* statement = [[NSString alloc] initWithFormat:@"SELECT * FROM %@ WHERE %@=?1", table->tableName, kRowID];
+      NSString* statement = [[NSString alloc] initWithFormat:@"%@ WHERE %@=?1", table->fetchStatement, kRowID];
       table->statements[kObjectStatement_SelectWithRowID] = _CopyAsCString(statement);
       [statement release];
     }
@@ -323,6 +324,7 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
 static void _FinalizeSQLTable(DatabaseSQLTable table) {
   [table->tableName release];
   [table->indices release];
+  [table->fetchStatement release];
   [table->fetchOrder release];
   for (unsigned int i = 0; i < table->columnCount; ++i) {
     [table->columnList[i].name release];
@@ -474,107 +476,115 @@ static void _Setter_Object(DatabaseObject* self, SEL cmd, id object) {
   _SetField_Object(self, _SQLColumnForSetter(self->__table, cmd), object);
 }
 
-static int __CompareProperties(const void* property1, const void* property2) {
-  return strcmp(property_getName(*((objc_property_t*)property1)), property_getName(*((objc_property_t*)property2)));
-}
-
 static DatabaseSQLTable _RegisterSQLTableFromDatabaseObjectSubclass(Class class) {
   DatabaseSQLTable table = calloc(1, sizeof(DatabaseSQLTableDefinition));
   table->class = class;
   table->tableName = [[class sqlTableName] copy];
   table->indices = [[class sqlPropertyIndices] copy];
+  table->fetchStatement = [[class sqlFetchStatement] copy];
   table->fetchOrder = [[class sqlTableFetchOrder] copy];
   
   table->columnCount = 0;
   table->columnList = malloc(0);
   
-  unsigned int count = 0;
-  objc_property_t* properties = malloc(0);
+  CFMutableDictionaryRef properties = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
   Class superclass = class;
   do {
     unsigned int columnCount;
     objc_property_t* propertyList = class_copyPropertyList(superclass, &columnCount);
-    properties = realloc(properties, (count + columnCount) * sizeof(objc_property_t));
     for (unsigned int i = 0; i < columnCount; ++i) {
       if (!strstr(property_getAttributes(propertyList[i]), ",D,")) {  // Ignore non-dynamic properties
         continue;
       }
-      properties[count++] = propertyList[i];
+      NSString* name = [NSString stringWithUTF8String:property_getName(propertyList[i])];
+      CFDictionarySetValue(properties, name, propertyList[i]);
     }
     free(propertyList);
     superclass = [superclass superclass];
   } while (superclass != [DatabaseObject class]);
-  qsort(properties, count, sizeof(objc_property_t), __CompareProperties);
+  unsigned int count = CFDictionaryGetCount(properties);
   if (count) {
-    table->columnList = realloc(table->columnList, (table->columnCount + count) * sizeof(DatabaseSQLColumnDefinition));
-    for (unsigned int i = 0; i < count; ++i) {
-      NSString* name = [NSString stringWithUTF8String:property_getName(properties[i])];
-      const char* attributes = property_getAttributes(properties[i]);
-      size_t length = strlen(attributes);
-      
-      DatabaseSQLColumn column = &table->columnList[table->columnCount + i];
-      column->name = [name copy];
-      column->columnName = [[class sqlColumnNameForProperty:name] copy];
-      column->columnOptions = [class sqlColumnOptionsForProperty:name];
-      column->columnForeignKey = [[class sqlForeignKeyForProperty:name] copy];
-      column->getter = sel_registerName([name UTF8String]);
-      if (strcmp(&attributes[length - 6], ",R,D,N")) {
-        column->setter = sel_registerName([[NSString stringWithFormat:@"set%@%@:", [[name substringToIndex:1] uppercaseString],
-                                                                            [name substringFromIndex:1]] UTF8String]);
-      } else {
-        column->setter = NULL;
-      }
-      switch (attributes[1]) {
+    void* keys = malloc(count * sizeof(NSString*));
+    CFDictionaryGetKeysAndValues(properties, keys, NULL);
+    NSArray* array = [[NSArray alloc] initWithObjects:keys count:count];
+    NSArray* names = [class sqlMappedProperties:array];
+    [array release];
+    free(keys);
+    count = [names count];
+    
+    if (count) {
+      table->columnList = realloc(table->columnList, (table->columnCount + count) * sizeof(DatabaseSQLColumnDefinition));
+      DatabaseSQLColumn column = &table->columnList[table->columnCount];
+      for (NSString* name in names) {
+        objc_property_t property = (objc_property_t)CFDictionaryGetValue(properties, name);
+        DCHECK(property);
+        const char* attributes = property_getAttributes(property);
+        size_t length = strlen(attributes);
         
-        case 'i': {
-          column->columnType = kDatabaseSQLColumnType_Int;
-          class_addMethod(class, column->getter, (IMP)&_Getter_Int, "i@:");
-          if (column->setter) {
-            CHECK(!strcmp(&attributes[length - 4], ",D,N"));
-            class_addMethod(class, column->setter, (IMP)&_Setter_Int, "v@:i");
-          }
-          break;
+        column->name = [name copy];
+        column->columnName = [[class sqlColumnNameForProperty:name] copy];
+        column->columnOptions = [class sqlColumnOptionsForProperty:name];
+        column->columnForeignKey = [[class sqlForeignKeyForProperty:name] copy];
+        column->getter = sel_registerName([name UTF8String]);
+        if (strcmp(&attributes[length - 6], ",R,D,N")) {
+          column->setter = sel_registerName([[NSString stringWithFormat:@"set%@%@:", [[name substringToIndex:1] uppercaseString],
+                                                                              [name substringFromIndex:1]] UTF8String]);
+        } else {
+          column->setter = NULL;
         }
-        
-        case 'd': {
-          column->columnType = kDatabaseSQLColumnType_Double;
-          class_addMethod(class, column->getter, (IMP)&_Getter_Double, "d@:");
-          if (column->setter) {
-            CHECK(!strcmp(&attributes[length - 4], ",D,N"));
-            class_addMethod(class, column->setter, (IMP)&_Setter_Double, "v@:d");
+        switch (attributes[1]) {
+          
+          case 'i': {
+            column->columnType = kDatabaseSQLColumnType_Int;
+            class_addMethod(class, column->getter, (IMP)&_Getter_Int, "i@:");
+            if (column->setter) {
+              CHECK(!strcmp(&attributes[length - 4], ",D,N"));
+              class_addMethod(class, column->setter, (IMP)&_Setter_Int, "v@:i");
+            }
+            break;
           }
-          break;
-        }
-        
-        case '@': {
-          if (!strncmp(&attributes[3], "NSString", 8)) {
-            column->columnType = kDatabaseSQLColumnType_String;
-          } else if (!strncmp(&attributes[3], "NSURL", 5)) {
-            column->columnType = kDatabaseSQLColumnType_URL;
-          } else if (!strncmp(&attributes[3], "NSDate", 6)) {
-            column->columnType = kDatabaseSQLColumnType_Date;
-          } else if (!strncmp(&attributes[3], "NSData", 6)) {
-            column->columnType = kDatabaseSQLColumnType_Data;
-          } else {
+          
+          case 'd': {
+            column->columnType = kDatabaseSQLColumnType_Double;
+            class_addMethod(class, column->getter, (IMP)&_Getter_Double, "d@:");
+            if (column->setter) {
+              CHECK(!strcmp(&attributes[length - 4], ",D,N"));
+              class_addMethod(class, column->setter, (IMP)&_Setter_Double, "v@:d");
+            }
+            break;
+          }
+          
+          case '@': {
+            if (!strncmp(&attributes[3], "NSString", 8)) {
+              column->columnType = kDatabaseSQLColumnType_String;
+            } else if (!strncmp(&attributes[3], "NSURL", 5)) {
+              column->columnType = kDatabaseSQLColumnType_URL;
+            } else if (!strncmp(&attributes[3], "NSDate", 6)) {
+              column->columnType = kDatabaseSQLColumnType_Date;
+            } else if (!strncmp(&attributes[3], "NSData", 6)) {
+              column->columnType = kDatabaseSQLColumnType_Data;
+            } else {
+              NOT_REACHED();
+            }
+            class_addMethod(class, column->getter, (IMP)&_Getter_Object, "@@:");
+            if (column->setter) {
+              CHECK(!strcmp(&attributes[length - 6], ",C,D,N"));
+              class_addMethod(class, column->setter, (IMP)&_Setter_Object, "v@:@");
+            }
+            break;
+          }
+          
+          default:
             NOT_REACHED();
-          }
-          class_addMethod(class, column->getter, (IMP)&_Getter_Object, "@@:");
-          if (column->setter) {
-            CHECK(!strcmp(&attributes[length - 6], ",C,D,N"));
-            class_addMethod(class, column->setter, (IMP)&_Setter_Object, "v@:@");
-          }
-          break;
+            break;
+          
         }
-        
-        default:
-          NOT_REACHED();
-          break;
-        
+        ++column;
       }
+      table->columnCount += count;
     }
-    table->columnCount += count;
   }
-  free(properties);
+  CFRelease(properties);
   
   _InitializeSQLTable(table);
   
@@ -611,6 +621,10 @@ static DatabaseSQLTable _RegisterSQLTableFromDatabaseObjectSubclass(Class class)
   return NSStringFromClass(self);
 }
 
++ (NSArray*) sqlMappedProperties:(NSArray*)properties {
+  return [properties sortedArrayUsingSelector:@selector(compare:)];
+}
+
 + (NSString*) sqlColumnNameForProperty:(NSString*)property {
   return property;
 }
@@ -625,6 +639,11 @@ static DatabaseSQLTable _RegisterSQLTableFromDatabaseObjectSubclass(Class class)
 
 + (NSSet*) sqlPropertyIndices {
   return nil;
+}
+
++ (NSString*) sqlFetchStatement {
+  NSString* tableName = [self sqlTableName];
+  return [NSString stringWithFormat:@"SELECT %@.* FROM %@", tableName, tableName];
 }
 
 + (NSString*) sqlTableFetchOrder {
@@ -1551,8 +1570,8 @@ UNLOCK_CONNECTION();
   return [self fetchObjectsInSQLTable:table withSQLColumn:column matchingValues:values extraSQLWhereClause:clause limit:limit];
 }
 
-- (NSArray*) fetchObjectsOfClass:(Class)class withSQLWhereClause:(NSString*)clause {
-  return [self fetchObjectsInSQLTable:_SQLTableForClass(class) withSQLWhereClause:clause];
+- (NSArray*) fetchObjectsOfClass:(Class)class withSQLWhereClause:(NSString*)clause limit:(NSUInteger)limit {
+  return [self fetchObjectsInSQLTable:_SQLTableForClass(class) withSQLWhereClause:clause limit:limit];
 }
 
 - (NSArray*) fetchObjectsOfClass:(Class)class
@@ -1854,7 +1873,7 @@ LOCK_CONNECTION();
   DatabaseObject* object = nil;
   CHECK(value);
   
-  NSString* string = [NSString stringWithFormat:@"SELECT * FROM %@ WHERE %@=?1", table->tableName, column->columnName];
+  NSString* string = [NSString stringWithFormat:@"%@ WHERE %@=?1", table->fetchStatement, column->columnName];
   sqlite3_stmt* statement = NULL;
   CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
   int result = _BindStatementBoxedValue(statement, value, column, 1);
@@ -1892,7 +1911,7 @@ LOCK_CONNECTION();
       [list appendFormat:@", ?%i", (int)(i + 1)];
     }
   }
-  NSMutableString* string = [NSMutableString stringWithFormat:@"SELECT * FROM %@ WHERE %@ IN (%@)", table->tableName, column->columnName, list];
+  NSMutableString* string = [NSMutableString stringWithFormat:@"%@ WHERE %@ IN (%@)", table->fetchStatement, column->columnName, list];
   [list release];
   if (clause) {
     [string appendFormat:@" AND %@", clause];
@@ -1927,10 +1946,8 @@ UNLOCK_CONNECTION();
 LOCK_CONNECTION();
   NSMutableArray* results = [NSMutableArray array];
   
-  NSMutableString* string = value ? [NSMutableString stringWithFormat:@"SELECT * FROM %@ WHERE %@=?1", table->tableName,
-                                                                      column->columnName]
-                                  : [NSMutableString stringWithFormat:@"SELECT * FROM %@ WHERE %@ IS NULL", table->tableName,
-                                                                      column->columnName];
+  NSMutableString* string = value ? [NSMutableString stringWithFormat:@"%@ WHERE %@=?1", table->fetchStatement, column->columnName]
+                                  : [NSMutableString stringWithFormat:@"%@ WHERE %@ IS NULL", table->fetchStatement, column->columnName];
   if (table->fetchOrder) {
     [string appendFormat:@" ORDER BY %@", table->fetchOrder];
   }
@@ -1951,14 +1968,17 @@ UNLOCK_CONNECTION();
   return results;
 }
 
-- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause {
+- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause limit:(NSUInteger)limit {
 LOCK_CONNECTION();
   CHECK(clause);
   NSMutableArray* results = [NSMutableArray array];
   
-  NSMutableString* string = [NSMutableString stringWithFormat:@"SELECT * FROM %@ WHERE %@", table->tableName, clause];
+  NSMutableString* string = [NSMutableString stringWithFormat:@"%@ WHERE %@", table->fetchStatement, clause];
   if (table->fetchOrder) {
     [string appendFormat:@" ORDER BY %@", table->fetchOrder];
+  }
+  if (limit > 0) {
+    [string appendFormat:@" LIMIT %i", (int)limit];
   }
   sqlite3_stmt* statement = NULL;
   CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
@@ -1982,8 +2002,8 @@ UNLOCK_CONNECTION();
 LOCK_CONNECTION();
   NSMutableArray* results = [NSMutableArray array];
   
-  NSMutableString* string = [NSMutableString stringWithFormat:@"SELECT * FROM %@ JOIN %@ ON %@.%@=%@.%@", table->tableName, joinTable->tableName,
-                             joinTable->tableName, joinColumn->columnName, table->tableName, kRowID];
+  NSMutableString* string = [NSMutableString stringWithFormat:@"%@ JOIN %@ ON %@.%@=%@.%@", table->fetchStatement, joinTable->tableName,
+                                                              joinTable->tableName, joinColumn->columnName, table->tableName, kRowID];
   if (clause) {
     [string appendFormat:@" WHERE %@", clause];
   }
