@@ -25,11 +25,7 @@
 #endif
 
 #define kApplicationLoggingHistoryFile @"Logging.db"
-#ifdef NDEBUG
 #define kApplicationLoggingHistoryAge (7.0 * 24.0 * 60.0 * 60.0) // 7 days
-#else
-#define kApplicationLoggingHistoryAge (60.0 * 60.0)  // 1 hour
-#endif
 #define kApplicationRemoteLoggingPort 2323
 
 typedef NSUInteger ApplicationMessageIdentifier;
