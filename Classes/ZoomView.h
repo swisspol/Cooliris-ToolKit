@@ -15,37 +15,27 @@
 #import <UIKit/UIKit.h>
 
 typedef enum {
-  kZoomViewFillModeNone = 0,
-  kZoomViewFillModeZoomToFit,
-  kZoomViewFillModeZoomToFill,
-} ZoomViewFillMode;
+  kZoomViewDisplayMode_Centered = 0,
+  kZoomViewDisplayMode_Fit,
+  kZoomViewDisplayMode_Fill,
+  kZoomViewDisplayMode_Automatic  // Choose kZoomViewDisplayMode_Fit or kZoomViewDisplayMode_Fill automatically depending on display and view aspect ratio similarity
+} ZoomViewDisplayMode;
 
-@interface ZoomView : UIScrollView <UIScrollViewDelegate> {
+@interface ZoomView : UIScrollView {
 @private
   UIView* _displayView;
-  ZoomViewFillMode _fillMode;
-  CGFloat _maximumScale;
-  CGFloat _zoomToFillScale;
-  UITapGestureRecognizer* _doubleTapRecognizer;
+  ZoomViewDisplayMode _displayMode;
+  float _doubleTapZoom;
   
-  // Used in layoutSubviews to see if the dimensions have changed
+  UITapGestureRecognizer* _doubleTapRecognizer;
   CGSize _oldSize;
-  CGPoint _oldCenterPoint;
+  CGSize _displaySize;
+  CGPoint _focusPoint;
 }
-@property(nonatomic, retain) IBOutlet UIView* displayView;
+@property(nonatomic, retain) UIView* displayView;
+@property(nonatomic) ZoomViewDisplayMode displayMode;  // Default is kZoomViewDisplayMode_Centered
+@property(nonatomic) float doubleTapZoom;  // Default is 1.5
 @property(nonatomic, readonly) UITapGestureRecognizer* doubleTapRecognizer;
 + (NSTimeInterval) defaultAnimationDuration;
 - (void) setDisplayView:(UIView*)view animated:(BOOL)animated;
-// When enabled, smaller views will be automatically scaled up to fit the view.
-// Also, when the view is rotated while at the minimum zoom level, the zoom level will be translated to the
-// minimum level of the new orientation
-// Default: YES
-@property(nonatomic) ZoomViewFillMode fillMode;
-// The maximum level to zoom the display view. When zoomsToFit is YES the scale is treated as a factor multiplying the
-// size required to fit to the edges of the zoom view
-// When NO it's treated as an absolute value
-// Default: 2.0
-@property(nonatomic) CGFloat maximumScale;
-// The zoom level so that the image fills the view
-@property(nonatomic, readonly) CGFloat zoomToFillScale;
 @end
