@@ -23,7 +23,7 @@
 
 @synthesize delegate=_delegate, hideInvisiblePageViews=_hideInvisibleViews, pageViews=_pageViews, swipingEnabled=_swipingEnabled,
             animationDuration=_animationDuration, selectedPageIndex=_pageIndex, showsOnlySelectedPage=_showSelectedOnly,
-            pageMargin = _pageMargin;
+            pageMargin = _pageMargin, panGestureRecognizer = _panRecognizer;
 
 - (BOOL) gestureRecognizerShouldBegin:(UIGestureRecognizer*)gestureRecognizer {
   return _pageViews && _swipingEnabled ? YES : NO;
@@ -55,10 +55,9 @@
   _overlayView.alpha = 0.0;
   [self addSubview:_overlayView];
   
-  UIPanGestureRecognizer* panRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panAction:)];
-  panRecognizer.delegate = self;
-  [self addGestureRecognizer:panRecognizer];
-  [panRecognizer release];
+  _panRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panAction:)];
+  _panRecognizer.delegate = self;
+  [self addGestureRecognizer:_panRecognizer];
   
   self.backgroundColor = [UIColor grayColor];
   
@@ -78,6 +77,7 @@
   [_leftShadowView release];
   [_rightShadowView release];
   [_overlayView release];
+  [_panRecognizer release];
   
   [super dealloc];
 }

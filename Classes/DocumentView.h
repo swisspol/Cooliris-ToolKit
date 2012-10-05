@@ -47,6 +47,7 @@
   CGSize _pageSize;
   BOOL _swiping;
   CGPoint _startPosition;
+  UIPanGestureRecognizer* _panRecognizer;
 }
 @property(nonatomic, assign) id<DocumentViewDelegate> delegate;
 @property(nonatomic) BOOL hideInvisiblePageViews;  // Use "hidden" view property instead of adding / removing views dynamically - Default is YES
@@ -65,6 +66,7 @@
 - (void) cancelAnimations;
 
 // For additional gesture recognizers
+@property(nonatomic, readonly) UIPanGestureRecognizer* panGestureRecognizer;
 - (void) panAction:(UIPanGestureRecognizer*)recognizer;
 @end
 
