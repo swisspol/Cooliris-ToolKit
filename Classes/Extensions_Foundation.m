@@ -773,10 +773,17 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
 
 // https://developer.apple.com/library/ios/#qa/qa1719/_index.html
 - (void) setDoNotBackupAttributeAtPath:(NSString*)path {
-  u_int8_t value = 1;
-  int result = setxattr([path fileSystemRepresentation], "com.apple.MobileBackup", &value, sizeof(value), 0, 0);
-  if (result) {
-    LOG_ERROR(@"Failed setting do-not-backup attribute on \"%@\": %s (%i)", path, strerror(result), result);
+  if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_5_1) {
+    NSError* error = nil;
+    if (![[NSURL fileURLWithPath:path] setResourceValue:[NSNumber numberWithBool:YES] forKey:NSURLIsExcludedFromBackupKey error:&error]) {
+      LOG_ERROR(@"Failed setting do-not-backup attribute on \"%@\": %@", path, error);
+    }
+  } else {
+    u_int8_t value = 1;
+    int result = setxattr([path fileSystemRepresentation], "com.apple.MobileBackup", &value, sizeof(value), 0, 0);
+    if (result) {
+      LOG_ERROR(@"Failed setting do-not-backup attribute on \"%@\": %s (%i)", path, strerror(result), result);
+    }
   }
 }
 
