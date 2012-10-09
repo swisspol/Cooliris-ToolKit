@@ -58,7 +58,14 @@
       CGRect zoomRect = CGRectMake(point.x - 1.0, point.y - 1.0, 2.0, 2.0);
       [self zoomToRect:zoomRect animated:YES];
     } else {
+      BOOL atOrigin = CGPointEqualToPoint(self.contentOffset, CGPointZero);  // Work around a strange behavior where if zooming out while changing contentInset from zero to non-zero at the same time
+      if (atOrigin) {
+        self.contentOffset = CGPointMake(1.0, 1.0);
+      }
       [self setZoomScale:self.minimumZoomScale animated:YES];
+      if (atOrigin) {
+        self.contentOffset = CGPointMake(0.0, 0.0);
+      }
     }
   }
 }
