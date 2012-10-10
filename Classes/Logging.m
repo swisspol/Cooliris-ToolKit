@@ -149,7 +149,7 @@ static void* _CaptureWriteFileDescriptor(int fd, LogLevel level) {
     params[0] = (void*)(long)fd;
     params[1] = (void*)level;
     pthread_create(&pthread, NULL, _CaptureThread, params);
-    return pthread;  
+    return pthread;
   } else {
     char* buffer = malloc(kCaptureBufferSize);
     assert(buffer);
@@ -262,11 +262,14 @@ void LoggingPurgeHistory(NSTimeInterval maxAge) {
   OSSpinLockUnlock(&_spinLock);
 }
 
-void LoggingReplayHistory(LoggingReplayCallback callback, void* context, BOOL backward) {
+void LoggingReplayHistory(LoggingReplayCallback callback, void* context, BOOL backward, NSUInteger limit) {
   OSSpinLockLock(&_spinLock);
   if (_database && callback) {
     NSString* string = [NSString stringWithFormat:@"SELECT version, timestamp, level, message FROM history ORDER BY timestamp %@",
                                                   backward ? @"DESC" : @"ASC"];
+    if (limit > 0) {
+      string = [string stringByAppendingFormat:@" LIMIT %i", (int)limit];
+    }
     sqlite3_stmt* statement = NULL;
     int result = sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL);
     assert(result == SQLITE_OK);
@@ -301,9 +304,9 @@ static void _BlockReplayCallback(NSUInteger appVersion, NSTimeInterval timestamp
   callback(appVersion, timestamp, level, message);
 }
 
-void LoggingEnumerateHistory(BOOL backward,
+void LoggingEnumerateHistory(BOOL backward, NSUInteger limit,
                              void (^block)(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message)) {
-  LoggingReplayHistory(_BlockReplayCallback, block, backward);
+  LoggingReplayHistory(_BlockReplayCallback, block, backward, limit);
 }
 
 #endif

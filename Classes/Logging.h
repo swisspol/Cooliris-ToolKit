@@ -108,9 +108,9 @@ BOOL LoggingIsStderrCaptured();
 BOOL LoggingIsHistoryEnabled();
 BOOL LoggingEnableHistory(NSString* path, NSUInteger appVersion);  // Create if non-existing - Pass nil to close
 void LoggingPurgeHistory(NSTimeInterval maxAge);  // Pass 0.0 to clear entirely
-void LoggingReplayHistory(LoggingReplayCallback callback, void* context, BOOL backward);
+void LoggingReplayHistory(LoggingReplayCallback callback, void* context, BOOL backward, NSUInteger limit);
 #if NS_BLOCKS_AVAILABLE
-void LoggingEnumerateHistory(BOOL backward,
+void LoggingEnumerateHistory(BOOL backward, NSUInteger limit,
                              void (^block)(NSUInteger appVersion, NSTimeInterval timestamp, LogLevel level, NSString* message));
 #endif
 void LoggingDisableHistory();

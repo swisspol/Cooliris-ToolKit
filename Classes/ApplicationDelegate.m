@@ -605,7 +605,7 @@ static void _HistoryLogCallback(NSUInteger appVersion, NSTimeInterval timestamp,
 
 - (void) showLogViewControllerWithTitle:(NSString*)title {
   NSMutableString* log = [NSMutableString string];
-  LoggingReplayHistory(_HistoryLogCallback, log, YES);
+  LoggingReplayHistory(_HistoryLogCallback, log, YES, 0);
   
   UITextView* view = [[UITextView alloc] init];
   view.text = log;
@@ -648,7 +648,7 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   }
   
   NSMutableString* log = [NSMutableString string];
-  LoggingReplayHistory(_HistoryErrorsCallback, log, YES);
+  LoggingReplayHistory(_HistoryErrorsCallback, log, YES, 0);
   
   MFMailComposeViewController* controller = [[NSClassFromString(@"MFMailComposeViewController") alloc] init];
   controller.mailComposeDelegate = (id<MFMailComposeViewControllerDelegate>)self;
