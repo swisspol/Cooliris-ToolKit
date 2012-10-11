@@ -135,7 +135,9 @@ static SEL _ParseCommandString(NSString* string, NSString** command, NSString** 
   [scanner setCharactersToBeSkipped:nil];
   [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:command];
   [scanner scanCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:NULL];
-  [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:argument];
+  if (![scanner isAtEnd]) {
+    *argument = [string substringFromIndex:scanner.scanLocation];
+  }
   return NSSelectorFromString([NSString stringWithFormat:@"command_%@:", *command]);
 }
 
