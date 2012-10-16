@@ -29,6 +29,14 @@
 #import "Extensions_Foundation.h"
 #import "Logging.h"
 
+#if TARGET_OS_IPHONE
+
+#ifndef kCFCoreFoundationVersionNumber_iOS_5_1
+#define kCFCoreFoundationVersionNumber_iOS_5_1 690.1
+#endif
+
+#endif
+
 static OSSpinLock _calendarSpinLock = OS_SPINLOCK_INIT;
 static OSSpinLock _formattersSpinLock = OS_SPINLOCK_INIT;
 static OSSpinLock _staticSpinLock = OS_SPINLOCK_INIT;
