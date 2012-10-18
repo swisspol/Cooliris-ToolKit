@@ -16,12 +16,13 @@
 #import "Logging.h"
 
 #define kHugeTimerInterval (365.0 * 24.0 * 3600.0)
-#define kCheckInitialDelay 0.5
+#define kInitialCheckDelay 0.5
 #if TARGET_OS_IPHONE
-#define kCheckMaxDelay 60.0
+#define kMaxCheckDelay 60.0
 #else
-#define kCheckMaxDelay 3600.0
+#define kMaxCheckDelay 300.0
 #endif
+#define kReachabilityHostName @"example.com"
 
 static NSString* _stateNames[] = {
                                   @"Unknown",
@@ -54,7 +55,7 @@ static NSString* _stateNames[] = {
   if ((self = [super init])) {
     _currentState = kServerConnectionState_Unknown;
     
-    _netReachability = [[NetReachability alloc] initWithHostName:@"example.com"];
+    _netReachability = [[NetReachability alloc] initWithHostName:kReachabilityHostName];
 #if TARGET_OS_IPHONE
     _netReachability.reachabilityMode = kNetReachabilityMode_Default;
 #endif
@@ -119,7 +120,7 @@ static NSString* _stateNames[] = {
       NOT_REACHED();  // Unexpected state: the delegate was able to connect to the server but NetReachability reports being offline
     }
   } else {
-    [self _didDisconnect:state];
+    [self _didDisconnect:NO reachabilityState:state];
   }
 }
 
@@ -146,7 +147,7 @@ static NSString* _stateNames[] = {
     }
   } else {
     if (state) {
-      _checkDelay = MIN(_checkDelay * 2.0, kCheckMaxDelay);
+      _checkDelay = MIN(_checkDelay * 2.0, kMaxCheckDelay);  // Increase delay and schedule check
       [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
       [self _setState:kServerConnectionState_Online];
       LOG_WARNING(@"Server connection is not responding (retrying in %.0f seconds)", _checkDelay);
@@ -179,11 +180,14 @@ static NSString* _stateNames[] = {
   }
 }
 
-- (void) _didDisconnect:(NetReachabilityState)state {
+- (void) _didDisconnect:(BOOL)resetCheck reachabilityState:(NetReachabilityState)state {
   if (state) {
-    _checkDelay = kCheckInitialDelay;
+    _checkDelay = resetCheck ? kInitialCheckDelay : MIN(_checkDelay * 2.0, kMaxCheckDelay);  // Reset or increase delay and schedule check
     [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
     [self _setState:kServerConnectionState_Online];
+    if (!resetCheck) {
+      LOG_WARNING(@"Server connection failed connecting (retrying in %.0f seconds)", _checkDelay);
+    }
   } else {
     [_checkTimer setFireDate:[NSDate distantFuture]];  // Likely not necessary, but let's be extra-safe
     [self _setState:kServerConnectionState_Offline];
@@ -202,7 +206,7 @@ static NSString* _stateNames[] = {
   if (reply == kServerConnectionReply_Later) {
     [self _setState:kServerConnectionState_Disconnecting];
   } else {
-    [self _didDisconnect:_netReachability.state];
+    [self _didDisconnect:YES reachabilityState:_netReachability.state];
   }
 }
 
@@ -227,14 +231,14 @@ static NSString* _stateNames[] = {
   
   if (state) {
     if ((_currentState == kServerConnectionState_Unknown) || (_currentState == kServerConnectionState_Offline)) {
-      _checkDelay = kCheckInitialDelay;
+      _checkDelay = kInitialCheckDelay;  // Reset delay and schedule check
       [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
       [self _setState:kServerConnectionState_Online];
     } else if (_currentState == kServerConnectionState_Online) {
-      _checkDelay = kCheckInitialDelay;
+      _checkDelay = kInitialCheckDelay;  // Reset delay and reschedule check
       [_checkTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:_checkDelay]];
     } else if (_currentState == kServerConnectionState_Checking) {
-      _checkDelay = kCheckInitialDelay;  // Reset delay for next check
+      _checkDelay = kInitialCheckDelay;  // Reset delay for next check
     }
 #if TARGET_OS_IPHONE
     else if ((_currentState == kServerConnectionState_Connected_WiFi) && (state == kNetReachabilityState_CellReachable)) {
@@ -273,7 +277,7 @@ static NSString* _stateNames[] = {
 - (void) replyToDisconnectFromServer:(BOOL)success {
   CHECK(_currentState == kServerConnectionState_Disconnecting);
   DCHECK(success);
-  [self _didDisconnect:_netReachability.state];
+  [self _didDisconnect:YES reachabilityState:_netReachability.state];
 }
 
 - (void) forceDisconnect {
@@ -289,7 +293,7 @@ static NSString* _stateNames[] = {
   NetReachabilityMode mode = _netReachability.reachabilityMode;
   _netReachability.delegate = nil;
   [_netReachability release];
-  _netReachability = [[NetReachability alloc] initWithHostName:@"example.com"];
+  _netReachability = [[NetReachability alloc] initWithHostName:kReachabilityHostName];
   _netReachability.reachabilityMode = mode;
   _netReachability.delegate = self;
 }
