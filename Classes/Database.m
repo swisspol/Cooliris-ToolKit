@@ -941,6 +941,15 @@ static inline int _ExecuteStatement(sqlite3_stmt* statement) {
   return result.count == 1 ? [[result objectAtIndex:0] objectForKey:pragma] : nil;
 }
 
+- (BOOL) writeUserVersion:(NSUInteger)version {
+  return [self setValue:[NSNumber numberWithInt:version] forPragma:@"user_version"];
+}
+
+- (NSUInteger) readUserVersion {
+  NSNumber* version = [self valueForPragma:@"user_version"];
+  return version ? [version intValue] : NSNotFound;
+}
+
 - (BOOL) _addSavepoint {
 LOCK_CONNECTION();
   

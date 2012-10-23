@@ -104,6 +104,8 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (id) initWithDatabaseAtPath:(NSString*)path readWrite:(BOOL)readWrite;  // Requires database to have been initialized
 - (BOOL) setValue:(id)value forPragma:(NSString*)pragma;
 - (id) valueForPragma:(NSString*)pragma;
+- (BOOL) writeUserVersion:(NSUInteger)version;
+- (NSUInteger) readUserVersion;  // Returns NSNotFound on error
 - (BOOL) beginTransaction;  // Nestable
 - (BOOL) commitTransaction;  // Nestable
 - (BOOL) rollbackTransaction;  // Rolls back current transaction
