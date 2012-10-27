@@ -882,7 +882,7 @@ static void __ReleaseStatementCallBack(CFAllocatorRef allocator, const void* val
   if ((self = [super init])) {
     int result = _OpenDatabase(path, readWrite ? SQLITE_OPEN_READWRITE : SQLITE_OPEN_READONLY, (sqlite3**)&_database);
     if (result != SQLITE_OK) {
-       LOG_ERROR(@"Failed opening database at \"%@\": %s (%i)", path, sqlite3_errmsg(_database), result);
+      LOG_ERROR(@"Failed opening database at \"%@\": %s (%i)", path, sqlite3_errmsg(_database), result);
       [self release];
       return nil;
     }
@@ -1463,6 +1463,30 @@ LOCK_CONNECTION();
   
 UNLOCK_CONNECTION();
   return (result == SQLITE_DONE);
+}
+
+- (BOOL) backupToNewDatabaseAtPath:(NSString*)path {
+LOCK_CONNECTION();
+  
+  sqlite3* database = NULL;
+  int result = _OpenDatabase(path, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, &database);
+  if (result == SQLITE_OK) {
+    sqlite3_backup* backup = sqlite3_backup_init(database, "main", _database, "main");
+    if (backup) {
+      sqlite3_backup_step(backup, -1);
+      sqlite3_backup_finish(backup);
+      result = sqlite3_errcode(database);
+    }
+    if (result != SQLITE_OK) {
+      LOG_ERROR(@"Failed performing backup to database \"%@\": %s (%i)", path, sqlite3_errmsg(database), sqlite3_errcode(database));
+    }
+    sqlite3_close(database);
+  } else {
+    LOG_ERROR(@"Failed opening database at \"%@\": %s (%i)", path, sqlite3_errmsg(_database), result);
+  }
+  
+UNLOCK_CONNECTION();
+  return (result == SQLITE_OK);
 }
 
 - (NSString*) description {
