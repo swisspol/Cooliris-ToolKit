@@ -93,8 +93,8 @@ typedef enum {
 
 - (void) connectionDidFinishLoading:(NSURLConnection*)connection {
   if (_response.statusCode == 200) {
-    NSString* contentType = [[_response allHeaderFields] objectForKey:@"Content-Type"];
-    if ([contentType hasPrefix:@"text/javascript"] && [contentType containsString:@"UTF-8"]) {  // Should be [text/javascript; charset="UTF-8"] but is sometimes different on 3G
+    NSString* contentType = [[[_response allHeaderFields] objectForKey:@"Content-Type"] lowercaseString];
+    if ([contentType hasPrefix:@"text/javascript"] && [contentType containsString:@"utf-8"]) {  // Should be [text/javascript; charset="UTF-8"] but is sometimes different on 3G
       [_pubNub connection:self didCompleteWithResponse:JSONParseData(_data)];
     } else {
       LOG_ERROR(@"PubNub request returned unexpected content type: %@", contentType);
