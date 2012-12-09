@@ -1374,6 +1374,13 @@ LOCK_CONNECTION();
         id object = nil;
         switch (sqlite3_column_type(statement, i)) {
           
+#if 0
+          case SQLITE_NULL: {
+            object = [NSNull null];
+            break;
+          }
+#endif
+          
           case SQLITE_INTEGER: {
             object = [[NSNumber alloc] initWithInt:sqlite3_column_int(statement, i)];
             break;
@@ -1415,7 +1422,7 @@ LOCK_CONNECTION();
       }
       if (utf8Key) {
         if (primary) {
-          [results setObject:row forKey:primary];
+          [results setValue:row forKey:primary];
           [primary release];
         }
       } else {
