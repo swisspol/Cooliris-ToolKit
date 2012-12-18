@@ -120,6 +120,7 @@ extern NSData* MakeHTTPBodyForMultipartForm(NSString* boundary, NSDictionary* ar
 @end
 
 @interface NSURL (Extensions)
++ (NSDictionary*) parseURLEncodedForm:(NSString*)form unescapeKeysAndValues:(BOOL)unescape;
 - (NSDictionary*) parseQueryParameters:(BOOL)unescape;
 @end
 

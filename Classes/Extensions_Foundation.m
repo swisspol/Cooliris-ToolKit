@@ -821,37 +821,44 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
 
 @implementation NSURL (Extensions)
 
++ (NSDictionary*) parseURLEncodedForm:(NSString*)form unescapeKeysAndValues:(BOOL)unescape {
+  NSMutableDictionary* parameters = [NSMutableDictionary dictionary];
+  NSScanner* scanner = [[NSScanner alloc] initWithString:form];
+  [scanner setCharactersToBeSkipped:nil];
+  while (1) {
+    NSString* key = nil;
+    if (![scanner scanUpToString:@"=" intoString:&key] || [scanner isAtEnd]) {
+      break;
+    }
+    [scanner setScanLocation:([scanner scanLocation] + 1)];
+    
+    NSString* value = nil;
+    if (![scanner scanUpToString:@"&" intoString:&value]) {
+      break;
+    }
+    
+    key = [key stringByReplacingOccurrencesOfString:@"+" withString:@" "];
+    value = [value stringByReplacingOccurrencesOfString:@"+" withString:@" "];
+    if (unescape) {
+      [parameters setObject:[value unescapeURLString] forKey:[key unescapeURLString]];
+    } else {
+      [parameters setObject:value forKey:key];
+    }
+    
+    if ([scanner isAtEnd]) {
+      break;
+    }
+    [scanner setScanLocation:([scanner scanLocation] + 1)];
+  }
+  [scanner release];
+  return parameters;
+}
+
 - (NSDictionary*) parseQueryParameters:(BOOL)unescape {
-  NSMutableDictionary* parameters = nil;
+  NSDictionary* parameters = nil;
   NSString* query = [self query];
   if (query) {
-    parameters = [NSMutableDictionary dictionary];
-    NSScanner* scanner = [[NSScanner alloc] initWithString:query];
-    [scanner setCharactersToBeSkipped:nil];
-    while (1) {
-      NSString* key = nil;
-      if (![scanner scanUpToString:@"=" intoString:&key] || [scanner isAtEnd]) {
-        break;
-      }
-      [scanner setScanLocation:([scanner scanLocation] + 1)];
-      
-      NSString* value = nil;
-      if (![scanner scanUpToString:@"&" intoString:&value]) {
-        break;
-      }
-      
-      if (unescape) {
-        [parameters setObject:[value unescapeURLString] forKey:[key unescapeURLString]];
-      } else {
-        [parameters setObject:value forKey:key];
-      }
-      
-      if ([scanner isAtEnd]) {
-        break;
-      }
-      [scanner setScanLocation:([scanner scanLocation] + 1)];
-    }
-    [scanner release];
+    parameters = [[self class] parseURLEncodedForm:query unescapeKeysAndValues:unescape];
   }
   return parameters;
 }
