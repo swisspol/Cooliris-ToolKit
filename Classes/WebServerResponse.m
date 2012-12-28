@@ -15,6 +15,7 @@
 #import <sys/stat.h>
 
 #import "WebServer.h"
+#import "Extensions_Foundation.h"
 #import "Logging.h"
 
 @implementation WebServerResponse
@@ -185,22 +186,32 @@
   return [[[[self class] alloc] initWithFile:path] autorelease];
 }
 
++ (WebServerFileResponse*) responseWithFile:(NSString*)path isAttachment:(BOOL)attachment {
+  return [[[[self class] alloc] initWithFile:path isAttachment:attachment] autorelease];
+}
+
 - (id) initWithFile:(NSString*)path {
+  return [self initWithFile:path isAttachment:NO];
+}
+
+- (id) initWithFile:(NSString*)path isAttachment:(BOOL)attachment {
   struct stat info;
   if (lstat([path fileSystemRepresentation], &info) || !(info.st_mode & S_IFREG)) {
     DNOT_REACHED();
     [self release];
     return nil;
   }
-  NSString* type = [WebServer mimeTypeFromPathExtension:[path pathExtension]];
+  NSString* type = [[NSFileManager defaultManager] mimeTypeFromPathExtension:[path pathExtension]];
   if (type == nil) {
-    DNOT_REACHED();
-    [self release];
-    return nil;
+    type = kWebServerDefaultMimeType;
   }
   
   if ((self = [super initWithContentType:type contentLength:info.st_size])) {
     _path = [path copy];
+    if (attachment) {
+      NSString* filename = [[path lastPathComponent] convertToEncoding:kHTTPHeaderStringEncoding];  // TODO: Use http://tools.ietf.org/html/rfc5987
+      [self setValue:[NSString stringWithFormat:@"attachment; filename=\"%@\"", filename] forAdditionalHeader:@"Content-Disposition"];
+    }
   }
   return self;
 }

@@ -59,7 +59,7 @@
   NSDictionary* _arguments;
 }
 @property(nonatomic, readonly) NSDictionary* arguments;  // Only valid after open / write / close sequence
-+ (NSString*) mimeType;  // Returns "application/x-www-form-urlencoded"
++ (NSString*) mimeType;
 @end
 
 @interface WebServerMultiPart : NSObject {
@@ -68,7 +68,7 @@
   NSString* _mimeType;
 }
 @property(nonatomic, readonly) NSString* contentType;  // May be nil
-@property(nonatomic, readonly) NSString* mimeType;  // Defaults to "text/plain" if undefined
+@property(nonatomic, readonly) NSString* mimeType;  // Defaults to "text/plain" per specifications if undefined
 @end
 
 @interface WebServerMultiPartArgument : WebServerMultiPart {
@@ -104,5 +104,5 @@
 }
 @property(nonatomic, readonly) NSDictionary* arguments;  // Only valid after open / write / close sequence
 @property(nonatomic, readonly) NSDictionary* files;  // Only valid after open / write / close sequence
-+ (NSString*) mimeType;  // Returns "multipart/form-data"
++ (NSString*) mimeType;
 @end

@@ -70,29 +70,33 @@ NSURL* MakeHTTPURLWithArguments(NSString* baseURL, NSDictionary* arguments, BOOL
 NSData* MakeHTTPBodyForMultipartForm(NSString* boundary, NSDictionary* arguments) {
   NSMutableData* body = [NSMutableData data];
   for (NSString* key in arguments) {
-    [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSASCIIStringEncoding]];
     id value = [arguments objectForKey:key];
     if ([value isKindOfClass:[NSDictionary class]]) {
-      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n",
-                               key, [value objectForKey:kMultipartFileKey_FileName]];  // TODO: Properly encode filename
-      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
+      NSString* filename = [[value objectForKey:kMultipartFileKey_FileName] convertToEncoding:kHTTPHeaderStringEncoding];  // TODO: Use http://tools.ietf.org/html/rfc5987
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n", key, filename];
+      [body appendData:[disposition dataUsingEncoding:kHTTPHeaderStringEncoding]];
       NSString* type = [NSString stringWithFormat:@"Content-Type: %@\r\n\r\n", [value objectForKey:kMultipartFileKey_MimeType]];
-      [body appendData:[type dataUsingEncoding:NSUTF8StringEncoding]];
+      [body appendData:[type dataUsingEncoding:kHTTPHeaderStringEncoding]];
       [body appendData:[value objectForKey:kMultipartFileKey_FileData]];
     } else if ([value isKindOfClass:[NSString class]]) {
-      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];  // Content-Type defaults to "text/plain"
-      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];
+      [body appendData:[disposition dataUsingEncoding:kHTTPHeaderStringEncoding]];
+      NSString* type = @"text/plain; charset=utf-8";
+      [body appendData:[type dataUsingEncoding:kHTTPHeaderStringEncoding]];
       [body appendData:[(NSString*)value dataUsingEncoding:NSUTF8StringEncoding]];
     } else if ([value isKindOfClass:[NSData class]]) {
-      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];  // Content-Type defaults to "text/plain"
-      [body appendData:[disposition dataUsingEncoding:NSUTF8StringEncoding]];
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];
+      [body appendData:[disposition dataUsingEncoding:kHTTPHeaderStringEncoding]];
+      NSString* type = @"text/plain; charset=utf-8";
+      [body appendData:[type dataUsingEncoding:kHTTPHeaderStringEncoding]];
       [body appendData:value];
     } else {
       NOT_REACHED();
     }
-    [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+    [body appendData:[@"\r\n" dataUsingEncoding:NSASCIIStringEncoding]];
   }
-  [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+  [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSASCIIStringEncoding]];
   return body;
 }
 
@@ -430,6 +434,12 @@ static void _ScanSentence(NSScanner* scanner) {
   return NO;
 }
 
+- (NSString*) convertToEncoding:(NSStringEncoding)encoding {
+  NSData* data = [self dataUsingEncoding:encoding allowLossyConversion:YES];
+  DCHECK(data);
+  return data ? [[[NSString alloc] initWithData:data encoding:encoding] autorelease] : nil;
+}
+
 @end
 
 @implementation NSMutableString (Extensions)
@@ -655,20 +665,28 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
 
 @implementation NSFileManager (Extensions)
 
-- (NSString*) mimeTypeFromFileExtension:(NSString*)extension {
-  NSString* type = nil;
-  extension = [extension lowercaseString];
+- (NSString*) mimeTypeFromPathExtension:(NSString*)extension {
+  NSString* mimeType = nil;
   if (extension.length) {
-    CFStringRef identifier = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)extension, NULL);
-    if (identifier) {
-      type = [(id)UTTypeCopyPreferredTagWithClass(identifier, kUTTagClassMIMEType) autorelease];
-      CFRelease(identifier);
+    CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)extension, NULL);
+    if (uti) {
+      mimeType = [(id)UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType) autorelease];
+      CFRelease(uti);
     }
   }
-  if (!type.length) {
-    type = @"application/octet-stream";
+  return mimeType;
+}
+
+- (NSString*) pathExtensionFromMimeType:(NSString*)mimeType {
+  NSString* extension = nil;
+  if (mimeType.length) {
+    CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (CFStringRef)mimeType, NULL);
+    if (uti) {
+      extension = [(id)UTTypeCopyPreferredTagWithClass(uti, kUTTagClassFilenameExtension) autorelease];
+      CFRelease(uti);
+    }
   }
-  return type;
+  return extension;
 }
 
 - (BOOL) getExtendedAttributeBytes:(void*)bytes length:(NSUInteger)length withName:(NSString*)name forFileAtPath:(NSString*)path {

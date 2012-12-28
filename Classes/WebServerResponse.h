@@ -67,5 +67,7 @@
   int _file;
 }
 + (WebServerFileResponse*) responseWithFile:(NSString*)path;
++ (WebServerFileResponse*) responseWithFile:(NSString*)path isAttachment:(BOOL)attachment;
 - (id) initWithFile:(NSString*)path;
+- (id) initWithFile:(NSString*)path isAttachment:(BOOL)attachment;
 @end

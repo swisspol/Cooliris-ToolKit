@@ -16,6 +16,8 @@
 
 // All extensions methods in this file are thread-safe
 
+#define kHTTPHeaderStringEncoding NSISOLatin1StringEncoding  // ISO 8859-1
+
 #define kMultipartFileKey_MimeType @"mimeType" // NSString
 #define kMultipartFileKey_FileName @"fileName"  // NSString
 #define kMultipartFileKey_FileData @"fileData"  // NSData
@@ -40,7 +42,7 @@ extern NSData* MakeHTTPBodyForMultipartForm(NSString* boundary, NSDictionary* ar
 
 @interface NSString (Extensions)
 - (BOOL) hasCaseInsensitivePrefix:(NSString*)prefix;
-- (NSString*) urlEscapedString;  // Uses UTF-8 encoding and also escapes characters that can confuse the parameter string part of the URL
+- (NSString*) urlEscapedString;  // Uses UTF-8 encoding and also escapes characters that can confuse the query part of the URL
 - (NSString*) unescapeURLString;  // Uses UTF-8 encoding
 - (NSString*) extractFirstSentence;
 - (NSArray*) extractAllSentences;
@@ -55,6 +57,7 @@ extern NSData* MakeHTTPBodyForMultipartForm(NSString* boundary, NSDictionary* ar
 - (NSString*) stringByReplacingPrefix:(NSString*)prefix withString:(NSString*)string;
 - (NSString*) stringByReplacingSuffix:(NSString*)suffix withString:(NSString*)string;
 - (BOOL) isIntegerNumber;
+- (NSString*) convertToEncoding:(NSStringEncoding)encoding;  // Potentially lossy conversion (characters that cannot be converted are replaced by '?')
 @end
 
 @interface NSMutableString (Extensions)
@@ -100,7 +103,8 @@ extern NSData* MakeHTTPBodyForMultipartForm(NSString* boundary, NSDictionary* ar
 @end
 
 @interface NSFileManager (Extensions)
-- (NSString*) mimeTypeFromFileExtension:(NSString*)extension;
+- (NSString*) mimeTypeFromPathExtension:(NSString*)extension;
+- (NSString*) pathExtensionFromMimeType:(NSString*)mimeType;
 - (BOOL) getExtendedAttributeBytes:(void*)bytes length:(NSUInteger)length withName:(NSString*)name forFileAtPath:(NSString*)path;
 - (NSData*) extendedAttributeDataWithName:(NSString*)name forFileAtPath:(NSString*)path;
 - (NSString*) extendedAttributeStringWithName:(NSString*)name forFileAtPath:(NSString*)path;  // Uses UTF8 encoding

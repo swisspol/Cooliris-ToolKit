@@ -42,12 +42,6 @@ typedef WebServerResponse* (^WebServerProcessBlock)(WebServerRequest* request);
 - (void) stop;
 @end
 
-@interface WebServer (Utilities)
-+ (NSDictionary*) parseURLEncodedForm:(NSString*)form;
-+ (NSString*) mimeTypeFromPathExtension:(NSString*)extension;  // Returns nil if unknown
-+ (NSString*) pathExtensionFromMimeType:(NSString*)type;  // Returns nil if unknown
-@end
-
 @interface WebServer (Handlers)
 - (void) addHandlerForBasePath:(NSString*)basePath localPath:(NSString*)localPath indexFilename:(NSString*)indexFilename cacheAge:(NSUInteger)cacheAge;  // Base path is recursive and case-sensitive
 - (void) addHandlerForMethod:(NSString*)method path:(NSString*)path requestClass:(Class)class processBlock:(WebServerProcessBlock)block;  // Path is case-insensitive

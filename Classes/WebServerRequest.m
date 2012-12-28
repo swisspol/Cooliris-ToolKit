@@ -30,6 +30,30 @@ static NSData* _newlineData = nil;
 static NSData* _newlinesData = nil;
 static NSData* _dashNewlineData = nil;
 
+static NSString* _ExtractHeaderParameter(NSString* header, NSString* attribute) {
+  NSString* value = nil;
+  NSScanner* scanner = [[NSScanner alloc] initWithString:header];
+  NSString* string = [NSString stringWithFormat:@"%@=", attribute];
+  if ([scanner scanUpToString:string intoString:NULL]) {
+    [scanner scanString:string intoString:NULL];
+    [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:&value];
+  }
+  if ([value hasPrefix:@"\""] && [value hasSuffix:@"\""]) {
+    value = [value substringWithRange:NSMakeRange(1, value.length - 2)];
+  }
+  [scanner release];
+  return value;
+}
+
+// http://www.w3schools.com/tags/ref_charactersets.asp
+static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
+  NSStringEncoding encoding = kCFStringEncodingInvalidId;
+  if (charset) {
+    encoding = CFStringConvertEncodingToNSStringEncoding(CFStringConvertIANACharSetNameToEncoding((CFStringRef)charset));
+  }
+  return (encoding != kCFStringEncodingInvalidId ? encoding : NSUTF8StringEncoding);
+}
+
 @implementation WebServerRequest : NSObject
 
 @synthesize method=_method, headers=_headers, path=_path, query=_query, contentType=_type, contentLength=_length;
@@ -180,8 +204,9 @@ static NSData* _dashNewlineData = nil;
     return NO;
   }
   
-  NSString* string = [[NSString alloc] initWithData:self.data encoding:NSUTF8StringEncoding];  // TODO: Use proper encoding from Content-Type header
-  _arguments = [[WebServer parseURLEncodedForm:string] retain];
+  NSString* charset = _ExtractHeaderParameter(self.contentType, @"charset");
+  NSString* string = [[NSString alloc] initWithData:self.data encoding:_StringEncodingFromCharset(charset)];
+  _arguments = [[NSURL parseURLEncodedForm:string unescapeKeysAndValues:YES] retain];
   [string release];
   
   return (_arguments ? YES : NO);
@@ -288,11 +313,8 @@ static NSData* _dashNewlineData = nil;
 
 - (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSString*)query {
   if ((self = [super initWithMethod:method headers:headers path:path query:query])) {
-    NSScanner* scanner = [NSScanner scannerWithString:[headers objectForKey:@"Content-Type"]];
-    if ([scanner scanUpToString:@"boundary=" intoString:NULL]) {
-      NSString* boundary = nil;
-      [scanner scanString:@"boundary=" intoString:NULL];
-      [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:&boundary];
+    NSString* boundary = _ExtractHeaderParameter(self.contentType, @"boundary");
+    if (boundary) {
       _boundary = [[[NSString stringWithFormat:@"--%@", boundary] dataUsingEncoding:NSASCIIStringEncoding] retain];
     }
     if (_boundary == nil) {
@@ -340,17 +362,8 @@ static NSData* _dashNewlineData = nil;
         NSDictionary* headers = [(id)CFHTTPMessageCopyAllHeaderFields(message) autorelease];
         NSString* contentDisposition = [headers objectForKey:@"Content-Disposition"];
         if ([[contentDisposition lowercaseString] hasPrefix:@"form-data;"]) {
-          NSScanner* scanner = [[NSScanner alloc] initWithString:contentDisposition];
-          if ([scanner scanUpToString:@"name=\"" intoString:NULL]) {
-            [scanner scanString:@"name=\"" intoString:NULL];
-            [scanner scanUpToString:@"\"" intoString:&controlName];
-          }
-          [scanner setScanLocation:0];
-          if ([scanner scanUpToString:@"filename=\"" intoString:NULL]) {
-            [scanner scanString:@"filename=\"" intoString:NULL];
-            [scanner scanUpToString:@"\"" intoString:&fileName];
-          }
-          [scanner release];
+          controlName = _ExtractHeaderParameter(contentDisposition, @"name");
+          fileName = _ExtractHeaderParameter(contentDisposition, @"filename");
         }
         _controlName = [controlName copy];
         _fileName = [fileName copy];

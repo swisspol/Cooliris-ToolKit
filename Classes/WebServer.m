@@ -402,7 +402,7 @@ static dispatch_queue_t _formatterQueue = NULL;
       DCHECK(requestMethod);
       NSString* requestURL = [(id)CFHTTPMessageCopyRequestURL(_requestMessage) autorelease];
       DCHECK(requestURL);
-      NSString* requestPath = [[(id)CFURLCopyPath((CFURLRef)requestURL) autorelease] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];  // Don't use -[NSURL path] which strips the ending slash
+      NSString* requestPath = [[(id)CFURLCopyPath((CFURLRef)requestURL) autorelease] unescapeURLString];  // Don't use -[NSURL path] which strips the ending slash
       DCHECK(requestPath);
       NSString* requestQuery = [(id)CFURLCopyQueryString((CFURLRef)requestURL, NULL) autorelease];  // Don't use -[NSURL query] to make sure query is not unescaped
       NSDictionary* requestHeaders = [(id)CFHTTPMessageCopyAllHeaderFields(_requestMessage) autorelease];
@@ -635,38 +635,6 @@ static void _SocketCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
   [_runLoop release];
   _runLoop = nil;
   _port = 0;
-}
-
-@end
-
-@implementation WebServer (Utilities)
-
-+ (NSDictionary*) parseURLEncodedForm:(NSString*)form {
-  return [NSURL parseURLEncodedForm:form unescapeKeysAndValues:YES];
-}
-
-+ (NSString*) mimeTypeFromPathExtension:(NSString*)extension {
-  NSString* mimeType = nil;
-  if (extension.length) {
-    CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)extension, NULL);
-    if (uti) {
-      mimeType = [(id)UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType) autorelease];
-      CFRelease(uti);
-    }
-  }
-  return mimeType;
-}
-
-+ (NSString*) pathExtensionFromMimeType:(NSString*)mimeType {
-  NSString* extension = nil;
-  if (mimeType.length) {
-    CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (CFStringRef)mimeType, NULL);
-    if (uti) {
-      extension = [(id)UTTypeCopyPreferredTagWithClass(uti, kUTTagClassFilenameExtension) autorelease];
-      CFRelease(uti);
-    }
-  }
-  return extension;
 }
 
 @end
