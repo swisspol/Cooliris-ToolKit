@@ -213,7 +213,9 @@ static dispatch_queue_t _formatterQueue = NULL;
 @implementation WebServerConnection (Write)
 
 - (void) _writeBuffer:(dispatch_data_t)buffer withCompletionBlock:(WriteBufferCompletionBlock)block {
+#ifndef NDEBUG
   size_t size = dispatch_data_get_size(buffer);
+#endif
   dispatch_write(_socket, buffer, kReadWriteQueue, ^(dispatch_data_t data, int error) {
     
     @autoreleasepool {
