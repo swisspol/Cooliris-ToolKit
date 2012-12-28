@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #import "PubNub.h"
-#import "JSON.h"
 #import "Crypto.h"
 #import "Logging.h"
 #import "Extensions_Foundation.h"
@@ -51,6 +50,26 @@ typedef enum {
 @interface PubNub ()
 - (void) connection:(PubNubConnection*)connection didCompleteWithResponse:(id)response;
 @end
+
+static id _ReadJSONData(NSData* data) {
+  NSError* error = nil;
+  id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+  if (object == nil) {
+    LOG_ERROR(@"PubNub JSON deserializing failed: %@", error);
+    return nil;
+  }
+  return object;
+}
+
+static NSString* _WriteJSONString(id object) {
+  NSError* error = nil;
+  NSData* data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
+  if (data == nil) {
+    LOG_ERROR(@"PubNub JSON serializing failed: %@", error);
+    return nil;
+  }
+  return [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
+}
 
 @implementation PubNubConnection
 
@@ -95,7 +114,7 @@ typedef enum {
   if (_response.statusCode == 200) {
     NSString* contentType = [[[_response allHeaderFields] objectForKey:@"Content-Type"] lowercaseString];
     if ([contentType hasPrefix:@"text/javascript"] && [contentType containsString:@"utf-8"]) {  // Should be [text/javascript; charset="UTF-8"] but is sometimes different on 3G
-      [_pubNub connection:self didCompleteWithResponse:JSONParseData(_data)];
+      [_pubNub connection:self didCompleteWithResponse:_ReadJSONData(_data)];
     } else {
       LOG_ERROR(@"PubNub request returned unexpected content type: %@", contentType);
       [_pubNub connection:self didCompleteWithResponse:nil];
@@ -166,7 +185,7 @@ typedef enum {
 }
 
 - (void) publishMessage:(id)message toChannel:(NSString*)channel {
-  NSString* json = JSONWriteString(message);
+  NSString* json = _WriteJSONString(message);
   if ([json lengthOfBytesUsingEncoding:NSUTF8StringEncoding] > kMaxMessageLength) {
     LOG_ABORT(@"PubNub message too long: %i bytes", json.length);
   }
@@ -264,7 +283,7 @@ typedef enum {
     case kCommand_SendMessage: {
       BOOL success = NO;
       NSString* error = nil;
-      if ([response isKindOfClass:[NSArray class]] && ([response count] == 2)) {
+      if ([response isKindOfClass:[NSArray class]] && (([response count] == 2) || ([response count] == 3))) {
         success = [[response objectAtIndex:0] boolValue];
         if (success == NO) {
           error = [response objectAtIndex:1];

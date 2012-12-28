@@ -101,12 +101,6 @@
   
   CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1.0, false);
   
-  NSString* string = @"string";
-  [pubNub publishMessage:string toChannel:_channel];
-  [self _waitForResult1:&result1 result2:&result2];
-  AssertEqualObjects(result1, [NSNull null]);
-  AssertEqualObjects(result2, string);
-  
   NSArray* array = [NSArray arrayWithObjects:@"string", [NSNumber numberWithInt:0], nil];
   [pubNub publishMessage:array toChannel:_channel];
   [self _waitForResult1:&result1 result2:&result2];
@@ -125,7 +119,6 @@
   [pubNub fetchHistory:kHistoryLimit forChannel:_channel];
   [self _waitForResult];
   AssertTrue([_result isKindOfClass:[NSArray class]]);
-  AssertEqual([_result count], (NSUInteger)3);
   
   [pubNub release];
 }
