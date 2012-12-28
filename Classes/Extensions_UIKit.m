@@ -108,7 +108,7 @@ UIColor* UIColorFromString(NSString* string) {
 
 + (UIColor*) backgroundColorWithPatternImage:(UIImage*)image {
 #if __USE_UIKIT_FOR_COLOR_PATTERNS__
-  if (image && (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_4_0)) {
+  if (image) {
     CGImageRef imageRef = CreateFlippedImage([image CGImage], NO, YES, NULL);
     if (imageRef) {
       image = [UIImage imageWithCGImage:imageRef];

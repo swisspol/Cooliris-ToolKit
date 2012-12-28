@@ -1,4 +1,0 @@
-DAVServer/cocoahttpserver = [git]https://github.com/robbiehanson/CocoaHTTPServer.git
-JSON/JSONKit = [git]https://github.com/johnezang/JSONKit.git
-SocialNetworks/Facebook-iOS-SDK = [git]https://github.com/facebook/facebook-ios-sdk.git
-SocialNetworks/ShareKit = [git]https://github.com/ideashower/ShareKit.git

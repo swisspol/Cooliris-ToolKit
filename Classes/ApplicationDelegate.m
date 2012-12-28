@@ -16,16 +16,10 @@
 #import <objc/runtime.h>
 
 #import "ApplicationDelegate.h"
-#if __TASK_SUPPORT__
-#import "Task.h"
-#endif
 #import "HTTPURLConnection.h"
 #import "Logging.h"
 #import "Extensions_Foundation.h"
 #import "Extensions_UIKit.h"
-#if __DAVSERVER_SUPPORT__
-#import "DAVServer.h"
-#endif
 
 #define kConfigurationKeySourceURL @"__sourceURL__"
 
@@ -47,10 +41,6 @@
 
 #define kRemoteLoggingMessageDelay 0.5
 #define kRemoteLoggingMessageDuration 10.0
-#if __DAVSERVER_SUPPORT__
-#define kWebDAVServerMessageDelay 0.5
-#define kWebDAVServerMessageDuration 10.0
-#endif
 
 #define kConfigurationCacheFile @"Configuration.data"
 #define kConfigurationLocalDownloadTimeOut 5.0
@@ -60,6 +50,10 @@
 
 #define kLoggingOverlayDisplayDuration 5.0
 #define kDeviceRotationAnimationDuration 0.4
+
+@interface NSObject (Configuration)
+- (void) configurationDidUpdate:(NSURL*)sourceURL;
+@end
 
 @interface ApplicationWindow : UIWindow {
 @private
@@ -73,21 +67,6 @@
 @interface LogViewController : UIViewController
 @end
 
-#if __TASK_SUPPORT__
-
-@interface ConfigurationDownloader : Task {
-@private
-  NSArray* _urls;
-  NSMutableDictionary* _configuration;
-  NSURL* _url;
-}
-@property(nonatomic, readonly) NSDictionary* configuration;
-@property(nonatomic, readonly) NSURL* url;
-- (id) initWithURLs:(NSArray*)urls;
-@end
-
-#endif
-
 @interface ApplicationDelegate (Internal)
 - (void) _dismissAlertWithButtonIndex:(NSInteger)index;
 - (void) _dismissAuthenticationWithButtonIndex:(NSInteger)index;
@@ -97,9 +76,7 @@
 static ApplicationDelegate* _sharedInstance = nil;
 static IMP _exceptionInitializerIMP = NULL;
 static NSMutableDictionary* _configurationDictionary = nil;
-#if __TASK_SUPPORT__
-static Task* _configurationTask = nil;
-#endif
+static BOOL _updatingConfiguration = NO;
 
 static id _ExceptionInitializer(id self, SEL cmd, NSString* name, NSString* reason, NSDictionary* userInfo) {
   if ((self = _exceptionInitializerIMP(self, cmd, name, reason, userInfo))) {
@@ -155,58 +132,6 @@ static NSString* _LoggingRemoteMessageCallback(NSString* message, void* context)
 static void _LoggingRemoteDisconnectCallback(void* context) {
   _ResetDefaultLoggingLevel();
 }
-
-#if __TASK_SUPPORT__
-
-@implementation ConfigurationDownloader
-
-@synthesize configuration=_configuration, url=_url;
-
-- (id) initWithURLs:(NSArray*)urls {
-  if ((self = [super init])) {
-    _urls = [urls retain];
-  }
-  return self;
-}
-
-- (void) dealloc {
-  [_urls release];
-  [_configuration release];
-  [_url release];
-  
-  [super dealloc];
-}
-
-- (BOOL) execute {
-  Class class = NSClassFromString(@"HTTPURLConnection");
-  CHECK(class);
-  for (NSURL* url in _urls) {
-    NSMutableURLRequest* request = [class HTTPRequestWithURL:url method:@"GET" userAgent:nil handleCookies:NO];
-    if ([url.host containsString:@"10.0."] || [url.host containsString:@"172.16."] || [url.host containsString:@"192.168."] ||
-      [url.host hasSuffix:@".local"]) {
-      [request setTimeoutInterval:kConfigurationLocalDownloadTimeOut];
-    }
-    NSData* data = [class downloadHTTPRequestToMemory:request delegate:(id)self headerFields:NULL];
-    if (data) {
-      NSString* error = nil;
-      _configuration = [[NSPropertyListSerialization propertyListFromData:data
-                                                         mutabilityOption:NSPropertyListMutableContainers
-                                                                   format:NULL
-                                                         errorDescription:&error] retain];
-      if (_configuration) {
-        [_configuration setObject:[url absoluteString] forKey:kConfigurationKeySourceURL];
-        _url = [url retain];
-        return YES;
-      }
-      LOG_ERROR(@"Failed parsing configuration patch: %@", error);
-    }
-  }
-  return NO;
-}
-
-@end
-
-#endif
 
 @implementation LogViewController
 
@@ -372,44 +297,9 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
       }
     }
   }
-  
-#if __DAVSERVER_SUPPORT__
-  // Start WebDAV server if necessary
-  NSInteger webdavServerEnabled = [[NSUserDefaults standardUserDefaults] integerForKey:kApplicationUserDefaultKey_WebDAVServerEnabled];
-  if (webdavServerEnabled != 0) {
-    NSString* ipAddress = [[UIDevice currentDevice] currentWiFiAddress];
-    if (ipAddress) {
-      NSString* documentsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
-      _webdavServer = [[DAVServer alloc] initWithRootDirectory:[documentsPath stringByDeletingLastPathComponent]];
-    }
-    if ([_webdavServer start]) {
-      if (webdavServerEnabled > 0) {
-        [self showMessageWithString:[NSString stringWithFormat:@"WebDAV Server @ %@:%i", ipAddress, _webdavServer.port]
-                              delay:kWebDAVServerMessageDelay
-                           duration:kWebDAVServerMessageDuration
-                           animated:YES];
-      }
-    } else {
-      if (webdavServerEnabled > 0) {
-        [self showMessageWithString:@"WebDAV Server Not Available"
-                              delay:kWebDAVServerMessageDelay
-                           duration:kWebDAVServerMessageDuration
-                           animated:YES];
-      }
-    }
-  }
-#endif
 }
 
 - (BOOL) application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions {
-#if __TASK_SUPPORT__
-#ifdef NSFoundationVersionNumber_iOS_4_0
-  if (&UIBackgroundTaskInvalid != NULL) {
-    _queueTask = UIBackgroundTaskInvalid;
-  }
-#endif
-#endif
-  
   // Setup minimum logging level
   _ResetDefaultLoggingLevel();
   
@@ -433,91 +323,24 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   return NO;
 }
 
-#if __TASK_SUPPORT__
-
-- (void) _shutdownTaskQueue {
-  LOG_VERBOSE(@"Waiting for TaskQueue to shutdown...");
-  
-  // Make sure no new task can be executed
-  [[TaskQueue sharedTaskQueue] suspend];
-  
-  // Cancel all tasks already in queue
-  [[TaskQueue sharedTaskQueue] cancelAllTasksExecution];
-  
-  // Wait until done
-  [[TaskQueue sharedTaskQueue] waitUntilIdle];
-  
-  LOG_VERBOSE(@"TaskQueue has shutdown");
-}
-
-#ifdef NSFoundationVersionNumber_iOS_4_0
-
-- (void) _endTaskQueueBackgroundTask {
-  [[NSNotificationCenter defaultCenter] removeObserver:self name:TaskQueueDidBecomeIdleNotification object:nil];
-  [[UIApplication sharedApplication] endBackgroundTask:_queueTask];
-  _queueTask = UIBackgroundTaskInvalid;
-  LOG_VERBOSE(@"TaskQueue background task ended");
-}
-
-- (void) _taskQueueDidBecomeIdle:(NSNotification*)notification {
-  if ([[TaskQueue sharedTaskQueue] numberOfQueuedTasks] == 0) {
-    [[TaskQueue sharedTaskQueue] suspend];
-    [self saveState];
-    [self _endTaskQueueBackgroundTask];
-  }
-}
-
-#endif
-
-#endif
-
 - (void) applicationDidEnterBackground:(UIApplication*)application {
   // Dismiss alert views
   [self dismissAuthentication:NO];
   [self dismissAlert:NO];
-  
-#if __DAVSERVER_SUPPORT__
-  // Suspend DAVServer
-  [_webdavServer stop:YES];
-#endif
   
   // Stop remote logging
   if (_loggingServer) {
     LoggingDisableRemoteAccess(YES);
   }
   
-  // Purge history
-  LoggingPurgeHistory(kApplicationLoggingHistoryAge);
-  
-#if __TASK_SUPPORT__
-  // Start TaskQueue background task if necessary - TODO: There can be race conditions if tasks aren't scheduled from main thread
-  if ([TaskQueue wasCreated]) {
-    if ([[TaskQueue sharedTaskQueue] isIdle] && ![[TaskQueue sharedTaskQueue] numberOfQueuedTasks]) {
-      [[TaskQueue sharedTaskQueue] suspend];
-      [self saveState];
-    } else {
-      [[NSNotificationCenter defaultCenter] addObserver:self
-                                               selector:@selector(_taskQueueDidBecomeIdle:)
-                                                   name:TaskQueueDidBecomeIdleNotification
-                                                 object:nil];
-      _queueTask = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
-        [self _shutdownTaskQueue];
-        [self saveState];
-        [self _endTaskQueueBackgroundTask];
-      }];
-      LOG_VERBOSE(@"TaskQueue background task started (%.0f seconds remaining)",
-                  [[UIApplication sharedApplication] backgroundTimeRemaining]);
-    }
-  }
-  // Otherwise, save state immediately
-  else
-#endif
-  {
-    [self saveState];
-  }
+  // Save state
+  [self saveState];
   
   // Make sure user defaults are synchronized
   [[NSUserDefaults standardUserDefaults] synchronize];
+  
+  // Purge history
+  LoggingPurgeHistory(kApplicationLoggingHistoryAge);
   
   LOG_VERBOSE(@"Application did enter background");
 }
@@ -528,28 +351,10 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   // Make sure user defaults are synchronized
   [[NSUserDefaults standardUserDefaults] synchronize];
   
-#if __TASK_SUPPORT__
-  // Finish TaskQueue background task
-  if (_queueTask != UIBackgroundTaskInvalid) {
-    [[TaskQueue sharedTaskQueue] suspend];
-    [self _endTaskQueueBackgroundTask];
-  }
-  
-  // Resume TaskQueue
-  if ([TaskQueue wasCreated] && [[TaskQueue sharedTaskQueue] isSuspended]) {
-    [[TaskQueue sharedTaskQueue] resume];
-  }
-#endif
-  
   // Restart logging remote access
   if (_loggingServer) {
     LoggingEnableRemoteAccess(kApplicationRemoteLoggingPort, _LoggingRemoteConnectCallback, _LoggingRemoteMessageCallback, _LoggingRemoteDisconnectCallback, self);
   }
-  
-#if __DAVSERVER_SUPPORT__
-  // Restart WebDAV server
-  [_webdavServer start];
-#endif
 }
 
 - (void) applicationWillTerminate:(UIApplication*)application {
@@ -557,31 +362,19 @@ static void _LoggingRemoteDisconnectCallback(void* context) {
   [self dismissAuthentication:NO];
   [self dismissAlert:NO];
   
-#if __TASK_SUPPORT__
-  // Shutdown TaskQueue
-  if ([TaskQueue wasCreated]) {
-    [self _shutdownTaskQueue];
-  }
-#endif
-  
-  // Save state
-  [self saveState];
-  
-#if __DAVSERVER_SUPPORT__
-  // Stop DAVServer
-  [_webdavServer stop:NO];
-#endif
-  
   // Stop remote logging
   if (_loggingServer) {
     LoggingDisableRemoteAccess(NO);
   }
   
-  // Purge history
-  LoggingPurgeHistory(kApplicationLoggingHistoryAge);
+  // Save state
+  [self saveState];
   
   // Make sure user defaults are synchronized
   [[NSUserDefaults standardUserDefaults] synchronize];
+  
+  // Purge history
+  LoggingPurgeHistory(kApplicationLoggingHistoryAge);
 }
 
 - (UIViewController*) _findTopViewController:(BOOL)skipLastModal {
@@ -689,8 +482,6 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
 
 @end
 
-#if __TASK_SUPPORT__
-
 @implementation ApplicationDelegate (Configuration)
 
 + (void) initialize {
@@ -722,30 +513,9 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   return [_configurationDictionary objectForKey:key];
 }
 
-+ (void) _didFinishDownloadingConfiguration:(ConfigurationDownloader*)task {
-  if (task.configuration) {
-    [_configurationDictionary release];
-    NSDictionary* configuration = [[NSBundle mainBundle] objectForInfoDictionaryKey:kApplicationBundleInfoKey_DefaultConfiguration];
-    _configurationDictionary = [[NSMutableDictionary alloc] initWithDictionary:configuration];
-    [_configurationDictionary addEntriesFromDictionary:task.configuration];
-    
-    NSString* cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
-    NSString* path = [cachesPath stringByAppendingPathComponent:kConfigurationCacheFile];
-    if (![task.configuration writeToFile:path atomically:YES]) {
-      LOG_ERROR(@"Failed writing cached configuration file");
-    }
-  }
-  
-  [_configurationTask release];
-  _configurationTask = nil;
-  
-  LOG_VERBOSE(@"Configuration updating completed");
-  
-  [task.userInfo performSelector:@selector(configurationDidUpdate:) withObject:task.url];
-}
-
+// TODO: Create a background task in case app goes to background while configuration is downloading
 + (void) updateConfigurationInBackgroundWithDelegate:(id)delegate {
-  CHECK(_configurationTask == nil);
+  CHECK(_updatingConfiguration == NO);
   LOG_VERBOSE(@"Configuration updating started");
   NSMutableArray* array = [[NSMutableArray alloc] init];
   NSURL* url = [NSURL URLWithString:[[NSUserDefaults standardUserDefaults] stringForKey:kApplicationUserDefaultKey_ConfigurationURL]];
@@ -756,21 +526,67 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
       [array addObject:[NSURL URLWithString:string]];
     }
   }
-  _configurationTask = [[ConfigurationDownloader alloc] initWithURLs:array];
-  _configurationTask.delegate = self;
-  _configurationTask.didFinishSelector = @selector(_didFinishDownloadingConfiguration:);
-  _configurationTask.userInfo = delegate;
-  [[TaskQueue sharedTaskQueue] scheduleTaskForExecution:_configurationTask];
+  
+  _updatingConfiguration = YES;
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    NSMutableDictionary* configuration = nil;
+    NSURL* url = nil;
+    
+    Class class = NSClassFromString(@"HTTPURLConnection");
+    CHECK(class);
+    for (url in array) {
+      NSMutableURLRequest* request = [class HTTPRequestWithURL:url method:@"GET" userAgent:nil handleCookies:NO];
+      if ([url.host containsString:@"10.0."] || [url.host containsString:@"172.16."] || [url.host containsString:@"192.168."] ||
+          [url.host hasSuffix:@".local"]) {
+        [request setTimeoutInterval:kConfigurationLocalDownloadTimeOut];
+      }
+      NSData* data = [class downloadHTTPRequestToMemory:request delegate:(id)self headerFields:NULL];
+      if (data) {
+        NSString* error = nil;
+        configuration = [NSPropertyListSerialization propertyListFromData:data
+                                                         mutabilityOption:NSPropertyListMutableContainers
+                                                                   format:NULL
+                                                         errorDescription:&error];
+        if (configuration) {
+          [configuration setObject:[url absoluteString] forKey:kConfigurationKeySourceURL];
+          break;
+        }
+        LOG_ERROR(@"Failed parsing configuration patch: %@", error);
+      }
+    }
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (configuration) {
+        [_configurationDictionary release];
+        NSDictionary* configuration = [[NSBundle mainBundle] objectForInfoDictionaryKey:kApplicationBundleInfoKey_DefaultConfiguration];
+        _configurationDictionary = [[NSMutableDictionary alloc] initWithDictionary:configuration];
+        [_configurationDictionary addEntriesFromDictionary:configuration];
+        
+        NSString* cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+        NSString* path = [cachesPath stringByAppendingPathComponent:kConfigurationCacheFile];
+        if (![configuration writeToFile:path atomically:YES]) {
+          LOG_ERROR(@"Failed writing cached configuration file");
+        }
+      }
+      
+      _updatingConfiguration = NO;
+      LOG_VERBOSE(@"Configuration updating completed");
+      
+      [delegate configurationDidUpdate:url];
+    });
+    
+    [pool release];
+  });
+  
   [array release];
 }
 
 + (BOOL) isUpdatingConfiguration {
-  return _configurationTask ? YES : NO;
+  return _updatingConfiguration;
 }
 
 @end
-
-#endif
 
 @implementation ApplicationDelegate (Alerts)
 
@@ -1256,20 +1072,6 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   return @"Remote logging access will be disabled at next launch";
 }
 
-#if __DAVSERVER_SUPPORT__
-
-- (NSString*) command_enableWebDAV:(id)argument {
-  [[NSUserDefaults standardUserDefaults] setBool:YES forKey:kApplicationUserDefaultKey_WebDAVServerEnabled];
-  return @"WebDAV server will be enabled at next launch";
-}
-
-- (NSString*) command_disableWebDAV:(id)argument {
-  [[NSUserDefaults standardUserDefaults] removeObjectForKey:kApplicationUserDefaultKey_WebDAVServerEnabled];
-  return @"WebDAV server will be disabled at next launch";
-}
-
-#endif
-
 - (NSString*) command_showIP:(id)argument {
   NSString* address = [[UIDevice currentDevice] currentWiFiAddress];
   return address ? [NSString stringWithFormat:@"Current WiFi IP address:\n%@", address] : @"No WiFi IP address available";
@@ -1285,8 +1087,6 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   return nil;
 }
 
-#if __TASK_SUPPORT__
-
 - (NSString*) command_reportErrors:(id)argument {
   NSString* email = [ApplicationDelegate objectForConfigurationKey:kApplicationConfigurationKey_ReportEmail];
   NSString* subject = [NSString stringWithFormat:@"Error Log for %@ %@ (%@)",
@@ -1297,8 +1097,6 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
   BOOL success = [self sendErrorsToEmail:email withSubject:subject bodyPrefix:prefix];
   return success ? nil : @"Device is not configured to send email";
 }
-
-#endif
 
 - (NSString*) command_enableOverlayLogging:(id)argument {
   [self setLoggingOverlayEnabled:YES];
@@ -1331,15 +1129,9 @@ static void _HistoryErrorsCallback(NSUInteger appVersion, NSTimeInterval timesta
 // Called from arbitrary threads
 static void _LoggingCallback(NSTimeInterval timestamp, LogLevel level, NSString* message, void* context) {
   message = [NSString stringWithFormat:@"[%s] %@\n", LoggingGetLevelName(level), message];
-#if __TASK_SUPPORT__
-  [[TaskQueue sharedTaskQueue] performSelectorOnMainThread:@selector(_loggedMessage:)
-                                              withArgument:message
-                                               usingTarget:[ApplicationDelegate sharedInstance]];
-#else
   dispatch_async(dispatch_get_main_queue(), ^{
     [[ApplicationDelegate sharedInstance] _loggedMessage:message];
   });
-#endif
 }
 
 - (void) _showLoggingOverlay {
@@ -1383,10 +1175,6 @@ static void _LoggingCallback(NSTimeInterval timestamp, LogLevel level, NSString*
 
 - (void) setLoggingOverlayEnabled:(BOOL)flag {
   if (flag && !_loggingOverlayView) {
-#if __TASK_SUPPORT__
-    [TaskQueue sharedTaskQueue]; // Make sure TaskQueue exists
-#endif
-    
     _loggingOverlayView = [[UITextView alloc] init];
     _loggingOverlayView.layer.cornerRadius = 6.0;
     _loggingOverlayView.opaque = NO;

@@ -582,20 +582,7 @@ CGImageRef CreateRenderedPDFPage(CGPDFPageRef page, CGSize size, ImageScalingMod
 }
 
 static void __DrawPattern(void* info, CGContextRef context) {
-#if TARGET_OS_IPHONE
-  BOOL shouldFlip = kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_4_0;
-  if (shouldFlip) {
-    CGContextSaveGState(context);
-    CGContextTranslateCTM(context, 0.0, CGImageGetHeight(info));
-    CGContextScaleCTM(context, 1.0, -1.0);
-  }
-#endif
   CGContextDrawImage(context, CGRectMake(0, 0, CGImageGetWidth(info), CGImageGetHeight(info)), info);
-#if TARGET_OS_IPHONE
-  if (shouldFlip) {
-    CGContextRestoreGState(context);
-  }
-#endif
 }
 
 static void __ReleasePattern(void* info) {

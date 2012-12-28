@@ -112,24 +112,6 @@ static inline void _LogCapturedOutput(char* buffer, ssize_t size, LogLevel level
   }
 }
 
-static void* _CaptureThread(void* arg) {
-  void** params = (void**)arg;
-  int fd = (long)params[0];
-  LogLevel level = (LogLevel)params[1];
-  
-  char* buffer = malloc(kCaptureBufferSize);
-  assert(buffer);
-  
-  while (1) {
-    ssize_t size = read(fd, buffer, kCaptureBufferSize);
-    if (size > 0) {
-      _LogCapturedOutput(buffer, size, level);
-    }
-  }
-  
-  return NULL;
-}
-
 static void* _CaptureWriteFileDescriptor(int fd, LogLevel level) {
   int fildes[2];
   pipe(fildes);
@@ -138,33 +120,19 @@ static void* _CaptureWriteFileDescriptor(int fd, LogLevel level) {
   fd = fildes[0];
   assert(fd);
   
-#if TARGET_OS_IPHONE
-  if (kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_4_0)
-#else
-  if (kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber10_6)
-#endif
-  {
-    pthread_t pthread = NULL;
-    void** params = malloc(2 * sizeof(void*));
-    params[0] = (void*)(long)fd;
-    params[1] = (void*)level;
-    pthread_create(&pthread, NULL, _CaptureThread, params);
-    return pthread;
-  } else {
-    char* buffer = malloc(kCaptureBufferSize);
-    assert(buffer);
-    fcntl(fd, F_SETFL, O_NONBLOCK);
-    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
-    dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, fd, 0, queue);
-    dispatch_source_set_event_handler(source, ^{
-      ssize_t size = read(fd, buffer, kCaptureBufferSize);
-      if (size > 0) {
-        _LogCapturedOutput(buffer, size, level);
-      }
-    });
-    dispatch_resume(source);
-    return source;
-  }
+  char* buffer = malloc(kCaptureBufferSize);
+  assert(buffer);
+  fcntl(fd, F_SETFL, O_NONBLOCK);
+  dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
+  dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, fd, 0, queue);
+  dispatch_source_set_event_handler(source, ^{
+    ssize_t size = read(fd, buffer, kCaptureBufferSize);
+    if (size > 0) {
+      _LogCapturedOutput(buffer, size, level);
+    }
+  });
+  dispatch_resume(source);
+  return source;
 }
 
 void LoggingCaptureStdout() {

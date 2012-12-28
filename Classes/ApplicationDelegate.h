@@ -20,9 +20,6 @@
 
 #define kApplicationUserDefaultKey_ConfigurationURL @"configurationURL"
 #define kApplicationUserDefaultKey_LoggingServerEnabled @"loggingServerEnabled"
-#if __DAVSERVER_SUPPORT__
-#define kApplicationUserDefaultKey_WebDAVServerEnabled @"webDAVServerEnabled"
-#endif
 
 #define kApplicationLoggingHistoryFile @"Logging.db"
 #define kApplicationLoggingHistoryAge (7.0 * 24.0 * 60.0 * 60.0) // 7 days
@@ -31,12 +28,7 @@
 typedef NSUInteger ApplicationMessageIdentifier;
 
 @class ApplicationWindow;
-#if __DAVSERVER_SUPPORT__
-@class DAVServer;
-#endif
 
-// When the application terminates, any pending or executing tasks on the shared TaskQueue get cancelled synchronously
-// When the application enters background, a background task is automatically created and kept alive until all tasks on the shared TaskQueue have completed
 @interface ApplicationDelegate : NSObject <UIApplicationDelegate> {
 @private
   UIWindow* _window;
@@ -58,15 +50,7 @@ typedef NSUInteger ApplicationMessageIdentifier;
   NSMutableArray* _messageViews;
   UIView* _spinnerView;
   
-#if __DAVSERVER_SUPPORT__
-  DAVServer* _webdavServer;
-#endif
   BOOL _loggingServer;
-#if __TASK_SUPPORT__
-#ifdef NSFoundationVersionNumber_iOS_4_0
-  UIBackgroundTaskIdentifier _queueTask;
-#endif
-#endif
   
   UITextView* _loggingOverlayView;
   NSTimer* _loggingOverlayTimer;
@@ -84,16 +68,12 @@ typedef NSUInteger ApplicationMessageIdentifier;
 - (BOOL) shouldRotateOverlayWindowToInterfaceOrientation:(UIInterfaceOrientation)orientation;  // Default implementation returns YES
 @end
 
-#if __TASK_SUPPORT__
-
 @interface ApplicationDelegate (Configuration)
 + (NSURL*) configurationSourceURL;  // Returns nil if configuration is default
 + (id) objectForConfigurationKey:(NSString*)key;  // Returned object is guaranteed not to be nil
 + (void) updateConfigurationInBackgroundWithDelegate:(id)delegate;  // -configurationDidUpdate:(NSURL*)sourceURL
 + (BOOL) isUpdatingConfiguration;
 @end
-
-#endif
 
 // If alert is dismissed, cancel selector is called on delegate
 // Any existing alert or authentication is automatically dismissed when new one is shown
@@ -170,8 +150,6 @@ typedef NSUInteger ApplicationMessageIdentifier;
 @interface ApplicationDelegate (UIApplicationDelegate)
 - (BOOL) application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions;
 - (void) applicationWillTerminate:(UIApplication*)application;
-#ifdef NSFoundationVersionNumber_iOS_4_0
 - (void) applicationWillEnterForeground:(UIApplication*)application;
 - (void) applicationDidEnterBackground:(UIApplication*)application;
-#endif
 @end
