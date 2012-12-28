@@ -172,19 +172,21 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 @interface DatabaseSchemaTable : NSObject {
 @private
   NSString* _name;
+  NSString* _statement;
   NSString* _order;
   NSMutableArray* _columns;
   Class _class;
   DatabaseSQLTable _table;
 }
 @property(nonatomic, readonly) NSString* name;
+@property(nonatomic, readonly) NSString* fetchStatement;
 @property(nonatomic, readonly) NSString* fetchOrder;
 @property(nonatomic, readonly) NSArray* columns;
 @property(nonatomic, readonly) Class objectClass;
 @property(nonatomic, readonly) DatabaseSQLTable sqlTable;
 + (DatabaseSchemaTable*) schemaTableFromObjectClass:(Class)class;
-- (id) initWithName:(NSString*)name fetchOrder:(NSString*)order columns:(NSArray*)columns;  // Uses DatabaseObject class
-- (id) initWithObjectClass:(Class)class name:(NSString*)name fetchOrder:(NSString*)order extraColumns:(NSArray*)columns;  // Table will inherit all property columns from object class
+- (id) initWithName:(NSString*)name fetchStatement:(NSString*)statement fetchOrder:(NSString*)order columns:(NSArray*)columns;  // Uses DatabaseObject class
+- (id) initWithObjectClass:(Class)class name:(NSString*)name fetchStatement:(NSString*)statement fetchOrder:(NSString*)order extraColumns:(NSArray*)columns;  // Table will inherit all property columns from object class
 @end
 
 // Native SQL access

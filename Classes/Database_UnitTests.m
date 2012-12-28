@@ -49,6 +49,12 @@
 @property(nonatomic) BOOL unused;
 @end
 
+// Work around compiler warnings
+@protocol TestObject <NSObject>
+- (void) setResult1:(int)value;
+- (void) setResult2:(NSString*)value;
+@end
+
 @implementation TestObject
 
 @dynamic string, url, date, data, result1, result2;
@@ -260,11 +266,11 @@
     AssertEqualObjects([results objectAtIndex:0], copy);
   }
   {
-    NSArray* results = [connection fetchObjectsOfClass:[TestObject class] withSQLWhereClause:@"1"];
+    NSArray* results = [connection fetchObjectsOfClass:[TestObject class] withSQLWhereClause:@"1" limit:0];
     AssertEqual(results.count, (NSUInteger)2);
   }
   {
-    NSArray* results = [connection fetchObjectsOfClass:[TestObject class] withSQLWhereClause:@"foo=2"];
+    NSArray* results = [connection fetchObjectsOfClass:[TestObject class] withSQLWhereClause:@"foo=2" limit:0];
     AssertEqual(results.count, (NSUInteger)1);
   }
   {
@@ -358,7 +364,10 @@
                                                                      options:0];
   AssertNotNil(column2);
   [columns addObject:column2];
-  DatabaseSchemaTable* table = [[DatabaseSchemaTable alloc] initWithName:@"employee" fetchOrder:nil columns:columns];
+  DatabaseSchemaTable* table = [[DatabaseSchemaTable alloc] initWithName:@"employee"
+                                                          fetchStatement:@"SELECT * FROM employee"
+                                                              fetchOrder:nil
+                                                                 columns:columns];
   AssertNotNil(table);
   
   [[NSFileManager defaultManager] removeItemAtPath:[DatabaseConnection defaultDatabasePath] error:NULL];
@@ -402,6 +411,7 @@
   [columns addObject:column];
   DatabaseSchemaTable* table = [[DatabaseSchemaTable alloc] initWithObjectClass:[TestObject class]
                                                                            name:@"record"
+                                                                 fetchStatement:@"SELECT * FROM record"
                                                                      fetchOrder:nil
                                                                    extraColumns:columns];
   AssertNotNil(table);

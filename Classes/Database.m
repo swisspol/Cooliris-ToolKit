@@ -1720,7 +1720,7 @@ UNLOCK_CONNECTION();
 
 @implementation DatabaseSchemaTable
 
-@synthesize name=_name, fetchOrder=_order, columns=_columns, objectClass=_class, sqlTable=_table;
+@synthesize name=_name, fetchStatement=_statement, fetchOrder=_order, columns=_columns, objectClass=_class, sqlTable=_table;
 
 + (DatabaseSchemaTable*) schemaTableFromObjectClass:(Class)class {
   return _SQLTableForClass(class)->schemaTable;
@@ -1744,11 +1744,11 @@ UNLOCK_CONNECTION();
   return self;
 }
 
-- (id) initWithName:(NSString*)name fetchOrder:(NSString*)order columns:(NSArray*)columns {
-  return [self initWithObjectClass:[DatabaseObject class] name:name fetchOrder:order extraColumns:columns];
+- (id) initWithName:(NSString*)name fetchStatement:(NSString*)statement fetchOrder:(NSString*)order columns:(NSArray*)columns {
+  return [self initWithObjectClass:[DatabaseObject class] name:name fetchStatement:statement fetchOrder:order extraColumns:columns];
 }
 
-- (id) initWithObjectClass:(Class)class name:(NSString*)name fetchOrder:(NSString*)order extraColumns:(NSArray*)columns {
+- (id) initWithObjectClass:(Class)class name:(NSString*)name fetchStatement:(NSString*)statement fetchOrder:(NSString*)order extraColumns:(NSArray*)columns {
   CHECK([class isSubclassOfClass:[DatabaseObject class]]);
   CHECK(name.length);
   CHECK(columns.count);
@@ -1756,6 +1756,7 @@ UNLOCK_CONNECTION();
     DatabaseSQLTable baseTable = class != [DatabaseObject class] ? _SQLTableForClass(class) : NULL;
     
     _name = [name copy];
+    _statement = [statement copy];
     _order = [order copy];
     _columns = [[NSMutableArray alloc] init];
     
@@ -1763,6 +1764,7 @@ UNLOCK_CONNECTION();
     _table = calloc(1, sizeof(DatabaseSQLTableDefinition));
     _table->class = class;
     _table->tableName = [_name retain];
+    _table->fetchStatement = [_statement retain];
     _table->fetchOrder = [_order retain];
     _table->columnCount = 0;
     _table->columnList = malloc(((baseTable ? baseTable->columnCount : 0) + columns.count) * sizeof(DatabaseSQLColumnDefinition));
@@ -1808,6 +1810,7 @@ UNLOCK_CONNECTION();
 
 - (void) dealloc {
   [_name release];
+  [_statement release];
   [_order release];
   [_columns release];
   
