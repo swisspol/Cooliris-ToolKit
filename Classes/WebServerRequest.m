@@ -36,10 +36,11 @@ static NSString* _ExtractHeaderParameter(NSString* header, NSString* attribute) 
   NSString* string = [NSString stringWithFormat:@"%@=", attribute];
   if ([scanner scanUpToString:string intoString:NULL]) {
     [scanner scanString:string intoString:NULL];
-    [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:&value];
-  }
-  if ([value hasPrefix:@"\""] && [value hasSuffix:@"\""]) {
-    value = [value substringWithRange:NSMakeRange(1, value.length - 2)];
+    if ([scanner scanString:@"\"" intoString:NULL]) {
+      [scanner scanUpToString:@"\"" intoString:&value];
+    } else {
+      [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:&value];
+    }
   }
   [scanner release];
   return value;
