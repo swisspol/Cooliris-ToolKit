@@ -666,24 +666,44 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
 @implementation NSFileManager (Extensions)
 
 - (NSString*) mimeTypeFromPathExtension:(NSString*)extension {
+  static NSDictionary* _overrides = nil;
+  if (_overrides == nil) {
+    _overrides = [[NSDictionary alloc] initWithObjectsAndKeys:
+                   @"text/css", @"css",
+                 nil];
+  }
   NSString* mimeType = nil;
+  extension = [extension lowercaseString];
   if (extension.length) {
-    CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)extension, NULL);
-    if (uti) {
-      mimeType = [(id)UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType) autorelease];
-      CFRelease(uti);
+    mimeType = [_overrides objectForKey:extension];
+    if (mimeType == nil) {
+      CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (CFStringRef)extension, NULL);
+      if (uti) {
+        mimeType = [(id)UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType) autorelease];
+        CFRelease(uti);
+      }
     }
   }
   return mimeType;
 }
 
 - (NSString*) pathExtensionFromMimeType:(NSString*)mimeType {
+  static NSDictionary* _overrides = nil;
+  if (_overrides == nil) {
+    _overrides = [[NSDictionary alloc] initWithObjectsAndKeys:
+                   @"css", @"text/css",
+                 nil];
+  }
   NSString* extension = nil;
+  mimeType = [mimeType lowercaseString];
   if (mimeType.length) {
-    CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (CFStringRef)mimeType, NULL);
-    if (uti) {
-      extension = [(id)UTTypeCopyPreferredTagWithClass(uti, kUTTagClassFilenameExtension) autorelease];
-      CFRelease(uti);
+    extension = [_overrides objectForKey:mimeType];
+    if (extension == nil) {
+      CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (CFStringRef)mimeType, NULL);
+      if (uti) {
+        extension = [(id)UTTypeCopyPreferredTagWithClass(uti, kUTTagClassFilenameExtension) autorelease];
+        CFRelease(uti);
+      }
     }
   }
   return extension;
