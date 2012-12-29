@@ -38,11 +38,16 @@ typedef WebServerResponse* (^WebServerProcessBlock)(WebServerRequest* request);
 - (void) removeAllHandlers;
 
 - (BOOL) start;  // Default is main runloop, 8080 port and computer name
-- (BOOL) startWithRunloop:(NSRunLoop*)runloop port:(NSUInteger)port bonjourName:(NSString*)name;  // Pass nil name to disable Bonjour
+- (BOOL) startWithRunloop:(NSRunLoop*)runloop port:(NSUInteger)port bonjourName:(NSString*)name;  // Pass nil name to disable Bonjour or empty string to use computer name
 - (void) stop;
 @end
 
+@interface WebServer (Extensions)
+- (BOOL) runWithPort:(NSUInteger)port;  // Starts then automatically stops on SIGINT i.e. Ctrl-C (use on main thread only)
+@end
+
 @interface WebServer (Handlers)
+- (void) addDefaultHandlerForMethod:(NSString*)method requestClass:(Class)class processBlock:(WebServerProcessBlock)block;
 - (void) addHandlerForBasePath:(NSString*)basePath localPath:(NSString*)localPath indexFilename:(NSString*)indexFilename cacheAge:(NSUInteger)cacheAge;  // Base path is recursive and case-sensitive
 - (void) addHandlerForMethod:(NSString*)method path:(NSString*)path requestClass:(Class)class processBlock:(WebServerProcessBlock)block;  // Path is case-insensitive
 - (void) addHandlerForMethod:(NSString*)method pathRegex:(NSString*)regex requestClass:(Class)class processBlock:(WebServerProcessBlock)block;  // Regular expression is case-insensitive

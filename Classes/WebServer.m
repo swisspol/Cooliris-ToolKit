@@ -76,6 +76,12 @@ static NSData* _separatorData = nil;
 static NSData* _continueData = nil;
 static NSDateFormatter* _dateFormatter = nil;
 static dispatch_queue_t _formatterQueue = NULL;
+static BOOL _run;
+
+static void _SignalHandler(int signal) {
+  _run = NO;
+  printf("\n");
+}
 
 @implementation WebServerHandler
 
@@ -639,7 +645,36 @@ static void _SocketCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
 
 @end
 
+@implementation WebServer (Extensions)
+
+- (BOOL) runWithPort:(NSUInteger)port {
+  BOOL success = NO;
+  _run = YES;
+  void* handler = signal(SIGINT, _SignalHandler);
+  if (handler != SIG_ERR) {
+    if ([self startWithRunloop:[NSRunLoop currentRunLoop] port:port bonjourName:@""]) {
+      while (_run) {
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:1.0]];
+      }
+      [self stop];
+      success = YES;
+    }
+    signal(SIGINT, handler);
+  }
+  return success;
+}
+
+@end
+
 @implementation WebServer (Handlers)
+
+- (void) addDefaultHandlerForMethod:(NSString*)method requestClass:(Class)class processBlock:(WebServerProcessBlock)block {
+  [self addHandlerWithMatchBlock:^WebServerRequest *(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSString* urlQuery) {
+    
+    return [[[class alloc] initWithMethod:requestMethod headers:requestHeaders path:urlPath query:urlQuery] autorelease];
+    
+  } processBlock:block];
+}
 
 - (WebServerResponse*) _responseWithContentsOfFile:(NSString*)path {
   return [WebServerFileResponse responseWithFile:path];
