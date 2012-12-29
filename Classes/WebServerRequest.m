@@ -32,17 +32,19 @@ static NSData* _dashNewlineData = nil;
 
 static NSString* _ExtractHeaderParameter(NSString* header, NSString* attribute) {
   NSString* value = nil;
-  NSScanner* scanner = [[NSScanner alloc] initWithString:header];
-  NSString* string = [NSString stringWithFormat:@"%@=", attribute];
-  if ([scanner scanUpToString:string intoString:NULL]) {
-    [scanner scanString:string intoString:NULL];
-    if ([scanner scanString:@"\"" intoString:NULL]) {
-      [scanner scanUpToString:@"\"" intoString:&value];
-    } else {
-      [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:&value];
+  if (header) {
+    NSScanner* scanner = [[NSScanner alloc] initWithString:header];
+    NSString* string = [NSString stringWithFormat:@"%@=", attribute];
+    if ([scanner scanUpToString:string intoString:NULL]) {
+      [scanner scanString:string intoString:NULL];
+      if ([scanner scanString:@"\"" intoString:NULL]) {
+        [scanner scanUpToString:@"\"" intoString:&value];
+      } else {
+        [scanner scanUpToCharactersFromSet:[NSCharacterSet whitespaceCharacterSet] intoString:&value];
+      }
     }
+    [scanner release];
   }
-  [scanner release];
   return value;
 }
 
@@ -241,17 +243,23 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @implementation WebServerMultiPartArgument
 
-@synthesize data=_data;
+@synthesize data=_data, string=_string;
 
 - (id) initWithContentType:(NSString*)contentType data:(NSData*)data {
   if ((self = [super initWithContentType:contentType])) {
     _data = [data retain];
+    
+    if ([self.mimeType hasPrefix:@"text/"]) {
+      NSString* charset = _ExtractHeaderParameter(self.contentType, @"charset");
+      _string = [[NSString alloc] initWithData:_data encoding:_StringEncodingFromCharset(charset)];
+    }
   }
   return self;
 }
 
 - (void) dealloc {
   [_data release];
+  [_string release];
   
   [super dealloc];
 }

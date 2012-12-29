@@ -74,8 +74,10 @@
 @interface WebServerMultiPartArgument : WebServerMultiPart {
 @private
   NSData* _data;
+  NSString* _string;
 }
 @property(nonatomic, readonly) NSData* data;
+@property(nonatomic, readonly) NSString* string;  // May be nil (only valid for text mime types
 @end
 
 @interface WebServerMultiPartFile : WebServerMultiPart {
