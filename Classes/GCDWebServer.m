@@ -29,6 +29,7 @@
 #import "Logging.h"
 
 #define kReadWriteQueue dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)
+#define kHeadersReadBuffer 1024
 #define kBodyWriteBufferSize (32 * 1024)
 
 typedef void (^ReadBufferCompletionBlock)(dispatch_data_t buffer);
@@ -97,12 +98,18 @@ static void _SignalHandler(int signal) {
   dispatch_read(_socket, length, kReadWriteQueue, ^(dispatch_data_t buffer, int error) {
     
     @autoreleasepool {
-      LOG_DEBUG(@"Connection received %i bytes on socket %i", dispatch_data_get_size(buffer), _socket);
       if (error == 0) {
-        if (dispatch_data_get_size(buffer) > 0) {
+        size_t size = dispatch_data_get_size(buffer);
+        if (size > 0) {
+          LOG_DEBUG(@"Connection received %i bytes on socket %i", size, _socket);
+          _bytesRead += size;
           block(buffer);
         } else {
-          LOG_ERROR(@"No data while reading from socket %i", _socket);
+          if (_bytesRead > 0) {
+            LOG_ERROR(@"No more data available on socket %i", _socket);
+          } else {
+            LOG_WARNING(@"No data received from socket %i", _socket);
+          }
           block(NULL);
         }
       } else {
@@ -134,17 +141,17 @@ static void _SignalHandler(int signal) {
 
 - (void) _readHeadersWithCompletionBlock:(ReadHeadersCompletionBlock)block {
   DCHECK(_requestMessage);
-  [self _readDataWithCompletionBlock:^(NSData* data) {
+  NSMutableData* data = [NSMutableData dataWithCapacity:kHeadersReadBuffer];
+  [self _readBufferWithLength:SIZE_T_MAX completionBlock:^(dispatch_data_t buffer) {
     
-    if (data) {
+    if (buffer) {
+      dispatch_data_apply(buffer, ^bool(dispatch_data_t region, size_t offset, const void* buffer, size_t size) {
+        [data appendBytes:buffer length:size];
+        return true;
+      });
       NSRange range = [data rangeOfData:_separatorData options:0 range:NSMakeRange(0, data.length)];
       if (range.location == NSNotFound) {
-        if (CFHTTPMessageAppendBytes(_requestMessage, data.bytes, data.length)) {
-          [self _readHeadersWithCompletionBlock:block];
-        } else {
-          LOG_ERROR(@"Failed appending request headers data from socket %i", _socket);
-          block(nil);
-        }
+        [self _readHeadersWithCompletionBlock:block];
       } else {
         NSUInteger length = range.location + range.length;
         if (CFHTTPMessageAppendBytes(_requestMessage, data.bytes, length)) {
@@ -206,15 +213,14 @@ static void _SignalHandler(int signal) {
 @implementation GCDWebServerConnection (Write)
 
 - (void) _writeBuffer:(dispatch_data_t)buffer withCompletionBlock:(WriteBufferCompletionBlock)block {
-#ifndef NDEBUG
   size_t size = dispatch_data_get_size(buffer);
-#endif
   dispatch_write(_socket, buffer, kReadWriteQueue, ^(dispatch_data_t data, int error) {
     
     @autoreleasepool {
       if (error == 0) {
         DCHECK(data == NULL);
         LOG_DEBUG(@"Connection sent %i bytes on socket %i", size, _socket);
+        _bytesWritten += size;
         block(YES);
       } else {
         LOG_ERROR(@"Error while writing to socket %i: %s (%i)", _socket, strerror(error), error);
@@ -269,7 +275,7 @@ static void _SignalHandler(int signal) {
 
 @implementation GCDWebServerConnection
 
-@synthesize server=_server, address=_address;
+@synthesize server=_server, address=_address, totalBytesRead=_bytesRead, totalBytesWritten=_bytesWritten;
 
 - (void) _initializeResponseHeadersWithStatusCode:(NSInteger)statusCode {
   _responseMessage = CFHTTPMessageCreateResponse(kCFAllocatorDefault, statusCode, NULL, kCFHTTPVersion1_1);

@@ -27,6 +27,8 @@ typedef GCDWebServerResponse* (^GCDWebServerProcessBlock)(GCDWebServerRequest* r
   GCDWebServer* _server;
   NSData* _address;
   CFSocketNativeHandle _socket;
+  NSUInteger _bytesRead;
+  NSUInteger _bytesWritten;
   
   CFHTTPMessageRef _requestMessage;
   GCDWebServerRequest* _request;
@@ -36,6 +38,8 @@ typedef GCDWebServerResponse* (^GCDWebServerProcessBlock)(GCDWebServerRequest* r
 }
 @property(nonatomic, readonly) GCDWebServer* server;
 @property(nonatomic, readonly) NSData* address;  // struct sockaddr
+@property(nonatomic, readonly) NSUInteger totalBytesRead;
+@property(nonatomic, readonly) NSUInteger totalBytesWritten;
 @end
 
 @interface GCDWebServerConnection (Subclassing)
