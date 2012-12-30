@@ -76,20 +76,26 @@ NSData* MakeHTTPBodyForMultipartForm(NSString* boundary, NSDictionary* arguments
       NSString* filename = [[value objectForKey:kMultipartFileKey_FileName] convertToEncoding:kHTTPHeaderStringEncoding];  // TODO: Use http://tools.ietf.org/html/rfc5987
       NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n", key, filename];
       [body appendData:[disposition dataUsingEncoding:kHTTPHeaderStringEncoding]];
+      
       NSString* type = [NSString stringWithFormat:@"Content-Type: %@\r\n\r\n", [value objectForKey:kMultipartFileKey_MimeType]];
       [body appendData:[type dataUsingEncoding:kHTTPHeaderStringEncoding]];
+      
       [body appendData:[value objectForKey:kMultipartFileKey_FileData]];
     } else if ([value isKindOfClass:[NSString class]]) {
-      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n", key];
       [body appendData:[disposition dataUsingEncoding:kHTTPHeaderStringEncoding]];
-      NSString* type = @"text/plain; charset=utf-8";
+      
+      NSString* type = @"Content-Type: text/plain; charset=utf-8\r\n\r\n";  // According to specs, default Content-Type is "text/plain" anyway, but let's be extra-safe
       [body appendData:[type dataUsingEncoding:kHTTPHeaderStringEncoding]];
+      
       [body appendData:[(NSString*)value dataUsingEncoding:NSUTF8StringEncoding]];
     } else if ([value isKindOfClass:[NSData class]]) {
-      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];
+      NSString* disposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n", key];
       [body appendData:[disposition dataUsingEncoding:kHTTPHeaderStringEncoding]];
-      NSString* type = @"text/plain; charset=utf-8";
+      
+      NSString* type = @"Content-Type: text/plain; charset=utf-8\r\n\r\n";  // According to specs, default Content-Type is "text/plain" anyway, but let's be extra-safe
       [body appendData:[type dataUsingEncoding:kHTTPHeaderStringEncoding]];
+      
       [body appendData:value];
     } else {
       NOT_REACHED();
