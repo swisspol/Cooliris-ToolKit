@@ -12,39 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#import "WebServerRequest.h"
-#import "WebServerResponse.h"
+#import "GCDWebServerRequest.h"
+#import "GCDWebServerResponse.h"
 
-#define kWebServerDefaultMimeType @"application/octet-stream"
+#define kGCDWebServerDefaultMimeType @"application/octet-stream"
 
-typedef WebServerRequest* (^WebServerMatchBlock)(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSDictionary* urlQuery);
-typedef WebServerResponse* (^WebServerProcessBlock)(WebServerRequest* request);
+typedef GCDWebServerRequest* (^GCDWebServerMatchBlock)(NSString* requestMethod, NSURL* requestURL, NSDictionary* requestHeaders, NSString* urlPath, NSDictionary* urlQuery);
+typedef GCDWebServerResponse* (^GCDWebServerProcessBlock)(GCDWebServerRequest* request);
 
-@class WebServer, WebServerHandler;
+@class GCDWebServer, GCDWebServerHandler;
 
-@interface WebServerConnection : NSObject {
+@interface GCDWebServerConnection : NSObject {
 @private
-  WebServer* _server;
+  GCDWebServer* _server;
   NSData* _address;
   CFSocketNativeHandle _socket;
   
   CFHTTPMessageRef _requestMessage;
-  WebServerRequest* _request;
-  WebServerHandler* _handler;
+  GCDWebServerRequest* _request;
+  GCDWebServerHandler* _handler;
   CFHTTPMessageRef _responseMessage;
-  WebServerResponse* _response;
+  GCDWebServerResponse* _response;
 }
-@property(nonatomic, readonly) WebServer* server;
+@property(nonatomic, readonly) GCDWebServer* server;
 @property(nonatomic, readonly) NSData* address;  // struct sockaddr
 @end
 
-@interface WebServerConnection (Subclassing)
+@interface GCDWebServerConnection (Subclassing)
 - (void) open;
-- (WebServerResponse*) processRequest:(WebServerRequest*)request withBlock:(WebServerProcessBlock)block;
+- (GCDWebServerResponse*) processRequest:(GCDWebServerRequest*)request withBlock:(GCDWebServerProcessBlock)block;
 - (void) close;
 @end
 
-@interface WebServer : NSObject {
+@interface GCDWebServer : NSObject {
 @private
   NSMutableArray* _handlers;
   
@@ -55,7 +55,7 @@ typedef WebServerResponse* (^WebServerProcessBlock)(WebServerRequest* request);
 }
 @property(nonatomic, readonly, getter=isRunning) BOOL running;
 @property(nonatomic, readonly) NSUInteger port;
-- (void) addHandlerWithMatchBlock:(WebServerMatchBlock)matchBlock processBlock:(WebServerProcessBlock)processBlock;
+- (void) addHandlerWithMatchBlock:(GCDWebServerMatchBlock)matchBlock processBlock:(GCDWebServerProcessBlock)processBlock;
 - (void) removeAllHandlers;
 
 - (BOOL) start;  // Default is main runloop, 8080 port and computer name
@@ -63,18 +63,18 @@ typedef WebServerResponse* (^WebServerProcessBlock)(WebServerRequest* request);
 - (void) stop;
 @end
 
-@interface WebServer (Subclassing)
+@interface GCDWebServer (Subclassing)
 + (Class) connectionClass;
 + (NSString*) serverName;  // Default is class name
 @end
 
-@interface WebServer (Extensions)
+@interface GCDWebServer (Extensions)
 - (BOOL) runWithPort:(NSUInteger)port;  // Starts then automatically stops on SIGINT i.e. Ctrl-C (use on main thread only)
 @end
 
-@interface WebServer (Handlers)
-- (void) addDefaultHandlerForMethod:(NSString*)method requestClass:(Class)class processBlock:(WebServerProcessBlock)block;
+@interface GCDWebServer (Handlers)
+- (void) addDefaultHandlerForMethod:(NSString*)method requestClass:(Class)class processBlock:(GCDWebServerProcessBlock)block;
 - (void) addHandlerForBasePath:(NSString*)basePath localPath:(NSString*)localPath indexFilename:(NSString*)indexFilename cacheAge:(NSUInteger)cacheAge;  // Base path is recursive and case-sensitive
-- (void) addHandlerForMethod:(NSString*)method path:(NSString*)path requestClass:(Class)class processBlock:(WebServerProcessBlock)block;  // Path is case-insensitive
-- (void) addHandlerForMethod:(NSString*)method pathRegex:(NSString*)regex requestClass:(Class)class processBlock:(WebServerProcessBlock)block;  // Regular expression is case-insensitive
+- (void) addHandlerForMethod:(NSString*)method path:(NSString*)path requestClass:(Class)class processBlock:(GCDWebServerProcessBlock)block;  // Path is case-insensitive
+- (void) addHandlerForMethod:(NSString*)method pathRegex:(NSString*)regex requestClass:(Class)class processBlock:(GCDWebServerProcessBlock)block;  // Regular expression is case-insensitive
 @end

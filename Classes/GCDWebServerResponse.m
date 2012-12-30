@@ -14,15 +14,15 @@
 
 #import <sys/stat.h>
 
-#import "WebServer.h"
+#import "GCDWebServer.h"
 #import "Extensions_Foundation.h"
 #import "Logging.h"
 
-@implementation WebServerResponse
+@implementation GCDWebServerResponse
 
 @synthesize contentType=_type, contentLength=_length, statusCode=_status, cacheControlMaxAge=_maxAge, additionalHeaders=_headers;
 
-+ (WebServerResponse*) response {
++ (GCDWebServerResponse*) response {
   return [[[[self class] alloc] init] autorelease];
 }
 
@@ -39,7 +39,7 @@
     _headers = [[NSMutableDictionary alloc] init];
     
     if ((_length > 0) && (_type == nil)) {
-      _type = [kWebServerDefaultMimeType copy];
+      _type = [kGCDWebServerDefaultMimeType copy];
     }
   }
   return self;
@@ -62,7 +62,7 @@
 
 @end
 
-@implementation WebServerResponse (Subclassing)
+@implementation GCDWebServerResponse (Subclassing)
 
 - (BOOL) open {
   [self doesNotRecognizeSelector:_cmd];
@@ -81,10 +81,14 @@
 
 @end
 
-@implementation WebServerResponse (Extensions)
+@implementation GCDWebServerResponse (Extensions)
 
-+ (WebServerResponse*) responseWithStatusCode:(NSInteger)statusCode {
++ (GCDWebServerResponse*) responseWithStatusCode:(NSInteger)statusCode {
   return [[[self alloc] initWithStatusCode:statusCode] autorelease];
+}
+
++ (GCDWebServerResponse*) responseWithRedirect:(NSURL*)location permanent:(BOOL)permanent {
+  return [[[self alloc] initWithRedirect:location permanent:permanent] autorelease];
 }
 
 - (id) initWithStatusCode:(NSInteger)statusCode {
@@ -94,11 +98,19 @@
   return self;
 }
 
+- (id) initWithRedirect:(NSURL*)location permanent:(BOOL)permanent {
+  if ((self = [self initWithContentType:nil contentLength:0])) {
+    self.statusCode = permanent ? 301 : 307;
+    [self setValue:[location absoluteString] forAdditionalHeader:@"Location"];
+  }
+  return self;
+}
+
 @end
 
-@implementation WebServerDataResponse
+@implementation GCDWebServerDataResponse
 
-+ (WebServerDataResponse*) responseWithData:(NSData*)data contentType:(NSString*)type {
++ (GCDWebServerDataResponse*) responseWithData:(NSData*)data contentType:(NSString*)type {
   return [[[[self class] alloc] initWithData:data contentType:type] autorelease];
 }
 
@@ -148,17 +160,17 @@
 
 @end
 
-@implementation WebServerDataResponse (Extensions)
+@implementation GCDWebServerDataResponse (Extensions)
 
-+ (WebServerDataResponse*) responseWithText:(NSString*)text {
++ (GCDWebServerDataResponse*) responseWithText:(NSString*)text {
   return [[[self alloc] initWithText:text] autorelease];
 }
 
-+ (WebServerDataResponse*) responseWithHTML:(NSString*)html {
++ (GCDWebServerDataResponse*) responseWithHTML:(NSString*)html {
   return [[[self alloc] initWithHTML:html] autorelease];
 }
 
-+ (WebServerDataResponse*) responseWithHTMLTemplate:(NSString*)path variables:(NSDictionary*)variables {
++ (GCDWebServerDataResponse*) responseWithHTMLTemplate:(NSString*)path variables:(NSDictionary*)variables {
   return [[[self alloc] initWithHTMLTemplate:path variables:variables] autorelease];
 }
 
@@ -194,13 +206,13 @@
 
 @end
 
-@implementation WebServerFileResponse
+@implementation GCDWebServerFileResponse
 
-+ (WebServerFileResponse*) responseWithFile:(NSString*)path {
++ (GCDWebServerFileResponse*) responseWithFile:(NSString*)path {
   return [[[[self class] alloc] initWithFile:path] autorelease];
 }
 
-+ (WebServerFileResponse*) responseWithFile:(NSString*)path isAttachment:(BOOL)attachment {
++ (GCDWebServerFileResponse*) responseWithFile:(NSString*)path isAttachment:(BOOL)attachment {
   return [[[[self class] alloc] initWithFile:path isAttachment:attachment] autorelease];
 }
 
@@ -217,7 +229,7 @@
   }
   NSString* type = [[NSFileManager defaultManager] mimeTypeFromPathExtension:[path pathExtension]];
   if (type == nil) {
-    type = kWebServerDefaultMimeType;
+    type = kGCDWebServerDefaultMimeType;
   }
   
   if ((self = [super initWithContentType:type contentLength:info.st_size])) {

@@ -14,9 +14,10 @@
 
 #import <Foundation/Foundation.h>
 
-@interface WebServerRequest : NSObject {
+@interface GCDWebServerRequest : NSObject {
 @private
   NSString* _method;
+  NSURL* _url;
   NSDictionary* _headers;
   NSString* _path;
   NSDictionary* _query;
@@ -24,29 +25,30 @@
   NSUInteger _length;
 }
 @property(nonatomic, readonly) NSString* method;
+@property(nonatomic, readonly) NSURL* URL;
 @property(nonatomic, readonly) NSDictionary* headers;
 @property(nonatomic, readonly) NSString* path;
 @property(nonatomic, readonly) NSDictionary* query;  // May be nil
 @property(nonatomic, readonly) NSString* contentType;  // Automatically parsed from headers (nil if request has no body)
 @property(nonatomic, readonly) NSUInteger contentLength;  // Automatically parsed from headers
-- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query;
+- (id) initWithMethod:(NSString*)method url:(NSURL*)url headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query;
 - (BOOL) hasBody;  // Convenience method
 @end
 
-@interface WebServerRequest (Subclassing)
+@interface GCDWebServerRequest (Subclassing)
 - (BOOL) open;  // Implementation required
 - (NSInteger) write:(const void*)buffer maxLength:(NSUInteger)length;  // Implementation required
 - (BOOL) close;  // Implementation required
 @end
 
-@interface WebServerDataRequest : WebServerRequest {
+@interface GCDWebServerDataRequest : GCDWebServerRequest {
 @private
   NSMutableData* _data;
 }
 @property(nonatomic, readonly) NSData* data;  // Only valid after open / write / close sequence
 @end
 
-@interface WebServerFileRequest : WebServerRequest {
+@interface GCDWebServerFileRequest : GCDWebServerRequest {
 @private
   NSString* _filePath;
   int _file;
@@ -54,7 +56,7 @@
 @property(nonatomic, readonly) NSString* filePath;  // Only valid after open / write / close sequence
 @end
 
-@interface WebServerURLEncodedFormRequest : WebServerDataRequest {
+@interface GCDWebServerURLEncodedFormRequest : GCDWebServerDataRequest {
 @private
   NSDictionary* _arguments;
 }
@@ -62,7 +64,7 @@
 + (NSString*) mimeType;
 @end
 
-@interface WebServerMultiPart : NSObject {
+@interface GCDWebServerMultiPart : NSObject {
 @private
   NSString* _contentType;
   NSString* _mimeType;
@@ -71,7 +73,7 @@
 @property(nonatomic, readonly) NSString* mimeType;  // Defaults to "text/plain" per specifications if undefined
 @end
 
-@interface WebServerMultiPartArgument : WebServerMultiPart {
+@interface GCDWebServerMultiPartArgument : GCDWebServerMultiPart {
 @private
   NSData* _data;
   NSString* _string;
@@ -80,7 +82,7 @@
 @property(nonatomic, readonly) NSString* string;  // May be nil (only valid for text mime types
 @end
 
-@interface WebServerMultiPartFile : WebServerMultiPart {
+@interface GCDWebServerMultiPartFile : GCDWebServerMultiPart {
 @private
   NSString* _fileName;
   NSString* _temporaryPath;
@@ -89,7 +91,7 @@
 @property(nonatomic, readonly) NSString* temporaryPath;
 @end
 
-@interface WebServerMultiPartFormRequest : WebServerRequest {
+@interface GCDWebServerMultiPartFormRequest : GCDWebServerRequest {
 @private
   NSData* _boundary;
   

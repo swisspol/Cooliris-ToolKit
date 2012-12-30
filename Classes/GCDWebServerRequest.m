@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#import "WebServer.h"
+#import "GCDWebServer.h"
 #import "Extensions_Foundation.h"
 #import "Logging.h"
 
@@ -57,13 +57,14 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
   return (encoding != kCFStringEncodingInvalidId ? encoding : NSUTF8StringEncoding);
 }
 
-@implementation WebServerRequest : NSObject
+@implementation GCDWebServerRequest : NSObject
 
-@synthesize method=_method, headers=_headers, path=_path, query=_query, contentType=_type, contentLength=_length;
+@synthesize method=_method, URL=_url, headers=_headers, path=_path, query=_query, contentType=_type, contentLength=_length;
 
-- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query {
+- (id) initWithMethod:(NSString*)method url:(NSURL*)url headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query {
   if ((self = [super init])) {
     _method = [method copy];
+    _url = [url retain];
     _headers = [headers retain];
     _path = [path copy];
     _query = [query retain];
@@ -78,7 +79,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
     _length = length;
     
     if ((_length > 0) && (_type == nil)) {
-      _type = [kWebServerDefaultMimeType copy];
+      _type = [kGCDWebServerDefaultMimeType copy];
     }
   }
   return self;
@@ -86,6 +87,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 - (void) dealloc {
   [_method release];
+  [_url release];
   [_headers release];
   [_path release];
   [_query release];
@@ -100,7 +102,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @end
 
-@implementation WebServerRequest (Subclassing)
+@implementation GCDWebServerRequest (Subclassing)
 
 - (BOOL) open {
   [self doesNotRecognizeSelector:_cmd];
@@ -119,7 +121,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @end
 
-@implementation WebServerDataRequest
+@implementation GCDWebServerDataRequest
 
 @synthesize data=_data;
 
@@ -149,12 +151,12 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @end
 
-@implementation WebServerFileRequest
+@implementation GCDWebServerFileRequest
 
 @synthesize filePath=_filePath;
 
-- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query {
-  if ((self = [super initWithMethod:method headers:headers path:path query:query])) {
+- (id) initWithMethod:(NSString*)method url:(NSURL*)url headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query {
+  if ((self = [super initWithMethod:method url:url headers:headers path:path query:query])) {
     _filePath = [[NSTemporaryDirectory() stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]] retain];
   }
   return self;
@@ -188,7 +190,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @end
 
-@implementation WebServerURLEncodedFormRequest
+@implementation GCDWebServerURLEncodedFormRequest
 
 @synthesize arguments=_arguments;
 
@@ -217,7 +219,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @end
 
-@implementation WebServerMultiPart
+@implementation GCDWebServerMultiPart
 
 @synthesize contentType=_contentType, mimeType=_mimeType;
 
@@ -241,7 +243,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @end
 
-@implementation WebServerMultiPartArgument
+@implementation GCDWebServerMultiPartArgument
 
 @synthesize data=_data, string=_string;
 
@@ -270,7 +272,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @end
 
-@implementation WebServerMultiPartFile
+@implementation GCDWebServerMultiPartFile
 
 @synthesize fileName=_fileName, temporaryPath=_temporaryPath;
 
@@ -297,7 +299,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @end
 
-@implementation WebServerMultiPartFormRequest
+@implementation GCDWebServerMultiPartFormRequest
 
 @synthesize arguments=_arguments, files=_files;
 
@@ -320,8 +322,8 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
   return @"multipart/form-data";
 }
 
-- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query {
-  if ((self = [super initWithMethod:method headers:headers path:path query:query])) {
+- (id) initWithMethod:(NSString*)method url:(NSURL*)url headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query {
+  if ((self = [super initWithMethod:method url:url headers:headers path:path query:query])) {
     NSString* boundary = _ExtractHeaderParameter(self.contentType, @"boundary");
     if (boundary) {
       _boundary = [[[NSString stringWithFormat:@"--%@", boundary] dataUsingEncoding:NSASCIIStringEncoding] retain];
@@ -416,7 +418,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
             if (result == dataLength) {
               if (close(_tmpFile) == 0) {
                 _tmpFile = 0;
-                WebServerMultiPartFile* file = [[WebServerMultiPartFile alloc] initWithContentType:_contentType fileName:_fileName temporaryPath:_tmpPath];
+                GCDWebServerMultiPartFile* file = [[GCDWebServerMultiPartFile alloc] initWithContentType:_contentType fileName:_fileName temporaryPath:_tmpPath];
                 [_files setObject:file forKey:_controlName];
                 [file release];
               } else {
@@ -431,7 +433,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
             _tmpPath = nil;
           } else {
             NSData* data = [[NSData alloc] initWithBytesNoCopy:(void*)dataBytes length:dataLength freeWhenDone:NO];
-            WebServerMultiPartArgument* argument = [[WebServerMultiPartArgument alloc] initWithContentType:_contentType data:data];
+            GCDWebServerMultiPartArgument* argument = [[GCDWebServerMultiPartArgument alloc] initWithContentType:_contentType data:data];
             [_arguments setObject:argument forKey:_controlName];
             [argument release];
             [data release];
