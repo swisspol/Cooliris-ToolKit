@@ -266,8 +266,10 @@ static void _SignalHandler(int signal) {
   } else if (result < 0) {
     LOG_ERROR(@"Failed reading response body on socket %i (error %i)", _socket, result);
     block(NO);
+    free(buffer);
   } else {
     block(YES);
+    free(buffer);
   }
 }
 
