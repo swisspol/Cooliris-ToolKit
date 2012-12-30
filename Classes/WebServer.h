@@ -17,12 +17,35 @@
 
 #define kWebServerDefaultMimeType @"application/octet-stream"
 
-typedef WebServerRequest* (^WebServerMatchBlock)(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSString* urlQuery);
+typedef WebServerRequest* (^WebServerMatchBlock)(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSDictionary* urlQuery);
 typedef WebServerResponse* (^WebServerProcessBlock)(WebServerRequest* request);
+
+@class WebServer, WebServerHandler;
+
+@interface WebServerConnection : NSObject {
+@private
+  WebServer* _server;
+  NSData* _address;
+  CFSocketNativeHandle _socket;
+  
+  CFHTTPMessageRef _requestMessage;
+  WebServerRequest* _request;
+  WebServerHandler* _handler;
+  CFHTTPMessageRef _responseMessage;
+  WebServerResponse* _response;
+}
+@property(nonatomic, readonly) WebServer* server;
+@property(nonatomic, readonly) NSData* address;  // struct sockaddr
+@end
+
+@interface WebServerConnection (Subclassing)
+- (void) open;
+- (WebServerResponse*) processRequest:(WebServerRequest*)request withBlock:(WebServerProcessBlock)block;
+- (void) close;
+@end
 
 @interface WebServer : NSObject {
 @private
-  NSString* _name;
   NSMutableArray* _handlers;
   
   NSUInteger _port;
@@ -30,16 +53,19 @@ typedef WebServerResponse* (^WebServerProcessBlock)(WebServerRequest* request);
   CFSocketRef _socket;
   CFNetServiceRef _service;
 }
-@property(nonatomic, copy) NSString* name;  // Default is class name
 @property(nonatomic, readonly, getter=isRunning) BOOL running;
 @property(nonatomic, readonly) NSUInteger port;
-
 - (void) addHandlerWithMatchBlock:(WebServerMatchBlock)matchBlock processBlock:(WebServerProcessBlock)processBlock;
 - (void) removeAllHandlers;
 
 - (BOOL) start;  // Default is main runloop, 8080 port and computer name
 - (BOOL) startWithRunloop:(NSRunLoop*)runloop port:(NSUInteger)port bonjourName:(NSString*)name;  // Pass nil name to disable Bonjour or empty string to use computer name
 - (void) stop;
+@end
+
+@interface WebServer (Subclassing)
++ (Class) connectionClass;
++ (NSString*) serverName;  // Default is class name
 @end
 
 @interface WebServer (Extensions)

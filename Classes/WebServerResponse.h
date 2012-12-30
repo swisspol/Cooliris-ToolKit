@@ -35,9 +35,9 @@
 @end
 
 @interface WebServerResponse (Subclassing)
-- (BOOL) open;
-- (NSInteger) read:(void*)buffer maxLength:(NSUInteger)length;
-- (BOOL) close;
+- (BOOL) open;  // Implementation required
+- (NSInteger) read:(void*)buffer maxLength:(NSUInteger)length;  // Implementation required
+- (BOOL) close;  // Implementation required
 @end
 
 @interface WebServerResponse (Extensions)
@@ -57,8 +57,10 @@
 @interface WebServerDataResponse (Extensions)
 + (WebServerDataResponse*) responseWithText:(NSString*)text;
 + (WebServerDataResponse*) responseWithHTML:(NSString*)html;
++ (WebServerDataResponse*) responseWithHTMLTemplate:(NSString*)path variables:(NSDictionary*)variables;  // Simple template system that replaces all occurences of "%variable%" with corresponding value (encodes using UTF-8)
 - (id) initWithText:(NSString*)text;  // Encodes using UTF-8
 - (id) initWithHTML:(NSString*)html;  // Encodes using UTF-8
+- (id) initWithHTMLTemplate:(NSString*)path variables:(NSDictionary*)variables;
 @end
 
 @interface WebServerFileResponse : WebServerResponse {

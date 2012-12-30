@@ -51,21 +51,8 @@ typedef void (^WriteBodyCompletionBlock)(BOOL success);
 - (id) initWithMatchBlock:(WebServerMatchBlock)matchBlock processBlock:(WebServerProcessBlock)processBlock;
 @end
 
-@interface WebServerConnection : NSObject {
-@private
-  WebServer* _server;
-  CFSocketNativeHandle _socket;
-  
-  CFHTTPMessageRef _requestMessage;
-  WebServerRequest* _request;
-  
-  WebServerHandler* _handler;
-  
-  CFHTTPMessageRef _responseMessage;
-  WebServerResponse* _response;
-}
-+ (WebServerConnection*) connectionWithServer:(WebServer*)server socket:(CFSocketNativeHandle)socket;
-- (id) initWithServer:(WebServer*)server socket:(CFSocketNativeHandle)socket;
+@interface WebServerConnection ()
+- (id) initWithServer:(WebServer*)server address:(NSData*)address socket:(CFSocketNativeHandle)socket;
 @end
 
 @interface WebServer ()
@@ -282,14 +269,12 @@ static void _SignalHandler(int signal) {
 
 @implementation WebServerConnection
 
-+ (WebServerConnection*) connectionWithServer:(WebServer*)server socket:(CFSocketNativeHandle)socket {
-  return [[[self alloc] initWithServer:server socket:socket] autorelease];
-}
+@synthesize server=_server, address=_address;
 
 - (void) _initializeResponseHeadersWithStatusCode:(NSInteger)statusCode {
   _responseMessage = CFHTTPMessageCreateResponse(kCFAllocatorDefault, statusCode, NULL, kCFHTTPVersion1_1);
   CFHTTPMessageSetHeaderFieldValue(_responseMessage, CFSTR("Connection"), CFSTR("Close"));
-  CFHTTPMessageSetHeaderFieldValue(_responseMessage, CFSTR("Server"), (CFStringRef)_server.name);
+  CFHTTPMessageSetHeaderFieldValue(_responseMessage, CFSTR("Server"), (CFStringRef)[[_server class] serverName]);
   dispatch_sync(_formatterQueue, ^{
     NSString* date = [_dateFormatter stringFromDate:[NSDate date]];
     CFHTTPMessageSetHeaderFieldValue(_responseMessage, CFSTR("Date"), (CFStringRef)date);
@@ -309,15 +294,8 @@ static void _SignalHandler(int signal) {
 // http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 - (void) _processRequest {
   DCHECK(_responseMessage == NULL);
-  LOG_VERBOSE(@"Connection on socket %i processing %@ request for \"%@\" (%i bytes body)", _socket, _request.method, _request.path, _request.contentLength);
   
-  WebServerResponse* response = nil;
-  @try {
-    response = _handler.processBlock(_request);
-  }
-  @catch (NSException* exception) {
-    LOG_EXCEPTION(exception);
-  }
+  WebServerResponse* response = [self processRequest:_request withBlock:_handler.processBlock];
   if (![response hasBody] || [response open]) {
     _response = [response retain];
   }
@@ -410,7 +388,12 @@ static void _SignalHandler(int signal) {
       DCHECK(requestURL);
       NSString* requestPath = [[(id)CFURLCopyPath((CFURLRef)requestURL) autorelease] unescapeURLString];  // Don't use -[NSURL path] which strips the ending slash
       DCHECK(requestPath);
-      NSString* requestQuery = [(id)CFURLCopyQueryString((CFURLRef)requestURL, NULL) autorelease];  // Don't use -[NSURL query] to make sure query is not unescaped
+      NSDictionary* requestQuery = nil;
+      NSString* queryString = [(id)CFURLCopyQueryString((CFURLRef)requestURL, NULL) autorelease];  // Don't use -[NSURL query] to make sure query is not unescaped;
+      if (queryString.length) {
+        requestQuery = [NSURL parseURLEncodedForm:queryString unescapeKeysAndValues:YES];
+        DCHECK(requestQuery);
+      }
       NSDictionary* requestHeaders = [(id)CFHTTPMessageCopyAllHeaderFields(_requestMessage) autorelease];
       DCHECK(requestHeaders);
       for (_handler in _server.handlers) {
@@ -456,20 +439,22 @@ static void _SignalHandler(int signal) {
   }];
 }
 
-- (id) initWithServer:(WebServer*)server socket:(CFSocketNativeHandle)socket {
+- (id) initWithServer:(WebServer*)server address:(NSData*)address socket:(CFSocketNativeHandle)socket {
   if ((self = [super init])) {
-    _server = server;
+    _server = [server retain];
+    _address = [address retain];
     _socket = socket;
     
-    LOG_DEBUG(@"Opened connection on socket %i", _socket);
-    [self _readRequestHeaders];
+    [self open];
   }
   return self;
 }
 
 - (void) dealloc {
-  LOG_DEBUG(@"Closed connection on socket %i", _socket);
-  close(_socket);
+  [self close];
+  
+  [_server release];
+  [_address release];
   
   if (_requestMessage) {
     CFRelease(_requestMessage);
@@ -486,9 +471,35 @@ static void _SignalHandler(int signal) {
 
 @end
 
+@implementation WebServerConnection (Subclassing)
+
+- (void) open {
+  LOG_DEBUG(@"Did open connection on socket %i", _socket);
+  [self _readRequestHeaders];
+}
+
+- (WebServerResponse*) processRequest:(WebServerRequest*)request withBlock:(WebServerProcessBlock)block {
+  LOG_VERBOSE(@"Connection on socket %i processing %@ request for \"%@\" (%i bytes body)", _socket, _request.method, _request.path, _request.contentLength);
+  WebServerResponse* response = nil;
+  @try {
+    response = block(request);
+  }
+  @catch (NSException* exception) {
+    LOG_EXCEPTION(exception);
+  }
+  return response;
+}
+
+- (void) close {
+  close(_socket);
+  LOG_DEBUG(@"Did close connection on socket %i", _socket);
+}
+
+@end
+
 @implementation WebServer
 
-@synthesize name=_name, handlers=_handlers, port=_port;
+@synthesize handlers=_handlers, port=_port;
 
 + (void) initialize {
   DCHECK([NSThread isMainThread]);  // NSDateFormatter should be initialized on main thread
@@ -517,7 +528,6 @@ static void _SignalHandler(int signal) {
 
 - (id) init {
   if ((self = [super init])) {
-    _name = [NSStringFromClass([self class]) retain];
     _handlers = [[NSMutableArray alloc] init];
   }
   return self;
@@ -528,7 +538,6 @@ static void _SignalHandler(int signal) {
     [self stop];
   }
   
-  [_name release];
   [_handlers release];
   
   [super dealloc];
@@ -566,7 +575,9 @@ static void _SocketCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
     int set = 1;
     setsockopt(handle, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int));  // Make sure this socket cannot generate SIG_PIPE
     @autoreleasepool {
-      [WebServerConnection connectionWithServer:(WebServer*)info socket:handle];
+      Class class = [[(WebServer*)info class] connectionClass];
+      WebServerConnection* connection = [[class alloc] initWithServer:(WebServer*)info address:(NSData*)address socket:handle];
+      [connection release];  // Connection will automatically retain itself while opened
     }
   } else {
     DNOT_REACHED();
@@ -627,12 +638,13 @@ static void _SocketCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
 
 - (void) stop {
   CHECK(_runLoop != nil);
-  if (_service) {
-    CFNetServiceUnscheduleFromRunLoop(_service, [_runLoop getCFRunLoop], kCFRunLoopCommonModes);
-    CFNetServiceSetClient(_service, NULL, NULL);
-    CFRelease(_service);
-  }
   if (_socket) {
+    if (_service) {
+      CFNetServiceUnscheduleFromRunLoop(_service, [_runLoop getCFRunLoop], kCFRunLoopCommonModes);
+      CFNetServiceSetClient(_service, NULL, NULL);
+      CFRelease(_service);
+    }
+    
     CFSocketInvalidate(_socket);
     CFRelease(_socket);
     _socket = NULL;
@@ -641,6 +653,18 @@ static void _SocketCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
   [_runLoop release];
   _runLoop = nil;
   _port = 0;
+}
+
+@end
+
+@implementation WebServer (Subclassing)
+
++ (Class) connectionClass {
+  return [WebServerConnection class];
+}
+
++ (NSString*) serverName {
+  return NSStringFromClass(self);
 }
 
 @end
@@ -669,7 +693,7 @@ static void _SocketCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
 @implementation WebServer (Handlers)
 
 - (void) addDefaultHandlerForMethod:(NSString*)method requestClass:(Class)class processBlock:(WebServerProcessBlock)block {
-  [self addHandlerWithMatchBlock:^WebServerRequest *(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSString* urlQuery) {
+  [self addHandlerWithMatchBlock:^WebServerRequest *(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSDictionary* urlQuery) {
     
     return [[[class alloc] initWithMethod:requestMethod headers:requestHeaders path:urlPath query:urlQuery] autorelease];
     
@@ -708,7 +732,7 @@ static void _SocketCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
 
 - (void) addHandlerForBasePath:(NSString*)basePath localPath:(NSString*)localPath indexFilename:(NSString*)indexFilename cacheAge:(NSUInteger)cacheAge {
   if ([basePath hasPrefix:@"/"] && [basePath hasSuffix:@"/"]) {
-    [self addHandlerWithMatchBlock:^WebServerRequest *(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSString* urlQuery) {
+    [self addHandlerWithMatchBlock:^WebServerRequest *(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSDictionary* urlQuery) {
       
       if (![requestMethod isEqualToString:@"GET"]) {
         return nil;
@@ -751,7 +775,7 @@ static void _SocketCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
 
 - (void) addHandlerForMethod:(NSString*)method path:(NSString*)path requestClass:(Class)class processBlock:(WebServerProcessBlock)block {
   if ([path hasPrefix:@"/"] && [class isSubclassOfClass:[WebServerRequest class]]) {
-    [self addHandlerWithMatchBlock:^WebServerRequest *(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSString* urlQuery) {
+    [self addHandlerWithMatchBlock:^WebServerRequest *(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSDictionary* urlQuery) {
       
       if (![requestMethod isEqualToString:method]) {
         return nil;
@@ -770,7 +794,7 @@ static void _SocketCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDat
 - (void) addHandlerForMethod:(NSString*)method pathRegex:(NSString*)regex requestClass:(Class)class processBlock:(WebServerProcessBlock)block {
   NSRegularExpression* expression = [NSRegularExpression regularExpressionWithPattern:regex options:NSRegularExpressionCaseInsensitive error:NULL];
   if (expression && [class isSubclassOfClass:[WebServerRequest class]]) {
-    [self addHandlerWithMatchBlock:^WebServerRequest *(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSString* urlQuery) {
+    [self addHandlerWithMatchBlock:^WebServerRequest *(NSString* requestMethod, NSDictionary* requestHeaders, NSString* urlPath, NSDictionary* urlQuery) {
       
       if (![requestMethod isEqualToString:method]) {
         return nil;

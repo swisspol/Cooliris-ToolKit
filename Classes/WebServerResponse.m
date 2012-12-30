@@ -158,6 +158,10 @@
   return [[[self alloc] initWithHTML:html] autorelease];
 }
 
++ (WebServerDataResponse*) responseWithHTMLTemplate:(NSString*)path variables:(NSDictionary*)variables {
+  return [[[self alloc] initWithHTMLTemplate:path variables:variables] autorelease];
+}
+
 - (id) initWithText:(NSString*)text {
   NSData* data = [text dataUsingEncoding:NSUTF8StringEncoding];
   if (data == nil) {
@@ -176,6 +180,16 @@
     return nil;
   }
   return [self initWithData:data contentType:@"text/html; charset=utf-8"];
+}
+
+- (id) initWithHTMLTemplate:(NSString*)path variables:(NSDictionary*)variables {
+  NSMutableString* html = [[NSMutableString alloc] initWithContentsOfFile:path encoding:NSUTF8StringEncoding error:NULL];
+  [variables enumerateKeysAndObjectsUsingBlock:^(NSString* key, NSString* value, BOOL* stop) {
+    [html replaceOccurrencesOfString:[NSString stringWithFormat:@"%%%@%%", key] withString:value options:0 range:NSMakeRange(0, html.length)];
+  }];
+  id response = [self initWithHTML:html];
+  [html release];
+  return response;
 }
 
 @end

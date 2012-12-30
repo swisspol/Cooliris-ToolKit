@@ -19,24 +19,24 @@
   NSString* _method;
   NSDictionary* _headers;
   NSString* _path;
-  NSString* _query;
+  NSDictionary* _query;
   NSString* _type;
   NSUInteger _length;
 }
 @property(nonatomic, readonly) NSString* method;
 @property(nonatomic, readonly) NSDictionary* headers;
 @property(nonatomic, readonly) NSString* path;
-@property(nonatomic, readonly) NSString* query;  // May be nil
+@property(nonatomic, readonly) NSDictionary* query;  // May be nil
 @property(nonatomic, readonly) NSString* contentType;  // Automatically parsed from headers (nil if request has no body)
 @property(nonatomic, readonly) NSUInteger contentLength;  // Automatically parsed from headers
-- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSString*)query;
+- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query;
 - (BOOL) hasBody;  // Convenience method
 @end
 
 @interface WebServerRequest (Subclassing)
-- (BOOL) open;
-- (NSInteger) write:(const void*)buffer maxLength:(NSUInteger)length;
-- (BOOL) close;
+- (BOOL) open;  // Implementation required
+- (NSInteger) write:(const void*)buffer maxLength:(NSUInteger)length;  // Implementation required
+- (BOOL) close;  // Implementation required
 @end
 
 @interface WebServerDataRequest : WebServerRequest {

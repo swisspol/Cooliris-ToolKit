@@ -61,12 +61,12 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @synthesize method=_method, headers=_headers, path=_path, query=_query, contentType=_type, contentLength=_length;
 
-- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSString*)query {
+- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query {
   if ((self = [super init])) {
     _method = [method copy];
     _headers = [headers retain];
     _path = [path copy];
-    _query = [query copy];
+    _query = [query retain];
     
     _type = [[_headers objectForKey:@"Content-Type"] retain];
     NSInteger length = [[_headers objectForKey:@"Content-Length"] integerValue];
@@ -153,7 +153,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
 
 @synthesize filePath=_filePath;
 
-- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSString*)query {
+- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query {
   if ((self = [super initWithMethod:method headers:headers path:path query:query])) {
     _filePath = [[NSTemporaryDirectory() stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]] retain];
   }
@@ -320,7 +320,7 @@ static NSStringEncoding _StringEncodingFromCharset(NSString* charset) {
   return @"multipart/form-data";
 }
 
-- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSString*)query {
+- (id) initWithMethod:(NSString*)method headers:(NSDictionary*)headers path:(NSString*)path query:(NSDictionary*)query {
   if ((self = [super initWithMethod:method headers:headers path:path query:query])) {
     NSString* boundary = _ExtractHeaderParameter(self.contentType, @"boundary");
     if (boundary) {
