@@ -91,7 +91,7 @@ static void _ResetDefaultLoggingLevel() {
     LoggingSetMinimumLevel(kLogLevel_Verbose);
     LOG_WARNING(@"Debugger is attached");
   } else {
-    LoggingSetMinimumLevel(kLogLevel_Warning);
+    LoggingSetMinimumLevel(kLogLevel_Info);
   }
 #else
   LoggingResetMinimumLevel();
