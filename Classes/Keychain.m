@@ -43,6 +43,7 @@
   [query setObject:account forKey:(id)kSecAttrAccount];
   [query setObject:(id)kSecClassGenericPassword forKey:(id)kSecClass];
   NSMutableDictionary* attributes = [[NSMutableDictionary alloc] init];
+  [attributes setObject:(id)kSecAttrAccessibleAfterFirstUnlock forKey:(id)kSecAttrAccessible];
   [attributes setObject:data forKey:(id)kSecValueData];
   OSStatus status = SecItemUpdate((CFDictionaryRef)query, (CFDictionaryRef)attributes);
   if (status == errSecItemNotFound) {
