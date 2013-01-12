@@ -128,6 +128,8 @@ static NSString* _WriteJSONString(id object) {
 - (void) connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
   if ([error.domain isEqualToString:NSURLErrorDomain] && (error.code == NSURLErrorNotConnectedToInternet)) {
     LOG_VERBOSE(@"PubNub request failed due to missing Internet connection");
+  } else if ([error.domain isEqualToString:NSURLErrorDomain] && (error.code == NSURLErrorCannotFindHost)) {
+    LOG_VERBOSE(@"PubNub request cannot find host");
   } else if ([error.domain isEqualToString:NSURLErrorDomain] && (error.code == NSURLErrorTimedOut)) {
     LOG_VERBOSE(@"PubNub request timed out");
   } else {
