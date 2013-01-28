@@ -147,6 +147,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
                       onProperty:(NSString*)joinProperty
               withSQLWhereClause:(NSString*)clause
                            limit:(NSUInteger)limit;
+- (NSArray*) fetchObjectsOfClass:(Class)class withSQL:(NSString*)sql;
 - (BOOL) deleteAllObjectsOfClass:(Class)class;
 - (BOOL) deleteObjectOfClass:(Class)class withSQLRowID:(DatabaseSQLRowID)rowID;
 - (BOOL) deleteObjectsOfClass:(Class)class withProperty:(NSString*)property matchingValue:(id)value;  // Returns NO on error or if none
@@ -211,6 +212,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
                         onSQLColumn:(DatabaseSQLColumn)joinColumn
                  withSQLWhereClause:(NSString*)clause
                               limit:(NSUInteger)limit;
+- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQL:(NSString*)sql;
 - (BOOL) deleteAllObjectsInSQLTable:(DatabaseSQLTable)table;
 - (BOOL) deleteObjectInSQLTable:(DatabaseSQLTable)table withSQLRowID:(DatabaseSQLRowID)rowID;
 - (BOOL) deleteObjectsInSQLTable:(DatabaseSQLTable)table withSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value;  // Returns NO on error or if none

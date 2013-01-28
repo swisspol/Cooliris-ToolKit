@@ -1633,6 +1633,10 @@ UNLOCK_CONNECTION();
   return [self fetchObjectsInSQLTable:table joiningSQLTable:joinTable onSQLColumn:joinColumn withSQLWhereClause:clause limit:limit];
 }
 
+- (NSArray*) fetchObjectsOfClass:(Class)class withSQL:(NSString*)sql {
+  return [self fetchObjectsInSQLTable:_SQLTableForClass(class) withSQL:sql];
+}
+
 - (NSUInteger) countObjectsOfClass:(Class)class {
   return [self countObjectsInSQLTable:_SQLTableForClass(class)];
 }
@@ -2067,6 +2071,26 @@ LOCK_CONNECTION();
   sqlite3_finalize(statement);
   
 UNLOCK_CONNECTION();
+  return results;
+}
+
+- (NSArray*) fetchObjectsInSQLTable:(DatabaseSQLTable)table withSQL:(NSString*)sql {
+  LOCK_CONNECTION();
+  CHECK(sql);
+  NSMutableArray* results = [NSMutableArray array];
+  
+  NSString* string = [NSString stringWithFormat:@"%@ %@", table->fetchStatement, sql];
+  sqlite3_stmt* statement = NULL;
+  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
+  int result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  if (result != SQLITE_DONE) {
+    LOG_ERROR(@"Failed fetching %@ objects with SQL \"%@\" from %@: %s (%i)", table->class, sql, self,
+              sqlite3_errmsg(_database), result);
+    results = nil;
+  }
+  sqlite3_finalize(statement);
+  
+  UNLOCK_CONNECTION();
   return results;
 }
 
