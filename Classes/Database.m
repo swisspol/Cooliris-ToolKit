@@ -44,7 +44,6 @@ enum {
 
 #define kMaxRetries 5
 #define kRetryDelay 20000  // 20ms
-#define kRowID @"_id_"
 #define kUndefinedTimeInterval kCFAbsoluteTimeIntervalSince1904
 
 struct DatabaseSQLColumnDefinition {
@@ -221,12 +220,12 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
       [statement release];
     }
     {
-      NSString* statement = [[NSString alloc] initWithFormat:@"%@ WHERE %@=?1", table->fetchStatement, kRowID];
+      NSString* statement = [[NSString alloc] initWithFormat:@"%@ WHERE %@=?1", table->fetchStatement, kDatabaseColumnName_RowID];
       table->statements[kObjectStatement_SelectWithRowID] = _CopyAsCString(statement);
       [statement release];
     }
     {
-      NSString* statement = [[NSString alloc] initWithFormat:@"SELECT 1 FROM %@ WHERE %@=?1", table->tableName, kRowID];
+      NSString* statement = [[NSString alloc] initWithFormat:@"SELECT 1 FROM %@ WHERE %@=?1", table->tableName, kDatabaseColumnName_RowID];
       table->statements[kObjectStatement_SelectExistsWithRowID] = _CopyAsCString(statement);
       [statement release];
     }
@@ -277,12 +276,12 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
           [statement appendFormat:@", %@=?%i", table->columnList[i].columnName, i + 2];
         }
       }
-      [statement appendFormat:@" WHERE %@=?1", kRowID];
+      [statement appendFormat:@" WHERE %@=?1", kDatabaseColumnName_RowID];
       table->statements[kObjectStatement_UpdateWithRowID] = _CopyAsCString(statement);
       [statement release];
     }
     {
-      NSString* statement = [[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE %@=?1", table->tableName, kRowID];
+      NSString* statement = [[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE %@=?1", table->tableName, kDatabaseColumnName_RowID];
       table->statements[kObjectStatement_DeleteWithRowID] = _CopyAsCString(statement);
       [statement release];
     }
@@ -293,7 +292,7 @@ static void _InitializeSQLTable(DatabaseSQLTable table) {
     }
     {
       NSMutableString* statement = [[NSMutableString alloc] init];
-      [statement appendFormat:@"CREATE TABLE %@ (%@ INTEGER PRIMARY KEY AUTOINCREMENT", table->tableName, kRowID];
+      [statement appendFormat:@"CREATE TABLE %@ (%@ INTEGER PRIMARY KEY AUTOINCREMENT", table->tableName, kDatabaseColumnName_RowID];
       for (unsigned int i = 0; i < table->columnCount; ++i) {
         [statement appendFormat:@", %@ %@", table->columnList[i].columnName, _typeMapping[table->columnList[i].columnType]];
         DatabaseSQLColumnOptions options = table->columnList[i].columnOptions;
@@ -1896,7 +1895,7 @@ LOCK_CONNECTION();
   DatabaseSQLRowID rowID = 0;
   CHECK(value);
   
-  NSString* string = [NSString stringWithFormat:@"SELECT %@ FROM %@ WHERE %@=?1", kRowID, table->tableName, column->columnName];
+  NSString* string = [NSString stringWithFormat:@"SELECT %@ FROM %@ WHERE %@=?1", kDatabaseColumnName_RowID, table->tableName, column->columnName];
   sqlite3_stmt* statement = NULL;
   CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
   int result = _BindStatementBoxedValue(statement, value, column, 1);
@@ -2050,7 +2049,7 @@ LOCK_CONNECTION();
   NSMutableArray* results = [NSMutableArray array];
   
   NSMutableString* string = [NSMutableString stringWithFormat:@"%@ JOIN %@ ON %@.%@=%@.%@", table->fetchStatement, joinTable->tableName,
-                                                              joinTable->tableName, joinColumn->columnName, table->tableName, kRowID];
+                                                              joinTable->tableName, joinColumn->columnName, table->tableName, kDatabaseColumnName_RowID];
   if (clause) {
     [string appendFormat:@" WHERE %@", clause];
   }
