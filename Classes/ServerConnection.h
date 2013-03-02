@@ -56,6 +56,7 @@ typedef enum {
 @private
   id<ServerConnectionDelegate> _delegate;
   ServerConnectionState _currentState;
+  NSString* _hostName;
   NetReachability* _netReachability;
   NSTimer* _checkTimer;
   NSTimeInterval _checkDelay;
@@ -65,6 +66,7 @@ typedef enum {
 @property(nonatomic, readonly, getter=isConnected) BOOL connected;
 @property(nonatomic) NetReachabilityMode reachabilityMode;
 + (ServerConnection*) sharedServerConnection;
+- (id) initWithHostName:(NSString*)hostName;
 - (void) replyToCheckServerReachability:(BOOL)success;
 - (void) replyToConnectToServer:(BOOL)success;
 - (void) replyToDisconnectFromServer:(BOOL)success;

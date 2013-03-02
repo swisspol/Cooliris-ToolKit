@@ -52,10 +52,17 @@ static NSString* _stateNames[] = {
 }
 
 - (id) init {
+  return [self initWithHostName:kReachabilityHostName];
+}
+
+- (id) initWithHostName:(NSString*)hostName {
+  CHECK(hostName);
+  
   if ((self = [super init])) {
     _currentState = kServerConnectionState_Unknown;
     
-    _netReachability = [[NetReachability alloc] initWithHostName:kReachabilityHostName];
+    _hostName = [hostName copy];
+    _netReachability = [[NetReachability alloc] initWithHostName:_hostName];
 #if TARGET_OS_IPHONE
     _netReachability.reachabilityMode = kNetReachabilityMode_Default;
 #endif
@@ -75,6 +82,7 @@ static NSString* _stateNames[] = {
   [_checkTimer invalidate];
   [_checkTimer release];
   [_netReachability release];
+  [_hostName release];
   
   [super dealloc];
 }
@@ -293,7 +301,7 @@ static NSString* _stateNames[] = {
   NetReachabilityMode mode = _netReachability.reachabilityMode;
   _netReachability.delegate = nil;
   [_netReachability release];
-  _netReachability = [[NetReachability alloc] initWithHostName:kReachabilityHostName];
+  _netReachability = [[NetReachability alloc] initWithHostName:_hostName];
   _netReachability.reachabilityMode = mode;
   _netReachability.delegate = self;
 }
