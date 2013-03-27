@@ -53,6 +53,7 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 @property(nonatomic, readonly) DatabaseSQLRowID sqlRowID;  // Always > 0 if in database
 @property(nonatomic, readonly, getter=wasModified) BOOL modified;  // Returns YES if any property was modified since last fetch for existing objects or since creation for new objects
 - (id) initWithSQLTable:(DatabaseSQLTable)table;  // Receiver class must match table class
+- (void) clearModified;  // Modified state is automatically reset when necessary so this method is only needed in very rare cases
 @end
 
 // Bridging of DatabaseObject subclasses to SQL tables

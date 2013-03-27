@@ -114,7 +114,6 @@ static const NSString* _typeMapping[] = {
 @interface DatabaseObject ()
 @property(nonatomic, readonly) void* _storage;
 @property(nonatomic) DatabaseSQLRowID sqlRowID;
-@property(nonatomic, getter=wasModified) BOOL modified;
 - (id) initWithSQLTable:(DatabaseSQLTable)table;
 @end
 
@@ -412,6 +411,10 @@ static inline void _SetField_Object(DatabaseObject* self, DatabaseSQLColumn colu
   }
   
   [super dealloc];
+}
+
+- (void) clearModified {
+  __modified = NO;
 }
 
 - (NSUInteger)hash {
@@ -1216,7 +1219,7 @@ LOCK_CONNECTION();
   if (result == SQLITE_ROW) {
     DCHECK(object.sqlRowID == sqlite3_column_int(statement, 0));
     _CopyRowValues(statement, object._storage, table, 1);
-    object.modified = NO;
+    [object clearModified];
   } else if (result == SQLITE_DONE) {
     object.sqlRowID = 0;
   } else {
@@ -1241,7 +1244,7 @@ LOCK_CONNECTION();
   }
   if (result == SQLITE_DONE) {
     object.sqlRowID = sqlite3_last_insert_rowid(_database);
-    object.modified = NO;
+    [object clearModified];
   } else {
     LOG_ERROR(@"Failed inserting %@ into %@: %s (%i)", [object miniDescription], self, sqlite3_errmsg(_database), result);
   }
@@ -1264,7 +1267,7 @@ LOCK_CONNECTION();
   }
   if (result == SQLITE_DONE) {
     object.sqlRowID = sqlite3_last_insert_rowid(_database);
-    object.modified = NO;
+    [object clearModified];
   } else {
     LOG_ERROR(@"Failed replacing %@ into %@: %s (%i)", [object miniDescription], self, sqlite3_errmsg(_database), result);
   }
@@ -1289,7 +1292,7 @@ LOCK_CONNECTION();
     result = _ExecuteStatement(statement);
   }
   if (result == SQLITE_DONE) {
-    object.modified = NO;
+    [object clearModified];
   } else {
     LOG_ERROR(@"Failed updating %@ into %@: %s (%i)", [object miniDescription], self, sqlite3_errmsg(_database), result);
   }
