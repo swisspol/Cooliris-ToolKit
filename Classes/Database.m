@@ -44,7 +44,6 @@ enum {
 
 #define kMaxRetries 5
 #define kRetryDelay 20000  // 20ms
-#define kUndefinedTimeInterval kCFAbsoluteTimeIntervalSince1904
 
 struct DatabaseSQLColumnDefinition {
   NSString* name;
@@ -1042,7 +1041,7 @@ static int _BindStatementValue(sqlite3_stmt* statement, void* ptr, DatabaseSQLCo
       if (date) {
         result = sqlite3_bind_double(statement, index, [date timeIntervalSinceReferenceDate]);
       } else {
-        result = sqlite3_bind_double(statement, index, kUndefinedTimeInterval);
+        result = sqlite3_bind_null(statement, index);
       }
       break;
     }
@@ -1148,8 +1147,9 @@ static void _CopyRowValues(sqlite3_stmt* statement, void* storage, DatabaseSQLTa
       }
       
       case kDatabaseSQLColumnType_Date: {
-        double time = sqlite3_column_double(statement, i + offset);
-        if (time != kUndefinedTimeInterval) {
+        int type = sqlite3_column_type(statement, i + offset);
+        double time = type != SQLITE_NULL ? sqlite3_column_double(statement, i + offset) : kCFAbsoluteTimeIntervalSince1904;  // Backward compatibility with the fact we used to store nil dates as kCFAbsoluteTimeIntervalSince1904
+        if (time != kCFAbsoluteTimeIntervalSince1904) {
           NSDate* date = [NSDate dateWithTimeIntervalSinceReferenceDate:time];
           if (date != *((NSDate**)ptr)) {
             [*((NSDate**)ptr) release];  // TODO: Should we autorelease?
