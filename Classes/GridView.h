@@ -25,6 +25,7 @@
 - (void) gridViewDidEndUpdatingViewsVisibility:(GridView*)gridView;
 - (void) gridViewDidUpdateScrollingAmount:(GridView*)gridView;
 - (void) gridViewDidBeginScrolling:(GridView*)gridView;
+- (void) gridViewDidScroll:(GridView*)gridView;
 - (void) gridViewDidEndScrolling:(GridView*)gridView;
 @end
 

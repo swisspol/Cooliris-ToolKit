@@ -192,9 +192,9 @@ static BOOL _showBorders = NO;
   _scrolling = _scrollView.contentOffset.y;
 }
 
-- (void) _updateScrolling {
+- (void) _updateScrolling:(BOOL)notify {
   _scrolling = _scrollView.contentOffset.y;
-  if ([_delegate respondsToSelector:@selector(gridViewDidUpdateScrollingAmount:)]) {
+  if (notify && [_delegate respondsToSelector:@selector(gridViewDidUpdateScrollingAmount:)]) {
     [_delegate gridViewDidUpdateScrollingAmount:self];
   }
 }
@@ -344,7 +344,7 @@ static BOOL _showBorders = NO;
                                     2.0 * viewportSize.height + MAX(viewportSize.height, totalHeight));
     _scrollView.contentSize = CGSizeMake(viewportSize.width, MAX(viewportSize.height, totalHeight));
     _scrollView.contentOffset = CGPointMake(0.0, MAX(MIN(_scrolling, _scrollView.contentSize.height - viewportSize.height), 0.0));
-    [self _updateScrolling];
+    [self _updateScrolling:YES];
   }
   
   [self _updateVisibleRows:YES];
@@ -457,6 +457,10 @@ static BOOL _showBorders = NO;
 
 - (void) scrollViewDidScroll:(UIScrollView*)scrollView {
   [self _updateVisibleRows:NO];
+  [self _updateScrolling:NO];
+  if ([_delegate respondsToSelector:@selector(gridViewDidScroll:)]) {
+    [_delegate gridViewDidScroll:self];
+  }
 }
 
 - (void) scrollViewWillBeginDragging:(UIScrollView*)scrollView {
@@ -467,7 +471,7 @@ static BOOL _showBorders = NO;
 
 - (void) scrollViewDidEndDragging:(UIScrollView*)scrollView willDecelerate:(BOOL)decelerate {
   if (decelerate == NO) {
-    [self _updateScrolling];
+    [self _updateScrolling:YES];
     if ([_delegate respondsToSelector:@selector(gridViewDidEndScrolling:)]) {
       [_delegate gridViewDidEndScrolling:self];
     }
@@ -475,7 +479,7 @@ static BOOL _showBorders = NO;
 }
 
 - (void) scrollViewDidEndDecelerating:(UIScrollView*)scrollView {
-  [self _updateScrolling];
+  [self _updateScrolling:YES];
   if ([_delegate respondsToSelector:@selector(gridViewDidEndScrolling:)]) {
     [_delegate gridViewDidEndScrolling:self];
   }
