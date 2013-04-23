@@ -747,9 +747,7 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
 
 - (BOOL) setExtendedAttributeBytes:(const void*)bytes length:(NSUInteger)length withName:(NSString*)name forFileAtPath:(NSString*)path {
   if (bytes || !length) {
-    const char* utf8Name = [name UTF8String];
-    const char* utf8Path = [path UTF8String];
-    int result = setxattr(utf8Path, utf8Name, bytes, length, 0, 0);
+    int result = setxattr([path fileSystemRepresentation], [name UTF8String], bytes, length, 0, XATTR_NOFOLLOW);
     return (result >= 0 ? YES : NO);
   }
   return NO;
@@ -762,6 +760,11 @@ static NSDateFormatter* _GetDateFormatter(NSString* format, NSString* identifier
 - (BOOL) setExtendedAttributeString:(NSString*)string withName:(NSString*)name forFileAtPath:(NSString*)path {
   NSData* data = [string dataUsingEncoding:NSUTF8StringEncoding];
   return data ? [self setExtendedAttributeData:data withName:name forFileAtPath:path] : NO;
+}
+
+- (BOOL) removeExtendedAttributeWithName:(NSString*)name forFileAtPath:(NSString*)path {
+  int result = removexattr([path fileSystemRepresentation], [name UTF8String], XATTR_NOFOLLOW);
+  return (result >= 0 ? YES : NO);
 }
 
 - (BOOL) removeItemAtPathIfExists:(NSString*)path {

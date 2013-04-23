@@ -111,6 +111,7 @@ extern NSData* MakeHTTPBodyForMultipartForm(NSString* boundary, NSDictionary* ar
 - (BOOL) setExtendedAttributeBytes:(const void*)bytes length:(NSUInteger)length withName:(NSString*)name forFileAtPath:(NSString*)path;
 - (BOOL) setExtendedAttributeData:(NSData*)data withName:(NSString*)name forFileAtPath:(NSString*)path;
 - (BOOL) setExtendedAttributeString:(NSString*)string withName:(NSString*)name forFileAtPath:(NSString*)path;  // Uses UTF8 encoding
+- (BOOL) removeExtendedAttributeWithName:(NSString*)name forFileAtPath:(NSString*)path;
 - (BOOL) removeItemAtPathIfExists:(NSString*)path;
 - (NSArray*) directoriesInDirectoryAtPath:(NSString*)path includeInvisible:(BOOL)invisible;
 - (NSArray*) filesInDirectoryAtPath:(NSString*)path includeInvisible:(BOOL)invisible includeSymlinks:(BOOL)symlinks;
