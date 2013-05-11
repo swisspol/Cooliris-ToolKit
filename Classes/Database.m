@@ -1898,10 +1898,11 @@ LOCK_CONNECTION();
   DatabaseSQLRowID rowID = 0;
   CHECK(value);
   
-  NSString* string = [NSString stringWithFormat:@"SELECT %@ FROM %@ WHERE %@=?1", kDatabaseColumnName_RowID, table->tableName, column->columnName];
+  NSString* string = value ? [NSString stringWithFormat:@"SELECT %@ FROM %@ WHERE %@=?1", kDatabaseColumnName_RowID, table->tableName, column->columnName]
+                           : [NSString stringWithFormat:@"SELECT %@ FROM %@ WHERE %@ IS NULL", kDatabaseColumnName_RowID, table->tableName, column->columnName];
   sqlite3_stmt* statement = NULL;
   CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = _BindStatementBoxedValue(statement, value, column, 1);
+  int result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
   if (result == SQLITE_OK) {
     result = _ExecuteStatement(statement);
   }
@@ -1922,10 +1923,11 @@ LOCK_CONNECTION();
   DatabaseObject* object = nil;
   CHECK(value);
   
-  NSString* string = [NSString stringWithFormat:@"%@ WHERE %@=?1", table->fetchStatement, column->columnName];
+  NSString* string = value ? [NSString stringWithFormat:@"%@ WHERE %@=?1", table->fetchStatement, column->columnName]
+                           : [NSString stringWithFormat:@"%@ WHERE %@ IS NULL", table->fetchStatement, column->columnName];
   sqlite3_stmt* statement = NULL;
   CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = _BindStatementBoxedValue(statement, value, column, 1);
+  int result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
   if (result == SQLITE_OK) {
     result = _ExecuteStatement(statement);
   }
