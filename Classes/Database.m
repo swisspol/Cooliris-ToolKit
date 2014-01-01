@@ -768,7 +768,8 @@ static int _CaseInsensitiveUTF8Compare(void* context, int length1, const void* b
 }
 
 static int _OpenDatabase(NSString* path, int flags, sqlite3** database) {
-  int result = sqlite3_open_v2([path fileSystemRepresentation], database, flags | SQLITE_OPEN_NOMUTEX, NULL);  // http://www.sqlite.org/threadsafe.html
+  const char* filename = path ? (path.length ? [path fileSystemRepresentation] : "") : ":memory:";
+  int result = sqlite3_open_v2(filename, database, flags | SQLITE_OPEN_NOMUTEX, NULL);  // http://www.sqlite.org/threadsafe.html
   if (result == SQLITE_OK) {
     result = sqlite3_create_collation(*database, "utf8", SQLITE_UTF8, NULL, _CaseInsensitiveUTF8Compare);
   }
@@ -868,7 +869,15 @@ static int _ExecIndexCallback(void* context, int count, char** row, char** colum
 }
 
 - (id) init {
-  return [self initWithDatabaseAtPath:nil];
+  return [self initWithMemoryDatabase];
+}
+
+- (id) initWithMemoryDatabase {
+  return [self initWithDatabaseAtPath:nil readWrite:YES];
+}
+
+- (id) initWithTemporaryDatabase {
+  return [self initWithDatabaseAtPath:@"" readWrite:YES];
 }
 
 - (id) initWithDatabaseAtPath:(NSString*)path {
@@ -1474,7 +1483,7 @@ UNLOCK_CONNECTION();
   return (result == SQLITE_DONE);
 }
 
-- (BOOL) backupToNewDatabaseAtPath:(NSString*)path {
+- (BOOL) backupToDatabaseAtPath:(NSString*)path {
 LOCK_CONNECTION();
   
   sqlite3* database = NULL;
@@ -1489,12 +1498,40 @@ LOCK_CONNECTION();
     if (result != SQLITE_OK) {
       LOG_ERROR(@"Failed performing backup to database \"%@\": %s (%i)", path, sqlite3_errmsg(database), sqlite3_errcode(database));
     }
-    sqlite3_close(database);
   } else {
-    LOG_ERROR(@"Failed opening database at \"%@\": %s (%i)", path, sqlite3_errmsg(_database), result);
+    LOG_ERROR(@"Failed opening database at \"%@\": %s (%i)", path, sqlite3_errmsg(database), result);
+  }
+  if (database) {
+    sqlite3_close(database);
   }
   
 UNLOCK_CONNECTION();
+  return (result == SQLITE_OK);
+}
+
+- (BOOL) restoreFromDatabaseAtPath:(NSString*)path {
+  LOCK_CONNECTION();
+  
+  sqlite3* database = NULL;
+  int result = _OpenDatabase(path, SQLITE_OPEN_READONLY, &database);
+  if (result == SQLITE_OK) {
+    sqlite3_backup* backup = sqlite3_backup_init(_database, "main", database, "main");
+    if (backup) {
+      sqlite3_backup_step(backup, -1);
+      sqlite3_backup_finish(backup);
+      result = sqlite3_errcode(_database);
+    }
+    if (result != SQLITE_OK) {
+      LOG_ERROR(@"Failed performing restore from database \"%@\": %s (%i)", path, sqlite3_errmsg(database), sqlite3_errcode(database));
+    }
+  } else {
+    LOG_ERROR(@"Failed opening database at \"%@\": %s (%i)", path, sqlite3_errmsg(database), result);
+  }
+  if (database) {
+    sqlite3_close(database);
+  }
+  
+  UNLOCK_CONNECTION();
   return (result == SQLITE_OK);
 }
 

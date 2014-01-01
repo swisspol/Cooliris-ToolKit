@@ -103,6 +103,8 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 #endif
 }
 @property(nonatomic, readonly) void* rawHandle;  // Raw sqlite3* connection handle - Use carefully!
+- (id) initWithMemoryDatabase;
+- (id) initWithTemporaryDatabase;
 - (id) initWithDatabaseAtPath:(NSString*)path;  // Requests read-write by default
 - (id) initWithDatabaseAtPath:(NSString*)path readWrite:(BOOL)readWrite;  // Requires database to have been initialized
 - (BOOL) setValue:(id)value forPragma:(NSString*)pragma;
@@ -122,7 +124,8 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (NSArray*) executeRawSQLStatement:(NSString*)sql;  // Returns nil on error or an NSArray of NSDictionaries
 - (id) executeRawSQLStatement:(NSString*)sql usingRowClass:(Class)class primaryKey:(NSString*)key;  // Class must implement -setValue:forKey: and if a primary key is passed, a NSDictionary will be returned instead of a NSArray
 - (BOOL) executeRawSQLStatements:(NSString*)sql;
-- (BOOL) backupToNewDatabaseAtPath:(NSString*)path;
+- (BOOL) backupToDatabaseAtPath:(NSString*)path;
+- (BOOL) restoreFromDatabaseAtPath:(NSString*)path;
 @end
 
 // Bridging of DatabaseObject subclasses to SQL tables
