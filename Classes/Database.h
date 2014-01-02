@@ -103,8 +103,6 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 #endif
 }
 @property(nonatomic, readonly) void* rawHandle;  // Raw sqlite3* connection handle - Use carefully!
-- (id) initWithMemoryDatabase;
-- (id) initWithTemporaryDatabase;
 - (id) initWithDatabaseAtPath:(NSString*)path;  // Requests read-write by default
 - (id) initWithDatabaseAtPath:(NSString*)path readWrite:(BOOL)readWrite;  // Requires database to have been initialized
 - (BOOL) setValue:(id)value forPragma:(NSString*)pragma;
@@ -223,6 +221,13 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (BOOL) deleteObjectInSQLTable:(DatabaseSQLTable)table withSQLRowID:(DatabaseSQLRowID)rowID;
 - (BOOL) deleteObjectsInSQLTable:(DatabaseSQLTable)table withSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value;  // Returns NO on error or if none
 - (BOOL) deleteObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause;  // Returns NO on error or if none
+@end
+
+@interface DatabaseConnection (Memory)
+- (id) initWithMemoryDatabase;
+- (id) initWithInitializedMemoryDatabase;
+- (id) initWithInitializedMemoryDatabaseUsingObjectClasses:(NSSet*)classes extraSQLStatements:(NSString*)sql;
+- (id) initWithInitializedMemoryDatabaseUsingSchema:(NSSet*)schema extraSQLStatements:(NSString*)sql;
 @end
 
 // Thread-safe pool of database connections

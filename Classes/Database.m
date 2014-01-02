@@ -795,6 +795,66 @@ static int _ExecIndexCallback(void* context, int count, char** row, char** colum
   return SQLITE_OK;
 }
 
+static int _InitializeDatabase(sqlite3* database, DatabaseSQLTable* tables, NSUInteger count, NSString* sql) {
+  NSMutableDictionary* tableDictionary = [[NSMutableDictionary alloc] init];
+  NSMutableDictionary* indexDictionary = [[NSMutableDictionary alloc] init];
+  int result = sqlite3_exec(database, "BEGIN IMMEDIATE TRANSACTION", NULL, NULL, NULL);
+  if (result == SQLITE_OK) {
+    result = sqlite3_exec(database, "SELECT name,sql FROM sqlite_master WHERE type='table'", _ExecTableCallback, tableDictionary, NULL);
+  }
+  if (result == SQLITE_OK) {
+    result = sqlite3_exec(database, "SELECT name,sql FROM sqlite_master WHERE type='index' AND sql IS NOT NULL", _ExecIndexCallback, indexDictionary, NULL);
+  }
+  if (result == SQLITE_OK) {
+    for (NSUInteger i = 0; i < count; ++i) {
+      const DatabaseSQLTableDefinition* table = tables[i];
+      NSString* string = [tableDictionary objectForKey:table->tableName];
+      if (string) {
+        if (![string isEqualToString:[NSString stringWithUTF8String:table->sql]]) {
+          LOG_ERROR(@"Database is already initialized with incompatible table:\n%@\n%@", string,
+                    [NSString stringWithUTF8String:table->sql]);
+          result = SQLITE_ERROR;
+        }
+      } else {
+        result = sqlite3_exec(database, table->sql, NULL, NULL, NULL);
+      }
+      if (result == SQLITE_OK) {
+        for (NSArray* properties in table->indices) {
+          NSString* name = [[NSString alloc] initWithFormat:@"%@_%@", table->tableName, [properties componentsJoinedByString:@"_"]];
+          NSString* string = [indexDictionary objectForKey:name];
+          NSString* statement = [[NSString alloc] initWithFormat:@"CREATE INDEX %@ ON %@ (%@)", name, table->tableName,
+                                 [properties componentsJoinedByString:@","]];
+          if (string) {
+            if (![string isEqualToString:statement]) {
+              LOG_ERROR(@"Database is already initialized with incompatible index:\n%@\n%@", string, statement);
+              result = SQLITE_ERROR;
+            }
+          } else {
+            result = sqlite3_exec(database, [statement UTF8String], NULL, NULL, NULL);
+          }
+          [statement release];
+          [name release];
+          if (result != SQLITE_OK) {
+            break;
+          }
+        }
+      }
+      if (result != SQLITE_OK) {
+        break;
+      }
+    }
+    if (sql && (result == SQLITE_OK)) {
+      result = sqlite3_exec(database, [sql UTF8String], NULL, NULL, NULL);
+    }
+    if (result == SQLITE_OK) {
+      result = sqlite3_exec(database, "COMMIT TRANSACTION", NULL, NULL, NULL);
+    }
+  }
+  [indexDictionary release];
+  [tableDictionary release];
+  return result;
+}
+
 + (BOOL) initializeDatabaseAtPath:(NSString*)path
                    usingSQLTables:(DatabaseSQLTable*)tables
                             count:(NSUInteger)count
@@ -802,62 +862,7 @@ static int _ExecIndexCallback(void* context, int count, char** row, char** colum
   sqlite3* database = NULL;
   int result = _OpenDatabase(path, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, &database);
   if (result == SQLITE_OK) {
-    NSMutableDictionary* tableDictionary = [[NSMutableDictionary alloc] init];
-    NSMutableDictionary* indexDictionary = [[NSMutableDictionary alloc] init];
-    result = sqlite3_exec(database, "BEGIN IMMEDIATE TRANSACTION", NULL, NULL, NULL);
-    if (result == SQLITE_OK) {
-      result = sqlite3_exec(database, "SELECT name,sql FROM sqlite_master WHERE type='table'", _ExecTableCallback, tableDictionary, NULL);
-    }
-    if (result == SQLITE_OK) {
-      result = sqlite3_exec(database, "SELECT name,sql FROM sqlite_master WHERE type='index' AND sql IS NOT NULL", _ExecIndexCallback, indexDictionary, NULL);
-    }
-    if (result == SQLITE_OK) {
-      for (NSUInteger i = 0; i < count; ++i) {
-        const DatabaseSQLTableDefinition* table = tables[i];
-        NSString* string = [tableDictionary objectForKey:table->tableName];
-        if (string) {
-          if (![string isEqualToString:[NSString stringWithUTF8String:table->sql]]) {
-            LOG_ERROR(@"Database is already initialized with incompatible table:\n%@\n%@", string,
-                      [NSString stringWithUTF8String:table->sql]);
-            result = SQLITE_ERROR;
-          }
-        } else {
-          result = sqlite3_exec(database, table->sql, NULL, NULL, NULL);
-        }
-        if (result == SQLITE_OK) {
-          for (NSArray* properties in table->indices) {
-            NSString* name = [[NSString alloc] initWithFormat:@"%@_%@", table->tableName, [properties componentsJoinedByString:@"_"]];
-            NSString* string = [indexDictionary objectForKey:name];
-            NSString* statement = [[NSString alloc] initWithFormat:@"CREATE INDEX %@ ON %@ (%@)", name, table->tableName,
-                                   [properties componentsJoinedByString:@","]];
-            if (string) {
-              if (![string isEqualToString:statement]) {
-                LOG_ERROR(@"Database is already initialized with incompatible index:\n%@\n%@", string, statement);
-                result = SQLITE_ERROR;
-              }
-            } else {
-              result = sqlite3_exec(database, [statement UTF8String], NULL, NULL, NULL);
-            }
-            [statement release];
-            [name release];
-            if (result != SQLITE_OK) {
-              break;
-            }
-          }
-        }
-        if (result != SQLITE_OK) {
-          break;
-        }
-      }
-      if (sql && (result == SQLITE_OK)) {
-        result = sqlite3_exec(database, [sql UTF8String], NULL, NULL, NULL);
-      }
-      if (result == SQLITE_OK) {
-        result = sqlite3_exec(database, "COMMIT TRANSACTION", NULL, NULL, NULL);
-      }
-    }
-    [indexDictionary release];
-    [tableDictionary release];
+    result = _InitializeDatabase(database, tables, count, sql);
   }
   if (result != SQLITE_OK) {
     LOG_ERROR(@"Failed initializing database at \"%@\": %s (%i)", path, sqlite3_errmsg(database), result);
@@ -869,15 +874,8 @@ static int _ExecIndexCallback(void* context, int count, char** row, char** colum
 }
 
 - (id) init {
-  return [self initWithMemoryDatabase];
-}
-
-- (id) initWithMemoryDatabase {
-  return [self initWithDatabaseAtPath:nil readWrite:YES];
-}
-
-- (id) initWithTemporaryDatabase {
-  return [self initWithDatabaseAtPath:@"" readWrite:YES];
+  [self doesNotRecognizeSelector:_cmd];
+  return nil;
 }
 
 - (id) initWithDatabaseAtPath:(NSString*)path {
@@ -2255,6 +2253,59 @@ LOCK_CONNECTION();
   
 UNLOCK_CONNECTION();
   return (result == SQLITE_DONE);
+}
+
+@end
+
+@implementation DatabaseConnection (Memory)
+
+- (id) initWithMemoryDatabase {
+  return [self initWithDatabaseAtPath:nil readWrite:YES];
+}
+
+- (id) initWithInitializedMemoryDatabase {
+  return [self initWithInitializedMemoryDatabaseUsingObjectClasses:nil extraSQLStatements:nil];
+}
+
+- (id) initWithInitializedMemoryDatabaseUsingObjectClasses:(NSSet*)classes extraSQLStatements:(NSString*)sql {
+  if ((self = [self initWithMemoryDatabase])) {
+    NSUInteger count = CFDictionaryGetCount(_tableCache);
+    DatabaseSQLTable values[count];
+    CFDictionaryGetKeysAndValues(_tableCache, NULL, (const void**)values);
+    DatabaseSQLTable tables[count];
+    NSUInteger index = 0;
+    for (NSUInteger i = 0; i < count; ++i) {
+      if (!classes || [classes containsObject:values[i]->class]) {
+        tables[index++] = values[i];
+      }
+    }
+    
+    int result = _InitializeDatabase(_database, tables, index, sql);
+    if (result != SQLITE_OK) {
+      LOG_ERROR(@"Failed initializing memory database: %s (%i)", sqlite3_errmsg(_database), result);
+      [self release];
+      return nil;
+    }
+  }
+  return self;
+}
+
+- (id) initWithInitializedMemoryDatabaseUsingSchema:(NSSet*)schema extraSQLStatements:(NSString*)sql {
+  if ((self = [self initWithMemoryDatabase])) {
+    DatabaseSQLTable tables[schema.count];
+    NSUInteger index = 0;
+    for (DatabaseSchemaTable* table in schema) {
+      tables[index++] = table.sqlTable;
+    }
+    
+    int result = _InitializeDatabase(_database, tables, index, sql);
+    if (result != SQLITE_OK) {
+      LOG_ERROR(@"Failed initializing memory database: %s (%i)", sqlite3_errmsg(_database), result);
+      [self release];
+      return nil;
+    }
+  }
+  return self;
 }
 
 @end
