@@ -122,7 +122,8 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (NSArray*) executeRawSQLStatement:(NSString*)sql;  // Returns nil on error or an NSArray of NSDictionaries
 - (id) executeRawSQLStatement:(NSString*)sql usingRowClass:(Class)class primaryKey:(NSString*)key;  // Class must implement -setValue:forKey: and if a primary key is passed, a NSDictionary will be returned instead of a NSArray
 - (BOOL) executeRawSQLStatements:(NSString*)sql;
-- (BOOL) backupToNewDatabaseAtPath:(NSString*)path;
+- (BOOL) backupToDatabaseAtPath:(NSString*)path;
+- (BOOL) restoreFromDatabaseAtPath:(NSString*)path;
 @end
 
 // Bridging of DatabaseObject subclasses to SQL tables
@@ -220,6 +221,13 @@ typedef NSUInteger DatabaseSQLColumnOptions;
 - (BOOL) deleteObjectInSQLTable:(DatabaseSQLTable)table withSQLRowID:(DatabaseSQLRowID)rowID;
 - (BOOL) deleteObjectsInSQLTable:(DatabaseSQLTable)table withSQLColumn:(DatabaseSQLColumn)column matchingValue:(id)value;  // Returns NO on error or if none
 - (BOOL) deleteObjectsInSQLTable:(DatabaseSQLTable)table withSQLWhereClause:(NSString*)clause;  // Returns NO on error or if none
+@end
+
+@interface DatabaseConnection (Memory)
+- (id) initWithMemoryDatabase;
+- (id) initWithInitializedMemoryDatabase;
+- (id) initWithInitializedMemoryDatabaseUsingObjectClasses:(NSSet*)classes extraSQLStatements:(NSString*)sql;
+- (id) initWithInitializedMemoryDatabaseUsingSchema:(NSSet*)schema extraSQLStatements:(NSString*)sql;
 @end
 
 // Thread-safe pool of database connections

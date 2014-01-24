@@ -19,8 +19,7 @@ These are  shipping iOS applications or examples that make significant use of th
   * [Decks for Apps](http://itunes.apple.com/us/app/decks-for-apps/id432671386?mt=8), the simplest and fastest way to keep up to date on the top apps for iPad. With Decks for Apps, discovering new apps on the App Store has become a whole lot easier.
   * [Decks for Flickr](http://itunes.apple.com/us/app/decks-for-flickr/id432336526?mt=8), your whole new way to enjoy a rich, fluid photographic experience on iPad. Discover and follow public photos from Flickr that match your interest, all as intuitive decks of cards that update continuously.
   * [Decks for Movies](http://itunes.apple.com/us/app/decks-for-movies/id432336366?mt=8), the hassle-free way to catch movie trailers for the top movies all in one place.
-  * [ComicFlow](http://itunes.apple.com/us/app/comicflow/id409290355?mt=8), a popular free iPad comic reader by [Pierre-Olivier Latour](http://www.pol-online.net) and available under open-source license at http://code.google.com/p/comicflow/.
-  * [iOS Face Detection](http://code.google.com/p/ios-face-detection/), a demo application that uses OpenCV to detect faces in a picture taken with an iPhone or iPad camera.
+  * [ComicFlow](http://itunes.apple.com/us/app/comicflow/id409290355?mt=8), a popular free iPad comic reader by [Pierre-Olivier Latour](http://www.pol-online.net) and available under open-source license at https://github.com/swisspol/ComicFlow.
 
 If you have an application that would fit this list, make sure to let us know at feedback@cooliris.com.
 
