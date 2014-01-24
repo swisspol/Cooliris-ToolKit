@@ -62,8 +62,8 @@ static BOOL _showBorders = NO;
 
 @implementation GridView
 
-@synthesize delegate=_delegate, items=_items, contentMargins=_contentMargins, itemSpacing=_itemSpacing, itemsJustified=_itemsJustified,
-            extraVisibleRows=_extraRows, numberOfRows=_rowCount, visibleRows=_visibleRows, scrollingAmount=_scrolling;
+@synthesize delegate=_delegate, items=_items, contentBackgroundOffset=_backgroundOffset, contentMargins=_contentMargins, itemSpacing=_itemSpacing,
+            itemsJustified=_itemsJustified, extraVisibleRows=_extraRows, numberOfRows=_rowCount, visibleRows=_visibleRows, scrollingAmount=_scrolling;
 
 + (void) load {
   if (getenv("showGridBorders")) {
@@ -82,7 +82,7 @@ static BOOL _showBorders = NO;
   _contentView = [[UIView alloc] init];
   [_scrollView addSubview:_contentView];
   
-  [self setContentColor:nil];
+  [self setContentBackgroundColor:nil];
   
   if (_showBorders) {
     UIView* view = [[UIView alloc] init];
@@ -162,7 +162,7 @@ static BOOL _showBorders = NO;
   return _items ? NO : YES;
 }
 
-- (void) setContentColor:(UIColor*)color {
+- (void) setContentBackgroundColor:(UIColor*)color {
   // Using -[CALayer backgroundColor] uses way less Core Animation memory than -[UIView backgroundColor] (radr://8370398)
   if (color) {
     _contentView.hidden = NO;
@@ -175,7 +175,7 @@ static BOOL _showBorders = NO;
   }
 }
 
-- (UIColor*) contentColor {
+- (UIColor*) contentBackgroundColor {
   return _contentView.backgroundColor;
 }
 
@@ -342,6 +342,7 @@ static BOOL _showBorders = NO;
     [currentRow release];
     _contentView.frame = CGRectMake(0.0, -viewportSize.height, viewportSize.width,
                                     2.0 * viewportSize.height + MAX(viewportSize.height, totalHeight));
+    _contentView.bounds = CGRectOffset(_contentView.frame, _backgroundOffset.x, _backgroundOffset.y);  // Ensure content background is anchored
     _scrollView.contentSize = CGSizeMake(viewportSize.width, MAX(viewportSize.height, totalHeight));
     _scrollView.contentOffset = CGPointMake(0.0, MAX(MIN(_scrolling, _scrollView.contentSize.height - viewportSize.height), 0.0));
     [self _updateScrolling:YES];

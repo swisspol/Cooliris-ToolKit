@@ -34,6 +34,7 @@
 @interface GridView : UIView <UIScrollViewDelegate> {
   id<GridViewDelegate> _delegate;
   NSMutableArray* _items;
+  CGPoint _backgroundOffset;
   UIEdgeInsets _contentMargins;
   UIEdgeInsets _itemSpacing;
   BOOL _itemsJustified;
@@ -50,7 +51,8 @@
 @property(nonatomic, assign) id<GridViewDelegate> delegate;
 @property(nonatomic, copy) NSArray* items;
 @property(nonatomic, readonly, getter=isEmpty) BOOL empty;
-@property(nonatomic, retain) UIColor* contentColor;  // Default is nil
+@property(nonatomic) CGPoint contentBackgroundOffset;  // Default is (0,0)
+@property(nonatomic, retain) UIColor* contentBackgroundColor;  // Default is nil
 @property(nonatomic) UIEdgeInsets contentMargins;  // Default is (10,10,10,10)
 @property(nonatomic) UIEdgeInsets itemSpacing;  // Default is (4,4,4,4)
 @property(nonatomic) BOOL itemsJustified;  // Default is NO
