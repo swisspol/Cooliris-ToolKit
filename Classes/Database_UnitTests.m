@@ -332,7 +332,7 @@
   [_conditionLock unlockWithCondition:3];
 }
 
-- (void) testContention {
+- (void) testContention1 {
   DatabaseConnection* connection = [DatabaseConnection defaultDatabaseConnection];
   AssertNotNil(connection);
   
@@ -343,6 +343,48 @@
   for (NSInteger i = 0; i < 100; ++i) {
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     AssertNotNil([connection fetchAllObjectsOfClass:[TestObject class]]);
+    [pool release];
+  }
+  
+  [_conditionLock lockWhenCondition:3];
+  [_conditionLock unlockWithCondition:0];
+  
+  AssertTrue([connection deleteAllObjectsOfClass:[TestObject class]]);
+}
+
+- (void) testContention2 {
+  DatabaseConnection* connection = [DatabaseConnection defaultDatabaseConnection];
+  AssertNotNil(connection);
+  
+  [NSThread detachNewThreadSelector:@selector(_contentionThread:) toTarget:self withObject:nil];
+  [_conditionLock lockWhenCondition:1];
+  [_conditionLock unlockWithCondition:2];
+  
+  for (NSInteger i = 0; i < 100; ++i) {
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    AssertNotNil([connection fetchObjectsOfClass:[TestObject class] withSQLWhereClause:@"1" limit:10]);
+    [pool release];
+  }
+  
+  [_conditionLock lockWhenCondition:3];
+  [_conditionLock unlockWithCondition:0];
+  
+  AssertTrue([connection deleteAllObjectsOfClass:[TestObject class]]);
+}
+
+- (void) testContention3 {
+  DatabaseConnection* connection = [DatabaseConnection defaultDatabaseConnection];
+  AssertNotNil(connection);
+  
+  [NSThread detachNewThreadSelector:@selector(_contentionThread:) toTarget:self withObject:nil];
+  [_conditionLock lockWhenCondition:1];
+  [_conditionLock unlockWithCondition:2];
+  
+  for (NSInteger i = 0; i < 100; ++i) {
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    DatabaseConnection* connection = [[DatabaseConnection alloc] initWithDatabaseAtPath:[DatabaseConnection defaultDatabasePath]];
+    AssertNotNil([connection fetchAllObjectsOfClass:[TestObject class]]);
+    [connection release];
     [pool release];
   }
   

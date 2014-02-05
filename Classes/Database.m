@@ -42,8 +42,8 @@ enum {
   kDatabaseStatementCount
 };
 
-#define kMaxRetries 5
-#define kRetryDelay 20000  // 20ms
+#define kBusyMaxRetries 10
+#define kBusyRetryDelay 10  // ms
 
 struct DatabaseSQLColumnDefinition {
   NSString* name;
@@ -914,28 +914,48 @@ static void __ReleaseStatementCallBack(CFAllocatorRef allocator, const void* val
   [super dealloc];
 }
 
-static inline sqlite3_stmt* _GetCachedStatement(DatabaseConnection* self, char* sql) {
-  sqlite3_stmt* statement = (sqlite3_stmt*)CFDictionaryGetValue(self->_statements, sql);
-  if (statement == NULL) {
-    CHECK(sqlite3_prepare_v2(self->_database, sql, -1, &statement, NULL) == SQLITE_OK);
-    CFDictionarySetValue(self->_statements, sql, statement);
+static inline int _RetryDelay(int retry) {
+  return retry * kBusyRetryDelay + random() % kBusyRetryDelay;
+}
+
+static inline int _PrepareStatement(sqlite3* database, const char* sql, sqlite3_stmt** statement, const char** tail) {
+  int result;
+  for (int retry = 0; retry <= kBusyMaxRetries; ++retry) {
+    result = sqlite3_prepare_v2(database, sql, -1, statement, tail);
+    if ((result != SQLITE_BUSY) && (result != SQLITE_LOCKED)) {
+      break;
+    }
+    int delay = _RetryDelay(retry);
+    LOG_VERBOSE(@"SQLite database is busy: preparing statement again in %i ms (thread = %p | retries = %i)", delay, pthread_self(), retry);
+    usleep(delay * 1000);
   }
-  return statement;
+  return result;
+}
+
+static inline int _GetCachedStatement(DatabaseConnection* self, char* sql, sqlite3_stmt** statement) {
+  int result;
+  *statement = (sqlite3_stmt*)CFDictionaryGetValue(self->_statements, sql);
+  if (*statement == NULL) {
+    result = _PrepareStatement(self->_database, sql, statement, NULL);
+    if (result == SQLITE_OK) {
+      CFDictionarySetValue(self->_statements, sql, *statement);
+    }
+  } else {
+    result = SQLITE_OK;
+  }
+  return result;
 }
 
 static inline int _ExecuteStatement(sqlite3_stmt* statement) {
   int result;
-  int retries = kMaxRetries;
-  while (1) {
+  for (int retry = 0; retry <= kBusyMaxRetries; ++retry) {
     result = sqlite3_step(statement);
-    if ((result == SQLITE_BUSY) && (retries > 0)) {
-      LOG_VERBOSE(@"SQLite database is busy: trying again in %i ms (thread = %p | statement = %p | retries = %i)", kRetryDelay / 1000,
-                  pthread_self(), statement, kMaxRetries - retries);
-      usleep(kRetryDelay);
-      retries -= 1;
-    } else {
+    if ((result != SQLITE_BUSY) && (result != SQLITE_LOCKED)) {
       break;
     }
+    int delay = _RetryDelay(retry);
+    LOG_VERBOSE(@"SQLite database is busy: executing statement again in %i ms (thread = %p | retries = %i)", delay, pthread_self(), retry);
+    usleep(delay * 1000);
   }
   return result;
 }
@@ -961,8 +981,11 @@ static inline int _ExecuteStatement(sqlite3_stmt* statement) {
 - (BOOL) _addSavepoint {
 LOCK_CONNECTION();
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, "SAVEPOINT mark");
-  int result = _ExecuteStatement(statement);
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, "SAVEPOINT mark", &statement);
+  if (result == SQLITE_OK) {
+    result = _ExecuteStatement(statement);
+  }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed adding savepoint in %@: %s (%i)", self, sqlite3_errmsg(_database), result);
   }
@@ -981,8 +1004,11 @@ LOCK_CONNECTION();
   int result;
   
   if (rollback) {
-    sqlite3_stmt* statement = _GetCachedStatement(self, "ROLLBACK TO mark");
-    result = _ExecuteStatement(statement);
+    sqlite3_stmt* statement;
+    result = _GetCachedStatement(self, "ROLLBACK TO mark", &statement);
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
     if (result != SQLITE_DONE) {
       LOG_ERROR(@"Failed rolling back savepoint in %@: %s (%i)", self, sqlite3_errmsg(_database), result);
     }
@@ -992,8 +1018,11 @@ LOCK_CONNECTION();
   }
   
   if (result == SQLITE_DONE) {
-    sqlite3_stmt* statement = _GetCachedStatement(self, "RELEASE mark");
-    result = _ExecuteStatement(statement);
+    sqlite3_stmt* statement;
+    result = _GetCachedStatement(self, "RELEASE mark", &statement);
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
     if (result != SQLITE_DONE) {
       LOG_ERROR(@"Failed releasing savepoint in %@: %s (%i)", self, sqlite3_errmsg(_database), result);
     }
@@ -1218,10 +1247,13 @@ LOCK_CONNECTION();
   CHECK(object.sqlRowID);
   DatabaseSQLTable table = object.sqlTable;
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_SelectWithRowID]);
-  int result = sqlite3_bind_int(statement, 1, object.sqlRowID);
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, table->statements[kObjectStatement_SelectWithRowID], &statement);
   if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = sqlite3_bind_int(statement, 1, object.sqlRowID);
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
   }
   if (result == SQLITE_ROW) {
     DCHECK(object.sqlRowID == sqlite3_column_int(statement, 0));
@@ -1244,10 +1276,13 @@ LOCK_CONNECTION();
   CHECK(object && !object.sqlRowID);
   DatabaseSQLTable table = object.sqlTable;
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_Insert]);
-  int result = _BindStatementValues(statement, object._storage, table, 1);
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, table->statements[kObjectStatement_Insert], &statement);
   if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = _BindStatementValues(statement, object._storage, table, 1);
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
   }
   if (result == SQLITE_DONE) {
     object.sqlRowID = sqlite3_last_insert_rowid(_database);
@@ -1267,10 +1302,13 @@ LOCK_CONNECTION();
   CHECK(object && !object.sqlRowID);
   DatabaseSQLTable table = object.sqlTable;
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_Replace]);
-  int result = _BindStatementValues(statement, object._storage, table, 1);
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, table->statements[kObjectStatement_Replace], &statement);
   if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = _BindStatementValues(statement, object._storage, table, 1);
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
   }
   if (result == SQLITE_DONE) {
     object.sqlRowID = sqlite3_last_insert_rowid(_database);
@@ -1290,13 +1328,16 @@ LOCK_CONNECTION();
   CHECK(object.sqlRowID);
   DatabaseSQLTable table = object.sqlTable;
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_UpdateWithRowID]);
-  int result = sqlite3_bind_int(statement, 1, object.sqlRowID);
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, table->statements[kObjectStatement_UpdateWithRowID], &statement);
   if (result == SQLITE_OK) {
-    result = _BindStatementValues(statement, object._storage, table, 2);
-  }
-  if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = sqlite3_bind_int(statement, 1, object.sqlRowID);
+    if (result == SQLITE_OK) {
+      result = _BindStatementValues(statement, object._storage, table, 2);
+      if (result == SQLITE_OK) {
+        result = _ExecuteStatement(statement);
+      }
+    }
   }
   if (result == SQLITE_DONE) {
     [object clearModified];
@@ -1325,10 +1366,13 @@ UNLOCK_CONNECTION();
 LOCK_CONNECTION();
   CHECK(rowID);
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_DeleteWithRowID]);
-  int result = sqlite3_bind_int(statement, 1, rowID);
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, table->statements[kObjectStatement_DeleteWithRowID], &statement);
   if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = sqlite3_bind_int(statement, 1, rowID);
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
   }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed deleting %@ object with SQL row ID (%i) from %@: %s (%i)", table->class, rowID, self, sqlite3_errmsg(_database), result);
@@ -1363,7 +1407,7 @@ LOCK_CONNECTION();
   id results = nil;
   
   sqlite3_stmt* statement = NULL;
-  int result = sqlite3_prepare_v2(_database, [sql UTF8String], -1, &statement, NULL);
+  int result = _PrepareStatement(_database, [sql UTF8String], &statement, NULL);
   if (result == SQLITE_OK) {
     const char* utf8Key = [key UTF8String];
     if (utf8Key) {
@@ -1460,7 +1504,7 @@ LOCK_CONNECTION();
   while (zSql[0]) {
     sqlite3_stmt* statement = NULL;
     const char* tail = NULL;
-    result = sqlite3_prepare_v2(_database, zSql, -1, &statement, &tail);
+    result = _PrepareStatement(_database, zSql, &statement, &tail);
     if (result == SQLITE_OK) {
       do {
         result = _ExecuteStatement(statement);
@@ -1885,10 +1929,13 @@ LOCK_CONNECTION();
   CHECK(rowID > 0);
   BOOL exists = NO;
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_SelectExistsWithRowID]);
-  int result = sqlite3_bind_int(statement, 1, rowID);
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, table->statements[kObjectStatement_SelectExistsWithRowID], &statement);
   if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = sqlite3_bind_int(statement, 1, rowID);
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
   }
   if (result == SQLITE_ROW) {
     if (sqlite3_column_int(statement, 0)) {
@@ -1909,10 +1956,13 @@ LOCK_CONNECTION();
   CHECK(rowID > 0);
   DatabaseObject* object = nil;
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_SelectWithRowID]);
-  int result = sqlite3_bind_int(statement, 1, rowID);
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, table->statements[kObjectStatement_SelectWithRowID], &statement);
   if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = sqlite3_bind_int(statement, 1, rowID);
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
   }
   if (result == SQLITE_ROW) {
     object = [[[table->class alloc] initWithSQLTable:table] autorelease];
@@ -1936,10 +1986,12 @@ LOCK_CONNECTION();
   NSString* string = value ? [NSString stringWithFormat:@"SELECT %@ FROM %@ WHERE %@=?1", kDatabaseColumnName_RowID, table->tableName, column->columnName]
                            : [NSString stringWithFormat:@"SELECT %@ FROM %@ WHERE %@ IS NULL", kDatabaseColumnName_RowID, table->tableName, column->columnName];
   sqlite3_stmt* statement = NULL;
-  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
+  int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
   if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
   }
   if (result == SQLITE_ROW) {
     rowID = sqlite3_column_int(statement, 0);
@@ -1961,10 +2013,12 @@ LOCK_CONNECTION();
   NSString* string = value ? [NSString stringWithFormat:@"%@ WHERE %@=?1", table->fetchStatement, column->columnName]
                            : [NSString stringWithFormat:@"%@ WHERE %@ IS NULL", table->fetchStatement, column->columnName];
   sqlite3_stmt* statement = NULL;
-  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
+  int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
   if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
   }
   if (result == SQLITE_ROW) {
     object = [[[table->class alloc] initWithSQLTable:table] autorelease];
@@ -2009,13 +2063,17 @@ LOCK_CONNECTION();
     [string appendFormat:@" LIMIT %i", (int)limit];
   }
   sqlite3_stmt* statement = NULL;
-  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = SQLITE_OK;
-  for (NSUInteger i = 0 ; i < count; ++i) {
-    _BindStatementBoxedValue(statement, [values objectAtIndex:i], column, i + 1);
-  }
+  int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
   if (result == SQLITE_OK) {
-    result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+    for (NSUInteger i = 0 ; i < count; ++i) {
+      result = _BindStatementBoxedValue(statement, [values objectAtIndex:i], column, i + 1);
+      if (result != SQLITE_OK) {
+        break;
+      }
+    }
+    if (result == SQLITE_OK) {
+      result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+    }
   }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed fetching %@ objects with property '%@' matching %@ from %@: %s (%i)", table->class, column->name,
@@ -2038,10 +2096,12 @@ LOCK_CONNECTION();
     [string appendFormat:@" ORDER BY %@", table->fetchOrder];
   }
   sqlite3_stmt* statement = NULL;
-  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
+  int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
   if (result == SQLITE_OK) {
-    result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+    result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
+    if (result == SQLITE_OK) {
+      result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+    }
   }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed fetching %@ objects with property '%@' matching '%@' from %@: %s (%i)", table->class, column->name,
@@ -2067,8 +2127,10 @@ LOCK_CONNECTION();
     [string appendFormat:@" LIMIT %i", (int)limit];
   }
   sqlite3_stmt* statement = NULL;
-  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
+  if (result == SQLITE_OK) {
+    result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed fetching %@ objects with SQL where clause \"%@\" from %@: %s (%i)", table->class, clause, self,
               sqlite3_errmsg(_database), result);
@@ -2100,8 +2162,10 @@ LOCK_CONNECTION();
     [string appendFormat:@" LIMIT %i", (int)limit];
   }
   sqlite3_stmt* statement = NULL;
-  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
+  if (result == SQLITE_OK) {
+    result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed fetching %@ objects joined with %@ objects on property '%@' from %@: %s (%i)", table->class,
               joinTable->class, joinColumn->name, self, sqlite3_errmsg(_database), result);
@@ -2120,8 +2184,10 @@ UNLOCK_CONNECTION();
   
   NSString* string = [NSString stringWithFormat:@"%@ %@", table->fetchStatement, sql];
   sqlite3_stmt* statement = NULL;
-  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
+  if (result == SQLITE_OK) {
+    result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed fetching %@ objects with SQL \"%@\" from %@: %s (%i)", table->class, sql, self,
               sqlite3_errmsg(_database), result);
@@ -2137,8 +2203,11 @@ UNLOCK_CONNECTION();
 LOCK_CONNECTION();
   NSUInteger count = 0;
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_CountAll]);
-  int result = _ExecuteStatement(statement);
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, table->statements[kObjectStatement_CountAll], &statement);
+  if (result == SQLITE_OK) {
+    result = _ExecuteStatement(statement);
+  }
   if (result == SQLITE_ROW) {
     count = sqlite3_column_int(statement, 0);
   } else {
@@ -2160,10 +2229,12 @@ LOCK_CONNECTION();
                            : [NSString stringWithFormat:@"SELECT Count(*) FROM %@ WHERE %@ IS NULL", table->tableName,
                                                         column->columnName];
   sqlite3_stmt* statement = NULL;
-  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
+  int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
   if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
   }
   if (result == SQLITE_ROW) {
     count = sqlite3_column_int(statement, 0);
@@ -2181,8 +2252,11 @@ UNLOCK_CONNECTION();
 LOCK_CONNECTION();
   NSMutableArray* results = [NSMutableArray array];
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_SelectAll]);
-  int result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, table->statements[kObjectStatement_SelectAll], &statement);
+  if (result == SQLITE_OK) {
+    result = [self _executeSelectStatement:statement withSQLTable:table results:results];
+  }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed fetching all %@ objects from %@: %s (%i)", table->class, self, sqlite3_errmsg(_database), result);
     results = nil;
@@ -2197,8 +2271,11 @@ UNLOCK_CONNECTION();
 - (BOOL) deleteAllObjectsInSQLTable:(DatabaseSQLTable)table {
 LOCK_CONNECTION();
   
-  sqlite3_stmt* statement = _GetCachedStatement(self, table->statements[kObjectStatement_DeleteAll]);
-  int result = _ExecuteStatement(statement);
+  sqlite3_stmt* statement;
+  int result = _GetCachedStatement(self, table->statements[kObjectStatement_DeleteAll], &statement);
+  if (result == SQLITE_OK) {
+    result = _ExecuteStatement(statement);
+  }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed deleting all %@ objects from %@: %s (%i)", table->class, self, sqlite3_errmsg(_database), result);
   }
@@ -2222,10 +2299,12 @@ LOCK_CONNECTION();
                            : [NSString stringWithFormat:@"DELETE FROM %@ WHERE %@ IS NULL", table->tableName,
                                                         column->columnName];
   sqlite3_stmt* statement = NULL;
-  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
+  int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
   if (result == SQLITE_OK) {
-    result = _ExecuteStatement(statement);
+    result = value ? _BindStatementBoxedValue(statement, value, column, 1) : SQLITE_OK;
+    if (result == SQLITE_OK) {
+      result = _ExecuteStatement(statement);
+    }
   }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed deleting %@ objects with property '%@' matching '%@' from %@: %s (%i)", table->class, column->name,
@@ -2243,8 +2322,10 @@ LOCK_CONNECTION();
   
   NSMutableString* string = [NSMutableString stringWithFormat:@"DELETE FROM %@ WHERE %@", table->tableName, clause];
   sqlite3_stmt* statement = NULL;
-  CHECK(sqlite3_prepare_v2(_database, [string UTF8String], -1, &statement, NULL) == SQLITE_OK);
-  int result = _ExecuteStatement(statement);
+  int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
+  if (result == SQLITE_OK) {
+    result = _ExecuteStatement(statement);
+  }
   if (result != SQLITE_DONE) {
     LOG_ERROR(@"Failed deleting %@ objects with SQL where clause \"%@\" from %@: %s (%i)", table->class, clause, self,
               sqlite3_errmsg(_database), result);
