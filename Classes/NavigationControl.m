@@ -21,7 +21,7 @@
 @synthesize delegate=_delegate, numberOfPages=_pageCount, numberOfMarkers=_markerCount, currentPage=_pageIndex,
             continuous=_continuous, margins=_margins, maximumSpacing=_maximumSpacing, thumbImage=_thumbImage,
             thumbTintColor=_thumbColor, markerImage=_markerImage, markerTintColor=_markerColor,
-            thumbMarkerImage=_thumbMarkerImage, thumbMarkerTintColor=_thumbMarkerTintColor,
+            thumbMarkerImage=_thumbMarkerImage, thumbMarkerTintColor=_thumbMarkerColor,
             constrainOverlayToSuperview=_constrainOverlay, overlayArrowOffset=_overlayArrowOffset;
 
 - (void) _initialize {
