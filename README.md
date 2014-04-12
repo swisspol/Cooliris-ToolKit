@@ -71,7 +71,7 @@ This directory is the core of the Cooliris Toolkit: these Objective-C classes ha
   * **RichString**: Basic replacement for NSAttributedString that allows archiving of itself and its attachments.
   * **ServerConnection**: Provides an abstract state-machine for applications that needs to be continuously connected to a server and automatically reconnect / disconnect depending on network conditions.
   * **ShakeMotion**: Wrapper around UIAccelerometer to detect shake motions.
-  * **SliderControl*: Implements a slider control with customizable graphic assets.
+  * **SliderControl**: Implements a slider control with customizable graphic assets.
   * **SmartDescription**: Replacement for NSObject's -description that automatically prints the values of the object’s properties.
   * **SwitchCell**: UITableViewCell subclass to display switches.
   * **TextFieldCell**: UITableViewCell subclass to display text fields.
