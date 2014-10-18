@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef __COOLIRIS_TOOLKIT_LOGGING__
+#define __COOLIRIS_TOOLKIT_LOGGING__
+
 #import <Foundation/Foundation.h>
 
 typedef enum {
@@ -124,3 +127,5 @@ void LoggingDisableRemoteAccess(BOOL keepConnectionAlive);
 
 // For internal use only, do NOT use directly
 extern LogLevel LoggingMinimumLogLevel;
+
+#endif // __COOLIRIS_TOOLKIT_LOGGING__
