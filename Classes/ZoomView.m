@@ -177,7 +177,15 @@
           self.minimumZoomScale = fitZoomScale;
           break;
         
-        case kZoomViewDisplayMode_Fill:
+		case kZoomViewDisplayMode_FitVertical:
+		  self.minimumZoomScale = boundsSize.height / _displaySize.height;
+		  break;
+
+		case kZoomViewDisplayMode_FitHorizontal:
+		  self.minimumZoomScale = boundsSize.width / _displaySize.width;
+		  break;
+
+		case kZoomViewDisplayMode_Fill:
           self.minimumZoomScale = fillZoomScale;
           break;
         
