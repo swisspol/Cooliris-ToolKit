@@ -17,8 +17,8 @@
 typedef enum {
   kZoomViewDisplayMode_Centered = 0,
   kZoomViewDisplayMode_Fit,
-  kZoomViewDisplayMode_FitVertical,
-  kZoomViewDisplayMode_FitHorizontal,
+  kZoomViewDisplayMode_FitVertically,
+  kZoomViewDisplayMode_FitHorizontally,
   kZoomViewDisplayMode_Fill,
   kZoomViewDisplayMode_Automatic  // Choose kZoomViewDisplayMode_Fit or kZoomViewDisplayMode_Fill automatically depending on display and view aspect ratio similarity
 } ZoomViewDisplayMode;
