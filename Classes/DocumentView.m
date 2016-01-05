@@ -301,7 +301,12 @@
       
       // Make sure there is a translation
       if (_swiping == NO) {
-        if ((fabsf(offset.x) < 1.0) && (fabsf(offset.y) < 1.0)) {
+#if __LP64__
+        if ((fabs(offset.x) < 1.0) && (fabs(offset.y) < 1.0))
+#else
+        if ((fabsf(offset.x) < 1.0) && (fabsf(offset.y) < 1.0))
+#endif
+        {
           break;
         }
         if ([_delegate respondsToSelector:@selector(documentViewWillBeginSwiping:)]) {

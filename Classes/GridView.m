@@ -259,7 +259,7 @@ static BOOL _showBorders = NO;
       if ([_delegate respondsToSelector:@selector(gridViewDidEndUpdatingViewsVisibility:)]) {
         [_delegate gridViewDidEndUpdatingViewsVisibility:self];
       }
-      LOG_DEBUG(@"Items = %i | Visible rows = %@ | Loaded rows = %@", _items.count, NSStringFromRange(_visibleRows),
+      LOG_DEBUG(@"Items = %i | Visible rows = %@ | Loaded rows = %@", (int)_items.count, NSStringFromRange(_visibleRows),
                   NSStringFromRange(_loadedRows));
     }
   }

@@ -503,7 +503,7 @@ static DatabaseSQLTable _RegisterSQLTableFromDatabaseObjectSubclass(Class class)
     free(propertyList);
     superclass = [superclass superclass];
   } while (superclass != [DatabaseObject class]);
-  unsigned int count = CFDictionaryGetCount(properties);
+  CFIndex count = CFDictionaryGetCount(properties);
   if (count) {
     void* keys = malloc(count * sizeof(NSString*));
     CFDictionaryGetKeysAndValues(properties, keys, NULL);
@@ -970,7 +970,7 @@ static inline int _ExecuteStatement(sqlite3_stmt* statement) {
 }
 
 - (BOOL) writeUserVersion:(NSUInteger)version {
-  return [self setValue:[NSNumber numberWithInt:version] forPragma:@"user_version"];
+  return [self setValue:[NSNumber numberWithInteger:version] forPragma:@"user_version"];
 }
 
 - (NSUInteger) readUserVersion {
@@ -1088,7 +1088,7 @@ static int _BindStatementValue(sqlite3_stmt* statement, void* ptr, DatabaseSQLCo
     case kDatabaseSQLColumnType_Data: {
       NSData* data = *((NSData**)ptr);
       if (data) {
-        result = sqlite3_bind_blob(statement, index, data.bytes, data.length, SQLITE_STATIC);  // Equivalent to sqlite3_bind_null() for zero-length
+        result = sqlite3_bind_blob(statement, index, data.bytes, (int)data.length, SQLITE_STATIC);  // Equivalent to sqlite3_bind_null() for zero-length
       } else {
         result = sqlite3_bind_null(statement, index);
       }
@@ -1285,7 +1285,7 @@ LOCK_CONNECTION();
     }
   }
   if (result == SQLITE_DONE) {
-    object.sqlRowID = sqlite3_last_insert_rowid(_database);
+    object.sqlRowID = (DatabaseSQLRowID)sqlite3_last_insert_rowid(_database);
     [object clearModified];
   } else {
     LOG_ERROR(@"Failed inserting %@ into %@: %s (%i)", [object miniDescription], self, sqlite3_errmsg(_database), result);
@@ -1311,7 +1311,7 @@ LOCK_CONNECTION();
     }
   }
   if (result == SQLITE_DONE) {
-    object.sqlRowID = sqlite3_last_insert_rowid(_database);
+    object.sqlRowID = (DatabaseSQLRowID)sqlite3_last_insert_rowid(_database);
     [object clearModified];
   } else {
     LOG_ERROR(@"Failed replacing %@ into %@: %s (%i)", [object miniDescription], self, sqlite3_errmsg(_database), result);
@@ -2065,7 +2065,7 @@ LOCK_CONNECTION();
   sqlite3_stmt* statement = NULL;
   int result = _PrepareStatement(_database, [string UTF8String], &statement, NULL);
   if (result == SQLITE_OK) {
-    for (NSUInteger i = 0 ; i < count; ++i) {
+    for (unsigned int i = 0 ; i < count; ++i) {
       result = _BindStatementBoxedValue(statement, [values objectAtIndex:i], column, i + 1);
       if (result != SQLITE_OK) {
         break;
