@@ -361,7 +361,7 @@
         [self _updatePageViewsVisibility];  // We can't rely on this happening in the delegate as it would be too late
       }
       CABasicAnimation* animation = [CABasicAnimation animation];
-      animation.delegate = self;
+      animation.delegate = (id<CAAnimationDelegate>)self;
       animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionDefault];
       animation.duration = _animationDuration;
       animation.fromValue = [NSValue valueWithCGPoint:_contentView.layer.position];
@@ -393,7 +393,7 @@
   _pageIndex = index;
   if (animate) {
     CABasicAnimation* animation = [CABasicAnimation animation];
-    animation.delegate = self;
+    animation.delegate = (id<CAAnimationDelegate>)self;
     animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionDefault];
     animation.duration = _animationDuration;
     animation.fromValue = [NSValue valueWithCGPoint:_contentView.layer.position];

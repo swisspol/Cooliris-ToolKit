@@ -39,7 +39,7 @@
     _cancelSelector = cancelSelector;
     _argument = [argument retain];
     
-    self.delegate = [BasicAnimation class];
+    self.delegate = (id<CAAnimationDelegate>)[BasicAnimation class];
   }
   return self;
 }
